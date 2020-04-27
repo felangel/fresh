@@ -175,9 +175,9 @@ abstract class FreshClient<T extends Token> {
   /// based on the provided `Response`.
   ///
   /// By default `shouldRefresh` returns `true`
-  /// if the response has a 403 status code.
+  /// if the response has a 401 status code.
   bool shouldRefresh(Response response) {
-    return response.statusCode == 403;
+    return response.statusCode == 401;
   }
 
   /// Sends an HTTP HEAD request with the given headers to the given URL, which
