@@ -20,5 +20,5 @@ class PhotosLoadSuccess extends PhotosState {
   final List<String> photos;
 
   @override
-  List<Object> get props => [photos, lastUpdated];
+  List<Object> get props => [photos];
 }
