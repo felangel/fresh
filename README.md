@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/felangel/fresh/master/docs/assets/fresh_logo.png" height="120" alt="Fresh" />
+# Fresh 🍋
 
 [![Pub](https://img.shields.io/pub/v/fresh.svg)](https://pub.dev/packages/fresh)
 [![style: effective dart](https://img.shields.io/badge/style-effective_dart-40c4ff.svg)](https://github.com/tenhobi/effective_dart)
@@ -17,14 +17,14 @@ Fresh is a package which attempts to simplify custom API authentication by integ
 ### Extend FreshClient
 
 ```dart
+// 1. Specify the Token Type
 class MyHttpClient extends FreshClient<OAuth2Token> {
-  // Must provide a concrete implementation of `TokenStorage` to super.
+  // 2. Provide an implementation of `TokenStorage`.
   MyHttpClient() : super(InMemoryTokenStorage());
 
   @override
   Future<OAuth2Token> refreshToken(token, client) async {
-    // Make a token refresh request using the current token
-    // and the provided client and return a new token.
+    // 3. Implement token refresh.
   }
 }
 ```
@@ -34,6 +34,7 @@ class MyHttpClient extends FreshClient<OAuth2Token> {
 As requests are made, `FreshClient` will handle managing the token for you. Tokens will be refreshed as needed and requests will be automatically retried pending a successful refresh.
 
 ```dart
+// Use like a normal Http Client.
 final httpClient = MyHttpClient();
 final response = await httpClient.get(url, headers: headers);
 ```
