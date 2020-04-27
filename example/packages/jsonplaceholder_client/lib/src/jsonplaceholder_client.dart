@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:html';
 
 import 'package:api_client/api_client.dart';
 import 'package:jsonplaceholder_client/jsonplaceholder_client.dart';
@@ -39,7 +38,7 @@ class JsonplaceholderClient {
       Uri.https('jsonplaceholder.typicode.com', '/photos'),
     );
 
-    if (response.statusCode != HttpStatus.ok) {
+    if (response.statusCode != 200) {
       throw PhotosRequestFailureException();
     }
 

@@ -1,12 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:html';
 
 import 'package:fresh/fresh.dart';
 import 'package:http/http.dart' show Client, Request, Response;
 import 'package:meta/meta.dart';
-
-import '../fresh.dart';
 
 /// An Exception that should be thrown when overriding `refreshToken` if the
 /// refresh fails and should result in a force-logout.
@@ -180,7 +177,7 @@ abstract class FreshClient<T extends Token> {
   /// By default `shouldRefresh` returns `true`
   /// if the response has a 403 status code.
   bool shouldRefresh(Response response) {
-    return response.statusCode == HttpStatus.unauthorized;
+    return response.statusCode == 403;
   }
 
   /// Sends an HTTP HEAD request with the given headers to the given URL, which

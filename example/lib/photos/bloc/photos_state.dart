@@ -15,11 +15,9 @@ class PhotosLoadInProgress extends PhotosState {}
 class PhotosLoadFailure extends PhotosState {}
 
 class PhotosLoadSuccess extends PhotosState {
-  PhotosLoadSuccess(this.photos, {DateTime lastUpdated})
-      : lastUpdated = lastUpdated ?? DateTime.now();
+  const PhotosLoadSuccess(this.photos);
 
   final List<String> photos;
-  final DateTime lastUpdated;
 
   @override
   List<Object> get props => [photos];
