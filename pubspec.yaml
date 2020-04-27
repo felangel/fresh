@@ -1,0 +1,14 @@
+name: fresh
+description: A Dart HTTP Client with built-in token refresh.
+
+version: 0.0.1
+
+environment:
+  sdk: ">=2.7.0 <3.0.0"
+
+dependencies:
+  meta: ^1.1.8
+  http: ^0.12.0+4
+
+dev_dependencies:
+  effective_dart: ^1.2.1

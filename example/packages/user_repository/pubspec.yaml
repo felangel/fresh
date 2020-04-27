@@ -1,0 +1,14 @@
+name: user_repository
+description: A User Dart Repository
+
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.7.0 <3.0.0"
+
+dependencies:
+  jsonplaceholder_client:
+    path: ../jsonplaceholder_client
+  meta: ^1.1.8
