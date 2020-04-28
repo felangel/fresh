@@ -1,4 +1,4 @@
 library fresh;
 
-export 'package:http/http.dart' show Client, Response;
-export 'src/fresh_client.dart';
+export 'package:dio/dio.dart' show Dio, Response;
+export 'src/fresh.dart';

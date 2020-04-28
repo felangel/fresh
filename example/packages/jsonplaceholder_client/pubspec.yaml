@@ -9,8 +9,9 @@ environment:
   sdk: ">=2.7.0 <3.0.0"
 
 dependencies:
-  api_client:
-    path: ../api_client
+  dio: ^3.0.9
+  fresh:
+    path: ../../../
   json_annotation: ^3.0.1
   meta: ^1.1.8
 

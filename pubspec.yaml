@@ -1,17 +1,17 @@
 name: fresh
-description: A Dart HTTP Client with built-in token refresh. Fresh is built on top of package:http and manages tokens transparently.
+description: An http interceptor for token refresh. Fresh is built on top of package:dio and manages authentication tokens transparently.
 repository: https://github.com/felangel/fresh
 issue_tracker: https://github.com/felangel/fresh/issues
 homepage: https://github.com/felangel/fresh
 
-version: 0.0.1
+version: 0.0.2
 
 environment:
   sdk: ">=2.7.0 <3.0.0"
 
 dependencies:
+  dio: ^3.0.9
   meta: ^1.1.8
-  http: ^0.12.0+4
 
 dev_dependencies:
   effective_dart: ^1.2.1
