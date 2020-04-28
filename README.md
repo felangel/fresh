@@ -6,37 +6,23 @@
 
 ---
 
-A Dart HTTP Client with built-in token refresh.
+A [dio](https://pub.dev/packages/dio) interceptor for built-in token refresh.
 
 ## Overview
 
-Fresh is a package which attempts to simplify custom API authentication by integrating token refresh and caching directly into the client. Fresh is flexible and is intended to support custom token refresh mechanisms.
+Fresh is a [dio](https://pub.dev/packages/dio) interceptor which attempts to simplify custom API authentication by integrating token refresh and caching transparently. Fresh is flexible and is intended to support custom token refresh mechanisms.
 
 ## Usage
 
-### Extend FreshClient
-
 ```dart
-// 1. Specify the Token Type
-class MyHttpClient extends FreshClient<OAuth2Token> {
-  // 2. Provide an implementation of `TokenStorage`.
-  MyHttpClient() : super(InMemoryTokenStorage());
-
-  @override
-  Future<OAuth2Token> refreshToken(token, client) async {
-    // 3. Implement token refresh.
-  }
-}
-```
-
-### Make Requests
-
-As requests are made, `FreshClient` will handle managing the token for you. Tokens will be refreshed as needed and requests will be automatically retried pending a successful refresh.
-
-```dart
-// Use like a normal Http Client.
-final httpClient = MyHttpClient();
-final response = await httpClient.get(url, headers: headers);
+dio.interceptors.add(
+  Fresh<OAuth2Token>(
+    tokenStorage: InMemoryTokenStorage(),
+    refreshToken: (token, client) {
+      // Perform refresh and return new token
+    },
+  ),
+);
 ```
 
 ## Example

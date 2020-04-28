@@ -72,33 +72,41 @@ abstract class TokenStorage<T extends Token> {
   Future<void> delete();
 }
 
-/// {@template fresh_interceptor}
-/// A Dio HTTP Interceptor for automatic token refresh.
-/// Requires a concrete implementation of [TokenStorage]
-/// and handles transparently refreshing/caching tokens.
-///
-/// In most cases, [FreshInterceptor] should be extended by a
-/// custom RefreshInterceptor implementation and the `refreshToken`
-/// method must be implemented.
+typedef TokenHeaderBuilder<T extends Token> = Map<String, String> Function(
+  T token,
+);
+
+typedef ShouldRefreshFunction = bool Function(Response response);
+
+typedef RefreshToken<T> = Future<T> Function(T token, Dio httpClient);
+
+/// {@template fresh}
+/// A Dio Interceptor for automatic token refresh.
+/// Requires a concrete implementation of [TokenStorage] and [RefreshToken].
+/// Handles transparently refreshing/caching tokens.
 ///
 /// ```dart
-/// class RefreshInterceptor extends FreshInterceptor<OAuth2Token> {
-///   // Must provide a concrete implementation of `TokenStorage` to super.
-///   ApiClient() : super(InMemoryTokenStorage());
-///
-///   @override
-///   Future<OAuth2Token> refreshToken(token, client) async {
-///     // Make a token refresh request using the current token
-///     // and the provided client and return a new token.
-///   }
-/// }
+/// dio.interceptors.add(
+///   Fresh<OAuth2Token>(
+///     tokenStorage: InMemoryTokenStorage(),
+///     refreshToken: (token, client) async {...},
+///   ),
+/// );
 /// ```
 /// {@endtemplate}
-abstract class FreshInterceptor<T extends Token> extends Interceptor {
-  /// {@macro fresh_interceptor}
-  FreshInterceptor(TokenStorage tokenStorage)
-      : assert(tokenStorage != null),
-        _tokenStorage = tokenStorage {
+class Fresh<T extends Token> extends Interceptor {
+  /// {@macro fresh}
+  Fresh({
+    @required TokenStorage tokenStorage,
+    @required RefreshToken<T> refreshToken,
+    TokenHeaderBuilder tokenHeader,
+    ShouldRefreshFunction shouldRefresh,
+  })  : assert(tokenStorage != null),
+        assert(refreshToken != null),
+        _tokenStorage = tokenStorage,
+        _refreshToken = refreshToken,
+        _tokenHeader = tokenHeader ?? _defaultTokenHeader,
+        _shouldRefresh = shouldRefresh ?? _defaultShouldRefresh {
     _tokenStorage.read().then((token) {
       _token = token;
       _authenticationStatus = token != null
@@ -114,6 +122,9 @@ abstract class FreshInterceptor<T extends Token> extends Interceptor {
         ..add(AuthenticationStatus.initial);
 
   final TokenStorage<T> _tokenStorage;
+  final TokenHeaderBuilder<T> _tokenHeader;
+  final ShouldRefreshFunction _shouldRefresh;
+  final RefreshToken<T> _refreshToken;
 
   T _token;
 
@@ -122,26 +133,6 @@ abstract class FreshInterceptor<T extends Token> extends Interceptor {
   /// Returns a `Stream<AuthenticationState>` which is updated internally based
   /// on if a valid token exists in [TokenStorage].
   Stream<AuthenticationStatus> get authenticationStatus => _controller.stream;
-
-  /// Returns the desired header which will be added to all outgoing requests.
-  /// Defaults to:
-  /// ```dart
-  /// {
-  ///   'authorization': '${token.tokenType} ${token.accessToken}'
-  /// }
-  /// ```
-  /// if token is of type [OAuth2Token].
-  ///
-  /// This method must be overridden if using a non [OAuth2Token]
-  /// otherwise an `UnimplementedError` will be thrown.
-  Map<String, String> tokenHeader(T token) {
-    if (token is OAuth2Token) {
-      return {
-        'authorization': '${token.tokenType} ${token.accessToken}',
-      };
-    }
-    throw UnimplementedError();
-  }
 
   /// Sets the internal [token] to the provided [token]
   /// and updates the `AuthenticationStatus` accordingly.
@@ -165,20 +156,20 @@ abstract class FreshInterceptor<T extends Token> extends Interceptor {
   Future<dynamic> onRequest(RequestOptions options) async {
     final token = await _getToken();
     if (token != null) {
-      (options.headers ?? <String, String>{}).addAll(tokenHeader(token));
+      (options.headers ?? <String, String>{}).addAll(_tokenHeader(token));
     }
     return options;
   }
 
   @override
   Future<dynamic> onResponse(Response response) async {
-    if (_token == null || !shouldRefresh(response)) {
+    if (_token == null || !_shouldRefresh(response)) {
       return response;
     }
 
     T refreshedToken;
     try {
-      refreshedToken = await refreshToken(_token, _httpClient);
+      refreshedToken = await _refreshToken(_token, _httpClient);
     } on RevokeTokenException catch (_) {
       await _onRevokeTokenException();
       return response;
@@ -193,25 +184,20 @@ abstract class FreshInterceptor<T extends Token> extends Interceptor {
       onReceiveProgress: response.request.onReceiveProgress,
       onSendProgress: response.request.onSendProgress,
       queryParameters: response.request.queryParameters,
-      options: response.request..headers.addAll(tokenHeader(_token)),
+      options: response.request..headers.addAll(_tokenHeader(_token)),
     );
   }
 
-  /// Must be overridden and is responsible for returning a new token
-  /// given the current token and an http client instance.
-  ///
-  /// `refreshToken` will be called when `shouldRefresh` returns `true`.
-  ///
-  /// If a refresh fails, a [RevokeTokenException] should be thrown in order
-  /// to invalidate the current token.
-  Future<T> refreshToken(T token, Dio httpClient);
+  static Map<String, String> _defaultTokenHeader(Token token) {
+    if (token is OAuth2Token) {
+      return {
+        'authorization': '${token.tokenType} ${token.accessToken}',
+      };
+    }
+    throw UnimplementedError();
+  }
 
-  /// Returns a `bool` which determines whether `refreshToken` should be called
-  /// based on the provided `Response`.
-  ///
-  /// By default `shouldRefresh` returns `true`
-  /// if the response has a 401 status code.
-  bool shouldRefresh(Response response) {
+  static bool _defaultShouldRefresh(Response response) {
     return response.statusCode == 401;
   }
 

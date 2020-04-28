@@ -10,8 +10,8 @@ environment:
 
 dependencies:
   dio: ^3.0.9
-  refresh_interceptor:
-    path: ../refresh_interceptor
+  fresh:
+    path: ../../../
   json_annotation: ^3.0.1
   meta: ^1.1.8
 

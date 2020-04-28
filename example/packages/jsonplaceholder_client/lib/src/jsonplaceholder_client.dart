@@ -1,28 +1,68 @@
+import 'dart:math';
+
 import 'package:dio/dio.dart';
-import 'package:refresh_interceptor/refresh_interceptor.dart';
+import 'package:fresh/fresh.dart';
 import 'package:jsonplaceholder_client/jsonplaceholder_client.dart';
 import 'package:meta/meta.dart';
+
+class InMemoryTokenStorage implements TokenStorage<OAuth2Token> {
+  OAuth2Token _token;
+
+  @override
+  Future<void> delete() async {
+    _token = null;
+  }
+
+  @override
+  Future<OAuth2Token> read() async {
+    return _token;
+  }
+
+  @override
+  Future<void> write(OAuth2Token token) async {
+    _token = token;
+  }
+}
 
 class PhotosRequestFailureException implements Exception {}
 
 class JsonplaceholderClient {
   JsonplaceholderClient({Dio httpClient})
-      : _httpClient = httpClient ?? Dio()
+      : _httpClient = (httpClient ?? Dio())
           ..options.baseUrl = 'https://jsonplaceholder.typicode.com'
-          ..interceptors.add(_refreshInterceptor);
+          ..interceptors.add(_fresh);
+
+  static var _refreshCount = 0;
+  static final _fresh = Fresh<OAuth2Token>(
+    tokenStorage: InMemoryTokenStorage(),
+    refreshToken: (token, client) async {
+      print('refreshing token...');
+      await Future.delayed(const Duration(seconds: 1));
+      if (Random().nextInt(3) == 0) {
+        print('token revoked!');
+        throw RevokeTokenException();
+      }
+      print('token refreshed!');
+      _refreshCount++;
+      return OAuth2Token(
+        accessToken: 'access_token_$_refreshCount',
+        refreshToken: 'refresh_token_$_refreshCount',
+      );
+    },
+    shouldRefresh: (_) => Random().nextInt(3) == 0,
+  );
 
   final Dio _httpClient;
-  static final RefreshInterceptor _refreshInterceptor = RefreshInterceptor();
 
   Stream<AuthenticationStatus> get authenticationStatus =>
-      _refreshInterceptor.authenticationStatus;
+      _fresh.authenticationStatus;
 
   Future<void> authenticate({
     @required String username,
     @required String password,
   }) async {
     await Future.delayed(const Duration(seconds: 1));
-    await _refreshInterceptor.setToken(
+    await _fresh.setToken(
       OAuth2Token(
         accessToken: 'initial_access_token',
         refreshToken: 'initial_refresh_token',
@@ -32,7 +72,7 @@ class JsonplaceholderClient {
 
   Future<void> unauthenticate() async {
     await Future.delayed(const Duration(seconds: 1));
-    await _refreshInterceptor.setToken(null);
+    await _fresh.setToken(null);
   }
 
   Future<List<Photo>> photos() async {
