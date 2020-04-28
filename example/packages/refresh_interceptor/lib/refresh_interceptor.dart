@@ -1,4 +1,4 @@
-library api_client.dart;
+library refresh_interceptor.dart;
 
 export 'package:fresh/fresh.dart' show AuthenticationStatus, OAuth2Token;
-export 'src/api_client.dart';
+export 'src/refresh_interceptor.dart';

@@ -1,5 +1,5 @@
-name: api_client
-description: A custom dart api client
+name: refresh_interceptor
+description: A custom dart refresh_interceptor
 
 publish_to: "none" # Remove this line if you wish to publish to pub.dev
 

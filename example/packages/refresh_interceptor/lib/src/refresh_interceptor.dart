@@ -3,10 +3,10 @@ import 'package:fresh/fresh.dart';
 
 import 'in_memory_token_storage.dart';
 
-class ApiClient extends FreshClient<OAuth2Token> {
-  ApiClient() : super(InMemoryTokenStorage());
+class RefreshInterceptor extends FreshInterceptor<OAuth2Token> {
+  RefreshInterceptor() : super(InMemoryTokenStorage());
 
-  var refreshCount = 0;
+  var _refreshCount = 0;
 
   @override
   Future<OAuth2Token> refreshToken(_, __) async {
@@ -17,20 +17,13 @@ class ApiClient extends FreshClient<OAuth2Token> {
       throw RevokeTokenException();
     }
     print('token refreshed!');
-    refreshCount++;
+    _refreshCount++;
     return OAuth2Token(
-      accessToken: 'access_token_$refreshCount',
-      refreshToken: 'refresh_token_$refreshCount',
+      accessToken: 'access_token_$_refreshCount',
+      refreshToken: 'refresh_token_$_refreshCount',
     );
   }
 
   @override
   bool shouldRefresh(_) => Random().nextInt(3) == 0;
-
-  @override
-  Map<String, String> tokenHeader(token) {
-    return {
-      'authorization': 'bearer ${token.accessToken}',
-    };
-  }
 }
