@@ -167,6 +167,19 @@ class Fresh<T extends Token> extends Interceptor {
       return response;
     }
 
+    return _tryRefresh(response);
+  }
+
+  @override
+  Future<dynamic> onError(DioError err) {
+    final response = err.response;
+    if (_token == null || !_shouldRefresh(response)) {
+      return super.onError(err);
+    }
+    return _tryRefresh(response);
+  }
+
+  Future<Response> _tryRefresh(Response response) async {
     T refreshedToken;
     try {
       refreshedToken = await _refreshToken(_token, _httpClient);
