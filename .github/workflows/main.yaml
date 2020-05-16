@@ -5,12 +5,14 @@ on:
     branches:
       - master
     paths:
-      - "!example/**"
+      - "lib/**"
+      - "test/**"
   pull_request:
     branches:
       - master
     paths:
-      - "!example/**"
+      - "lib/**"
+      - "test/**"
 
 jobs:
   fresh:
