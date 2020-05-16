@@ -20,7 +20,7 @@ class OAuth2Token implements Token {
     this.expiresIn,
     this.refreshToken,
     this.scope,
-  });
+  }) : assert(accessToken != null);
 
   /// The access token string as issued by the authorization server.
   final String accessToken;
@@ -42,10 +42,7 @@ class OAuth2Token implements Token {
 /// {@template token}
 /// Generic Token Interface
 /// {@endtemplate}
-abstract class Token {
-  /// {@macro token}
-  const Token();
-}
+abstract class Token {}
 
 /// Enum representing the current authentication status of the application.
 enum AuthenticationStatus {
@@ -101,12 +98,14 @@ class Fresh<T extends Token> extends Interceptor {
     @required RefreshToken<T> refreshToken,
     TokenHeaderBuilder tokenHeader,
     ShouldRefreshFunction shouldRefresh,
+    Dio httpClient,
   })  : assert(tokenStorage != null),
         assert(refreshToken != null),
         _tokenStorage = tokenStorage,
         _refreshToken = refreshToken,
         _tokenHeader = tokenHeader ?? _defaultTokenHeader,
-        _shouldRefresh = shouldRefresh ?? _defaultShouldRefresh {
+        _shouldRefresh = shouldRefresh ?? _defaultShouldRefresh,
+        _httpClient = httpClient ?? Dio() {
     _tokenStorage.read().then((token) {
       _token = token;
       _authenticationStatus = token != null
@@ -116,11 +115,11 @@ class Fresh<T extends Token> extends Interceptor {
     });
   }
 
-  static final Dio _httpClient = Dio();
   static final StreamController _controller =
-      StreamController<AuthenticationStatus>()
+      StreamController<AuthenticationStatus>.broadcast()
         ..add(AuthenticationStatus.initial);
 
+  final Dio _httpClient;
   final TokenStorage<T> _tokenStorage;
   final TokenHeaderBuilder<T> _tokenHeader;
   final ShouldRefreshFunction _shouldRefresh;
@@ -171,10 +170,10 @@ class Fresh<T extends Token> extends Interceptor {
   }
 
   @override
-  Future<dynamic> onError(DioError err) {
+  Future<dynamic> onError(DioError err) async {
     final response = err.response;
     if (_token == null || !_shouldRefresh(response)) {
-      return super.onError(err);
+      return err;
     }
     return _tryRefresh(response);
   }
