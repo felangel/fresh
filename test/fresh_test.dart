@@ -90,14 +90,11 @@ void main() {
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
-        expectLater(
-          fresh.authenticationStatus,
-          emitsInOrder([
-            AuthenticationStatus.authenticated,
-            AuthenticationStatus.unauthenticated
-          ]),
-        );
         await fresh.setToken(null);
+        await expectLater(
+          fresh.authenticationStatus,
+          emitsInOrder([AuthenticationStatus.unauthenticated]),
+        );
       });
 
       test('adds unauthenticated status if token is not null', () async {
@@ -108,14 +105,11 @@ void main() {
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
-        expectLater(
-          fresh.authenticationStatus,
-          emitsInOrder([
-            AuthenticationStatus.unauthenticated,
-            AuthenticationStatus.authenticated
-          ]),
-        );
         await fresh.setToken(token);
+        await expectLater(
+          fresh.authenticationStatus,
+          emitsInOrder([AuthenticationStatus.authenticated]),
+        );
       });
     });
 
@@ -292,13 +286,13 @@ void main() {
             AuthenticationStatus.authenticated,
           ]),
         );
-        expectLater(
+        final actual = await fresh.onResponse(response);
+        await expectLater(
           fresh.authenticationStatus,
           emitsInOrder([
             AuthenticationStatus.unauthenticated,
           ]),
         );
-        final actual = await fresh.onResponse(response);
         expect(refreshCallCount, 1);
         expect(actual, response);
         verify(tokenStorage.delete()).called(1);
