@@ -1,19 +1,22 @@
-name: fresh
+name: example
 
 on:
   push:
     branches:
       - master
     paths:
-      - "!example/**"
+      - "example/**"
   pull_request:
     branches:
       - master
     paths:
-      - "!example/**"
+      - "example/**"
 
 jobs:
-  fresh:
+  example:
+    defaults:
+      run:
+        working-directory: example
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -25,4 +28,4 @@ jobs:
       - name: Analyze
         run: flutter analyze lib
       - name: Run tests
-        run: pub run test_coverage
+        run: flutter test --no-pub --coverage --test-randomize-ordering-seed random
