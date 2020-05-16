@@ -131,7 +131,10 @@ class Fresh<T extends Token> extends Interceptor {
 
   /// Returns a `Stream<AuthenticationState>` which is updated internally based
   /// on if a valid token exists in [TokenStorage].
-  Stream<AuthenticationStatus> get authenticationStatus => _controller.stream;
+  Stream<AuthenticationStatus> get authenticationStatus async* {
+    yield _authenticationStatus;
+    yield* _controller.stream;
+  }
 
   /// Sets the internal [token] to the provided [token]
   /// and updates the `AuthenticationStatus` accordingly.
@@ -143,11 +146,11 @@ class Fresh<T extends Token> extends Interceptor {
   /// from the custom `RefreshInterceptor` implementation.
   Future<void> setToken(T token) async {
     await _tokenStorage.write(token);
-    _controller.add(
-      token == null
-          ? AuthenticationStatus.unauthenticated
-          : AuthenticationStatus.authenticated,
-    );
+    final authenticationStatus = token == null
+        ? AuthenticationStatus.unauthenticated
+        : AuthenticationStatus.authenticated;
+    _authenticationStatus = authenticationStatus;
+    _controller.add(authenticationStatus);
     _token = token;
   }
 
@@ -216,11 +219,12 @@ class Fresh<T extends Token> extends Interceptor {
   Future<T> _getToken() async {
     if (_authenticationStatus != AuthenticationStatus.initial) return _token;
     final token = await _tokenStorage.read();
-    _controller.add(
-      token != null
-          ? AuthenticationStatus.authenticated
-          : AuthenticationStatus.unauthenticated,
-    );
+    final authenticationStatus = token != null
+        ? AuthenticationStatus.authenticated
+        : AuthenticationStatus.unauthenticated;
+    _authenticationStatus = authenticationStatus;
+    _controller.add(authenticationStatus);
+
     _token = token;
     return _token;
   }
@@ -228,6 +232,7 @@ class Fresh<T extends Token> extends Interceptor {
   Future<void> _onRevokeTokenException() async {
     await _tokenStorage.delete();
     _token = null;
+    _authenticationStatus = AuthenticationStatus.unauthenticated;
     _controller.add(AuthenticationStatus.unauthenticated);
   }
 }

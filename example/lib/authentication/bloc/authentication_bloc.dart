@@ -13,6 +13,7 @@ class AuthenticationBloc
       : assert(userRepository != null),
         _userRepository = userRepository {
     _subscription = _userRepository.authenticationStatus.listen((status) {
+      print('status $status');
       add(AuthenticationStatusChanged(status));
     });
   }
