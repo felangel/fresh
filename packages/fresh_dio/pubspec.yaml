@@ -1,0 +1,22 @@
+name: fresh_dio
+description: An http interceptor for token refresh. Fresh is built on top of package:dio and manages authentication tokens transparently.
+repository: https://github.com/felangel/fresh
+issue_tracker: https://github.com/felangel/fresh/issues
+homepage: https://github.com/felangel/fresh
+
+version: 0.1.0
+
+environment:
+  sdk: ">=2.7.0 <3.0.0"
+
+dependencies:
+  dio: ^3.0.9
+  meta: ^1.1.8
+  fresh:
+    path: ../fresh
+
+dev_dependencies:
+  effective_dart: ^1.2.1
+  mockito: ^4.1.1
+  test: ^1.14.3
+  test_coverage: ^0.4.1

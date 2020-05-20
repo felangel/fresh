@@ -1,21 +1,26 @@
-name: fresh
+name: fresh_dio
 
 on:
   push:
     branches:
       - master
     paths:
-      - "lib/**"
-      - "test/**"
+      - ".github/workflows/fresh_dio.yaml"
+      - "packages/fresh_dio/lib/**"
+      - "packages/fresh_dio/test/**"
   pull_request:
     branches:
       - master
     paths:
-      - "lib/**"
-      - "test/**"
+      - ".github/workflows/fresh_dio.yaml"
+      - "packages/fresh_dio/lib/**"
+      - "packages/fresh_dio/test/**"
 
 jobs:
   build:
+    defaults:
+      run:
+        working-directory: packages/fresh_dio
     runs-on: ubuntu-latest
     container:
       image: google/dart:2.8.1

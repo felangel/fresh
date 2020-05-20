@@ -1,16 +1,15 @@
 name: fresh
-description: An http interceptor for token refresh. Fresh is built on top of package:dio and manages authentication tokens transparently.
+description: An token refresh library for dart. This package exposes the core components that are common to various refresh token implementations (REST, GraphQL, etc...).
 repository: https://github.com/felangel/fresh
 issue_tracker: https://github.com/felangel/fresh/issues
 homepage: https://github.com/felangel/fresh
 
-version: 0.1.0
+version: 0.2.0
 
 environment:
   sdk: ">=2.7.0 <3.0.0"
 
 dependencies:
-  dio: ^3.0.9
   meta: ^1.1.8
 
 dev_dependencies:

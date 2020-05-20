@@ -1,22 +1,22 @@
-name: example
+name: fresh_dio_example
 
 on:
   push:
     branches:
       - master
     paths:
-      - "example/**"
+      - "packages/fresh_dio/example/**"
   pull_request:
     branches:
       - master
     paths:
-      - "example/**"
+      - "packages/fresh_dio/example/**"
 
 jobs:
   build:
     defaults:
       run:
-        working-directory: example
+        working-directory: packages/fresh_dio/example
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

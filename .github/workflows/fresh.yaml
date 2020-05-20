@@ -1,0 +1,38 @@
+name: fresh
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/fresh.yaml"
+      - "packages/fresh/lib/**"
+      - "packages/fresh/test/**"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/fresh.yaml"
+      - "packages/fresh/lib/**"
+      - "packages/fresh/test/**"
+
+jobs:
+  build:
+    defaults:
+      run:
+        working-directory: packages/fresh
+    runs-on: ubuntu-latest
+    container:
+      image: google/dart:2.8.1
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Dependencies
+        run: pub get
+      - name: Format
+        run: dartfmt --dry-run --set-exit-if-changed .
+      - name: Analyze
+        run: dartanalyzer --fatal-infos --fatal-warnings lib test
+      - name: Run tests
+        run: pub run test_coverage
+      - name: Check Code Coverage
+        uses: ChicagoFlutter/lcov-cop@v1.0.0
