@@ -10,7 +10,7 @@ environment:
 
 dependencies:
   dio: ^3.0.9
-  fresh:
+  fresh_dio:
     path: ../../../
   json_annotation: ^3.0.1
   meta: ^1.1.8
