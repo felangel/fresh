@@ -1,4 +1,4 @@
-# fresh 🍋
+# Fresh 🍋
 
 [![build](https://github.com/felangel/fresh/workflows/build/badge.svg)](https://github.com/felangel/fresh/actions)
 [![coverage](https://github.com/felangel/fresh/blob/master/coverage_badge.svg)](https://github.com/felangel/fresh/actions)
@@ -7,7 +7,7 @@
 
 ---
 
-An token refresh library for dart.
+An token refresh library for dart. This library consists of a collection of packages which specialize in a particular aspect of token refresh.
 
 ## Packages
 

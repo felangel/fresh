@@ -1,3 +1,8 @@
+# 0.2.0
+
+- **BREAKING**: split `dio` interceptor into separate package (`fresh_dio`)
+  - `package:fresh` is repurposed to contain core refresh components
+
 # 0.1.0
 
 - Improvements to internal implementation
