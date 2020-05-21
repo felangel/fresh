@@ -12,7 +12,8 @@ environment:
 dependencies:
   dio: ^3.0.9
   meta: ^1.1.8
-  fresh: ^0.2.0
+  fresh:
+    path: ../fresh
 
 dev_dependencies:
   effective_dart: ^1.2.1

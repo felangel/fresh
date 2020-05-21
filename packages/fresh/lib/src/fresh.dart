@@ -64,3 +64,28 @@ abstract class TokenStorage<T extends Token> {
   /// Deletes the stored token asynchronously.
   Future<void> delete();
 }
+
+/// Function responsible for building the token header(s) give a [token].
+typedef TokenHeaderBuilder<T extends Token> = Map<String, String> Function(
+  T token,
+);
+
+/// A [TokenStorage] implementation that keeps the token in memory.
+class InMemoryTokenStorage implements TokenStorage<OAuth2Token> {
+  OAuth2Token _token;
+
+  @override
+  Future<void> delete() async {
+    _token = null;
+  }
+
+  @override
+  Future<OAuth2Token> read() async {
+    return _token;
+  }
+
+  @override
+  Future<void> write(OAuth2Token token) async {
+    _token = token;
+  }
+}

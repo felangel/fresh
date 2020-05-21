@@ -12,7 +12,7 @@ A [dio](https://pub.dev/packages/dio) interceptor for built-in token refresh. Bu
 
 ## Overview
 
-`fresh_dio` is a [dio](https://pub.dev/packages/dio) interceptor which attempts to simplify custom API authentication by integrating token refresh and caching transparently. Fresh is flexible and is intended to support custom token refresh mechanisms.
+`fresh_dio` is a [dio](https://pub.dev/packages/dio) interceptor which attempts to simplify custom API authentication by integrating token refresh and caching transparently. `fresh_dio` is flexible and is intended to support custom token refresh mechanisms.
 
 ## Usage
 
@@ -29,4 +29,4 @@ dio.interceptors.add(
 
 ## Example
 
-See [the example](https://github.com/felangel/fresh/tree/master/packages/fresh_dio/example) for a complete sample application using `fresh` which integrates with [jsonplaceholder](https://jsonplaceholder.typicode.com).
+See [the example](https://github.com/felangel/fresh/tree/master/packages/fresh_dio/example) for a complete sample application using `fresh_dio` which integrates with [jsonplaceholder](https://jsonplaceholder.typicode.com).

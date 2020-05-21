@@ -1,0 +1,25 @@
+name: example
+description: A example of how to use fresh_graphql
+
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.7.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_bloc: ^4.0.0
+  graphql: ^3.0.2
+  json_annotation: ^3.0.1
+  fresh_graphql:
+    path: ../
+
+dev_dependencies:
+  build_runner: ^1.8.1
+  json_serializable: ^3.3.0
+
+flutter:
+  uses-material-design: true
