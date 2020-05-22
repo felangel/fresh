@@ -23,7 +23,10 @@ final freshLink = FreshLink(
     // Perform refresh and return new token
   },
 );
-final graphQLClient = GraphQLClient(cache: InMemoryCache(), link: Link.from([freshLink, HttpLink(...)]));
+final graphQLClient = GraphQLClient(
+  cache: InMemoryCache(),
+  link: Link.from([freshLink, HttpLink(uri: 'https://my.graphql.api')]),
+);
 ```
 
 ## Example
