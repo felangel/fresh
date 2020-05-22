@@ -10,7 +10,8 @@ An token refresh library for dart. This library consists of a collection of pack
 
 ## Packages
 
-| Package                                                                       | Pub                                                                                              |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| [fresh](https://github.com/felangel/fresh/tree/master/packages/fresh)         | [![pub package](https://img.shields.io/pub/v/fresh.svg)](https://pub.dev/packages/fresh)         |
-| [fresh_dio](https://github.com/felangel/fresh/tree/master/packages/fresh_dio) | [![pub package](https://img.shields.io/pub/v/fresh_dio.svg)](https://pub.dev/packages/fresh_dio) |
+| Package                                                                               | Pub                                                                                                      |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| [fresh](https://github.com/felangel/fresh/tree/master/packages/fresh)                 | [![pub package](https://img.shields.io/pub/v/fresh.svg)](https://pub.dev/packages/fresh)                 |
+| [fresh_dio](https://github.com/felangel/fresh/tree/master/packages/fresh_dio)         | [![pub package](https://img.shields.io/pub/v/fresh_dio.svg)](https://pub.dev/packages/fresh_dio)         |
+| [fresh_graphql](https://github.com/felangel/fresh/tree/master/packages/fresh_graphql) | [![pub package](https://img.shields.io/pub/v/fresh_graphql.svg)](https://pub.dev/packages/fresh_graphql) |
