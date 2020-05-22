@@ -4,7 +4,7 @@ repository: https://github.com/felangel/fresh
 issue_tracker: https://github.com/felangel/fresh/issues
 homepage: https://github.com/felangel/fresh
 
-version: 0.1.0
+version: 0.1.1
 
 environment:
   sdk: ">=2.7.0 <3.0.0"
@@ -12,8 +12,7 @@ environment:
 dependencies:
   dio: ^3.0.9
   meta: ^1.1.8
-  fresh:
-    path: ../fresh
+  fresh: ^0.2.1
 
 dev_dependencies:
   effective_dart: ^1.2.1
