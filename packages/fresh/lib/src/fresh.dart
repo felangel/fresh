@@ -71,8 +71,8 @@ typedef TokenHeaderBuilder<T extends Token> = Map<String, String> Function(
 );
 
 /// A [TokenStorage] implementation that keeps the token in memory.
-class InMemoryTokenStorage implements TokenStorage<OAuth2Token> {
-  OAuth2Token _token;
+class InMemoryTokenStorage<T extends Token> implements TokenStorage<T> {
+  T _token;
 
   @override
   Future<void> delete() async {
@@ -80,12 +80,12 @@ class InMemoryTokenStorage implements TokenStorage<OAuth2Token> {
   }
 
   @override
-  Future<OAuth2Token> read() async {
+  Future<T> read() async {
     return _token;
   }
 
   @override
-  Future<void> write(OAuth2Token token) async {
+  Future<void> write(T token) async {
     _token = token;
   }
 }
