@@ -1,3 +1,8 @@
+# 0.2.1
+
+- Add `InMemoryTokenStorage`
+- Add `TokenHeaderBuilder` typedef
+
 # 0.2.0
 
 - **BREAKING**: split `dio` interceptor into separate package (`fresh_dio`)
