@@ -5,11 +5,7 @@ import 'package:fresh/fresh.dart';
 import 'package:fresh_dio/fresh_dio.dart';
 import 'package:meta/meta.dart';
 
-typedef TokenHeaderBuilder<T extends Token> = Map<String, String> Function(
-  T token,
-);
-
-typedef ShouldRefreshFunction = bool Function(Response response);
+typedef ShouldRefresh = bool Function(Response response);
 
 typedef RefreshToken<T> = Future<T> Function(T token, Dio httpClient);
 
@@ -33,7 +29,7 @@ class Fresh<T extends Token> extends Interceptor {
     @required TokenStorage tokenStorage,
     @required RefreshToken<T> refreshToken,
     TokenHeaderBuilder tokenHeader,
-    ShouldRefreshFunction shouldRefresh,
+    ShouldRefresh shouldRefresh,
     Dio httpClient,
   })  : assert(tokenStorage != null),
         assert(refreshToken != null),
@@ -58,7 +54,7 @@ class Fresh<T extends Token> extends Interceptor {
   final Dio _httpClient;
   final TokenStorage<T> _tokenStorage;
   final TokenHeaderBuilder<T> _tokenHeader;
-  final ShouldRefreshFunction _shouldRefresh;
+  final ShouldRefresh _shouldRefresh;
   final RefreshToken<T> _refreshToken;
 
   T _token;
