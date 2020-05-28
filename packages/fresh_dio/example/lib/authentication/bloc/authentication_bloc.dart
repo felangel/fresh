@@ -30,7 +30,7 @@ class AuthenticationBloc
     if (event is AuthenticationStatusChanged) {
       yield _mapAuthenticationStatusChangedToState(event);
     } else if (event is LoggedOut) {
-      yield _mapLoggedOutToState();
+      _userRepository.signOut();
     }
   }
 
@@ -46,11 +46,6 @@ class AuthenticationBloc
       default:
         return AuthenticationUnknown();
     }
-  }
-
-  AuthenticationState _mapLoggedOutToState() {
-    _userRepository.signOut();
-    return AuthenticationUnauthenticated();
   }
 
   @override
