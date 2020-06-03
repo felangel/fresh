@@ -92,14 +92,12 @@ void main() {
       test(
           'uses cached token and sets empty '
           'operation context headers when token is null', () async {
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
         when(tokenStorage.read()).thenAnswer((_) async => null);
         final operation = MockOperation();
         final freshLink = FreshLink<OAuth2Token>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async => null,
         );
-        await freshLink.setToken(null);
         await expectLater(
           freshLink.request(operation, (operation) async* {}),
           emitsDone,
@@ -109,7 +107,7 @@ void main() {
           emitsInOrder([AuthenticationStatus.unauthenticated]),
         );
         verify(operation.setContext({'headers': {}})).called(1);
-        verifyNever(tokenStorage.read());
+        verify(tokenStorage.read()).called(1);
       });
 
       test(
