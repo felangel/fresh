@@ -23,7 +23,7 @@ jobs:
         working-directory: packages/fresh_dio
     runs-on: ubuntu-latest
     container:
-      image: google/dart:2.8.1
+      image: google/dart:2.8.3
     steps:
       - uses: actions/checkout@v2
       - name: Install Dependencies
