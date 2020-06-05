@@ -91,7 +91,7 @@ class FreshLink<T extends Token> extends Link {
   /// Sets the internal [token] to the provided [token].
   /// This method should be called after making a successful token request.
   Future<void> setToken(Token token) async {
-    await _tokenStorage.write(token);
+    await token == null ? _tokenStorage.delete() : _tokenStorage.write(token);
     final authenticationStatus = token == null
         ? AuthenticationStatus.unauthenticated
         : AuthenticationStatus.authenticated;

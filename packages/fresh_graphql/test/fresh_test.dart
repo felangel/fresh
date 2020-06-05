@@ -255,7 +255,7 @@ void main() {
     });
 
     group('setToken', () {
-      test('invokes tokenStorage.write', () async {
+      test('invokes tokenStorage.write for non-null token', () async {
         when(tokenStorage.read()).thenAnswer((_) async => null);
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
         final token = MockOAuth2Token();
@@ -265,6 +265,17 @@ void main() {
         );
         await freshLink.setToken(token);
         verify(tokenStorage.write(token)).called(1);
+      });
+
+      test('invokes tokenStorage.delete for null token', () async {
+        when(tokenStorage.read()).thenAnswer((_) async => MockOAuth2Token());
+        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        final freshLink = FreshLink<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (_, __) async => null,
+        );
+        await freshLink.setToken(null);
+        verify(tokenStorage.delete()).called(1);
       });
     });
   });
