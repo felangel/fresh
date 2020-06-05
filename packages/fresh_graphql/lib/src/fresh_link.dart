@@ -71,7 +71,9 @@ class FreshLink<T extends Token> extends Link {
               }
             }
           },
-        );
+        ) {
+    _getToken(tokenStorage);
+  }
 
   static var _controller = StreamController<AuthenticationStatus>();
   static var _authenticationStatus = AuthenticationStatus.initial;
