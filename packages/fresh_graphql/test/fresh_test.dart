@@ -256,7 +256,7 @@ void main() {
 
     group('setToken', () {
       test('invokes tokenStorage.write', () async {
-        when(tokenStorage.read()).thenAnswer((_) async => MockOAuth2Token());
+        when(tokenStorage.read()).thenAnswer((_) async => null);
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
         final token = MockOAuth2Token();
         final freshLink = FreshLink<OAuth2Token>(
