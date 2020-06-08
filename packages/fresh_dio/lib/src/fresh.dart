@@ -28,7 +28,7 @@ class Fresh<T extends Token> extends Interceptor {
   Fresh({
     @required TokenStorage tokenStorage,
     @required RefreshToken<T> refreshToken,
-    TokenHeaderBuilder tokenHeader,
+    TokenHeaderBuilder<T> tokenHeader,
     ShouldRefresh shouldRefresh,
     Dio httpClient,
   })  : assert(tokenStorage != null),
