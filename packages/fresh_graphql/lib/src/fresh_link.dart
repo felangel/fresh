@@ -9,8 +9,6 @@ typedef ShouldRefresh = bool Function(FetchResult);
 
 typedef RefreshToken<T> = Future<T> Function(T, Client);
 
-typedef OnRefreshFailure = void Function();
-
 /// {@template fresh_link}
 /// A GraphQL Link which handles manages an authentication token automatically.
 ///
@@ -32,7 +30,6 @@ class FreshLink<T extends Token> extends Link {
   FreshLink({
     @required TokenStorage<T> tokenStorage,
     @required RefreshToken<T> refreshToken,
-    OnRefreshFailure onRefreshFailure,
     TokenHeaderBuilder<T> tokenHeader = _defaultTokenHeader,
     ShouldRefresh shouldRefresh = _defaultShouldRefresh,
   })  : assert(tokenStorage != null),
@@ -40,7 +37,7 @@ class FreshLink<T extends Token> extends Link {
         _tokenStorage = tokenStorage,
         super(
           request: (operation, [forward]) async* {
-            final token = await tokenStorage.read();
+            final token = await _getToken(tokenStorage);
             final headers = token != null
                 ? await tokenHeader(token)
                 : const <String, String>{};
@@ -61,7 +58,12 @@ class FreshLink<T extends Token> extends Link {
                   yield* forward(operation);
                 } on RevokeTokenException catch (_) {
                   await tokenStorage.delete();
-                  onRefreshFailure?.call();
+                  if (_authenticationStatus !=
+                      AuthenticationStatus.unauthenticated) {
+                    _authenticationStatus =
+                        AuthenticationStatus.unauthenticated;
+                    _controller.add(AuthenticationStatus.unauthenticated);
+                  }
                   yield result;
                 }
               } else {
@@ -69,13 +71,36 @@ class FreshLink<T extends Token> extends Link {
               }
             }
           },
-        );
+        ) {
+    _getToken(tokenStorage);
+  }
+
+  static var _controller = StreamController<AuthenticationStatus>();
+  static var _authenticationStatus = AuthenticationStatus.initial;
+  static Token _token;
+
+  /// Returns a `Stream<AuthenticationState>` which is updated internally based
+  /// on if a valid token exists in [TokenStorage].
+  Stream<AuthenticationStatus> get authenticationStatus async* {
+    yield _authenticationStatus;
+    yield* _controller.stream;
+  }
 
   final TokenStorage<T> _tokenStorage;
 
   /// Sets the internal [token] to the provided [token].
   /// This method should be called after making a successful token request.
-  Future<void> setToken(Token token) => _tokenStorage.write(token);
+  Future<void> setToken(Token token) async {
+    await token == null ? _tokenStorage.delete() : _tokenStorage.write(token);
+    final authenticationStatus = token == null
+        ? AuthenticationStatus.unauthenticated
+        : AuthenticationStatus.authenticated;
+    if (_authenticationStatus != authenticationStatus) {
+      _authenticationStatus = authenticationStatus;
+      _controller.add(authenticationStatus);
+    }
+    _token = token;
+  }
 
   static bool _defaultShouldRefresh(FetchResult result) {
     return result?.statusCode == 401;
@@ -88,5 +113,31 @@ class FreshLink<T extends Token> extends Link {
       };
     }
     throw UnimplementedError();
+  }
+
+  static Future<T> _getToken<T extends Token>(
+    TokenStorage<T> tokenStorage,
+  ) async {
+    if (_authenticationStatus != AuthenticationStatus.initial) return _token;
+    final token = await tokenStorage.read();
+    final authenticationStatus = token != null
+        ? AuthenticationStatus.authenticated
+        : AuthenticationStatus.unauthenticated;
+    if (_authenticationStatus != authenticationStatus) {
+      _authenticationStatus = authenticationStatus;
+      _controller.add(authenticationStatus);
+    }
+    _token = token;
+    return _token;
+  }
+
+  /// Internal API to reset the state of the [FreshLink].
+  /// This should only be used for testing purposes.
+  @visibleForTesting
+  static void reset() {
+    _authenticationStatus = AuthenticationStatus.initial;
+    _token = null;
+    _controller?.close();
+    _controller = StreamController<AuthenticationStatus>();
   }
 }

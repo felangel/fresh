@@ -25,8 +25,9 @@ void main() async {
       return OAuth2Token(accessToken: 't0ps3cret_r3fresh3d!');
     },
     shouldRefresh: (_) => Random().nextInt(1) == 0,
-    onRefreshFailure: () => print('refresh failed!'),
-  )..setToken(OAuth2Token(accessToken: 't0ps3cret!'));
+  )
+    ..setToken(OAuth2Token(accessToken: 't0ps3cret!'))
+    ..authenticationStatus.listen(print);
   final graphQLClient = GraphQLClient(
     cache: InMemoryCache(),
     link: Link.from([freshLink, HttpLink(uri: 'https://api.graphql.jobs')]),
