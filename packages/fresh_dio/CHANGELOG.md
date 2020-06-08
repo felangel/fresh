@@ -1,6 +1,6 @@
 # 0.1.2
 
-- fix: add generic <T> parameter to 'TokenHeaderBuilder' ([#22](https://github.com/felangel/fresh/pull/22)).
+- fix: add generic `<T>` parameter to `TokenHeaderBuilder` ([#22](https://github.com/felangel/fresh/pull/22)).
 
 # 0.1.1
 
