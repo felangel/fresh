@@ -4,6 +4,7 @@ import 'package:fresh/fresh.dart';
 import 'package:graphql/client.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
+import 'package:pedantic/pedantic.dart';
 
 typedef ShouldRefresh = bool Function(FetchResult);
 
@@ -72,7 +73,7 @@ class FreshLink<T extends Token> extends Link {
             }
           },
         ) {
-    _getToken(tokenStorage);
+    unawaited(_getToken(tokenStorage));
   }
 
   static var _controller = StreamController<AuthenticationStatus>();
@@ -91,7 +92,9 @@ class FreshLink<T extends Token> extends Link {
   /// Sets the internal [token] to the provided [token].
   /// This method should be called after making a successful token request.
   Future<void> setToken(Token token) async {
-    await token == null ? _tokenStorage.delete() : _tokenStorage.write(token);
+    token == null
+        ? await _tokenStorage.delete()
+        : await _tokenStorage.write(token);
     final authenticationStatus = token == null
         ? AuthenticationStatus.unauthenticated
         : AuthenticationStatus.authenticated;
