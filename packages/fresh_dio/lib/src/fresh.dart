@@ -145,7 +145,7 @@ class Fresh<T extends Token> extends Interceptor {
   }
 
   static bool _defaultShouldRefresh(Response response) {
-    return response.statusCode == 401;
+    return response != null && response.statusCode == 401;
   }
 
   Future<T> _getToken() async {
