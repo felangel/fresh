@@ -298,6 +298,24 @@ void main() {
         expect(actual, response);
         verify(tokenStorage.delete()).called(1);
       });
+
+      test('returns null when token exists and response is null', () async {
+        tokenStorage = MockTokenStorage<MockToken>();
+        when(tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        final fresh = Fresh(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+        );
+        await expectLater(
+          fresh.authenticationStatus,
+          emitsInOrder([
+            AuthenticationStatus.authenticated,
+          ]),
+        );
+        final actual = await fresh.onResponse(null);
+        expect(actual, null);
+      });
     });
 
     group('onError', () {
