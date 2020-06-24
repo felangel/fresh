@@ -1,3 +1,7 @@
+# 0.1.3
+
+- fix: handle `null` response in `onResponse` ([#24](https://github.com/felangel/fresh/pull/24)).
+
 # 0.1.2
 
 - fix: add generic `<T>` parameter to `TokenHeaderBuilder` ([#22](https://github.com/felangel/fresh/pull/22)).
