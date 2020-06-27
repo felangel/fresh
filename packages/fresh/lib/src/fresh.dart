@@ -54,7 +54,7 @@ enum AuthenticationStatus {
 
 /// An interface which must be implemented to
 /// read, write, and delete the `Token`.
-abstract class TokenStorage<T extends Token> {
+abstract class TokenStorage<T> {
   /// Returns the stored token asynchronously.
   Future<T> read();
 
@@ -66,12 +66,12 @@ abstract class TokenStorage<T extends Token> {
 }
 
 /// Function responsible for building the token header(s) give a [token].
-typedef TokenHeaderBuilder<T extends Token> = Map<String, String> Function(
+typedef TokenHeaderBuilder<T> = Map<String, String> Function(
   T token,
 );
 
 /// A [TokenStorage] implementation that keeps the token in memory.
-class InMemoryTokenStorage<T extends Token> implements TokenStorage<T> {
+class InMemoryTokenStorage<T> implements TokenStorage<T> {
   T _token;
 
   @override

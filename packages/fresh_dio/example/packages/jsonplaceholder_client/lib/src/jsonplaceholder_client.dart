@@ -14,7 +14,7 @@ class JsonplaceholderClient {
           ..interceptors.add(_fresh);
 
   static var _refreshCount = 0;
-  static final _fresh = Fresh<OAuth2Token>(
+  static final _fresh = Fresh.auth2Token(
     tokenStorage: InMemoryTokenStorage(),
     refreshToken: (token, client) async {
       print('refreshing token...');

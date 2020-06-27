@@ -23,19 +23,18 @@ typedef RefreshToken<T> = Future<T> Function(T token, Dio httpClient);
 /// );
 /// ```
 /// {@endtemplate}
-class Fresh<T extends Token> extends Interceptor {
+class Fresh<T> extends Interceptor {
   /// {@macro fresh}
   Fresh({
-    @required TokenStorage tokenStorage,
+    @required this.tokenHeader,
+    @required TokenStorage<T> tokenStorage,
     @required RefreshToken<T> refreshToken,
-    TokenHeaderBuilder<T> tokenHeader,
     ShouldRefresh shouldRefresh,
     Dio httpClient,
   })  : assert(tokenStorage != null),
         assert(refreshToken != null),
         _tokenStorage = tokenStorage,
         _refreshToken = refreshToken,
-        _tokenHeader = tokenHeader ?? _defaultTokenHeader,
         _shouldRefresh = shouldRefresh ?? _defaultShouldRefresh,
         _httpClient = httpClient ?? Dio() {
     _tokenStorage.read().then((token) {
@@ -47,13 +46,31 @@ class Fresh<T extends Token> extends Interceptor {
     });
   }
 
+  static Fresh<OAuth2Token> auth2Token({
+    @required TokenStorage<OAuth2Token> tokenStorage,
+    @required RefreshToken<OAuth2Token> refreshToken,
+    ShouldRefresh shouldRefresh,
+    TokenHeaderBuilder<OAuth2Token> tokenHeader,
+  }) {
+    return Fresh<OAuth2Token>(
+        refreshToken: refreshToken,
+        tokenStorage: tokenStorage,
+        shouldRefresh: shouldRefresh,
+        tokenHeader: tokenHeader ??
+            (token) {
+              return {
+                'authorization': '${token.tokenType} ${token.accessToken}',
+              };
+            });
+  }
+
   static final StreamController _controller =
       StreamController<AuthenticationStatus>.broadcast()
         ..add(AuthenticationStatus.initial);
 
   final Dio _httpClient;
   final TokenStorage<T> _tokenStorage;
-  final TokenHeaderBuilder<T> _tokenHeader;
+  final TokenHeaderBuilder<T> tokenHeader;
   final ShouldRefresh _shouldRefresh;
   final RefreshToken<T> _refreshToken;
 
@@ -89,8 +106,10 @@ class Fresh<T extends Token> extends Interceptor {
   @override
   Future<dynamic> onRequest(RequestOptions options) async {
     final token = await _getToken();
+    final data = tokenHeader(token);
+
     if (token != null) {
-      (options.headers ?? <String, String>{}).addAll(_tokenHeader(token));
+      (options.headers ?? <String, String>{}).addAll(data);
     }
     return options;
   }
@@ -131,17 +150,8 @@ class Fresh<T extends Token> extends Interceptor {
       onReceiveProgress: response.request.onReceiveProgress,
       onSendProgress: response.request.onSendProgress,
       queryParameters: response.request.queryParameters,
-      options: response.request..headers.addAll(_tokenHeader(_token)),
+      options: response.request..headers.addAll(tokenHeader(_token)),
     );
-  }
-
-  static Map<String, String> _defaultTokenHeader(Token token) {
-    if (token is OAuth2Token) {
-      return {
-        'authorization': '${token.tokenType} ${token.accessToken}',
-      };
-    }
-    throw UnimplementedError();
   }
 
   static bool _defaultShouldRefresh(Response response) {

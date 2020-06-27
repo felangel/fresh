@@ -26,59 +26,82 @@ typedef RefreshToken<T> = Future<T> Function(T, Client);
 /// );
 /// ```
 /// {@endtemplate}
-class FreshLink<T extends Token> extends Link {
+class FreshLink<T> {
   /// {@macro fresh_link}
+
+  TokenStorage<T> tokenStorage;
+  RefreshToken<T> refreshToken;
+  TokenHeaderBuilder<T> tokenHeader;
+  ShouldRefresh shouldRefresh;
+
   FreshLink({
-    @required TokenStorage<T> tokenStorage,
-    @required RefreshToken<T> refreshToken,
-    TokenHeaderBuilder<T> tokenHeader = _defaultTokenHeader,
-    ShouldRefresh shouldRefresh = _defaultShouldRefresh,
+    @required this.tokenStorage,
+    @required this.refreshToken,
+    @required this.tokenHeader,
+    this.shouldRefresh = _defaultShouldRefresh,
   })  : assert(tokenStorage != null),
         assert(refreshToken != null),
-        _tokenStorage = tokenStorage,
-        super(
-          request: (operation, [forward]) async* {
-            final token = await _getToken(tokenStorage);
-            final headers = token != null
-                ? await tokenHeader(token)
-                : const <String, String>{};
-
-            operation.setContext(
-              <String, Map<String, String>>{'headers': headers},
-            );
-
-            await for (final result in forward(operation)) {
-              if (token != null && shouldRefresh(result)) {
-                try {
-                  final refreshedToken = await refreshToken(token, Client());
-                  await tokenStorage.write(refreshedToken);
-                  final headers = await tokenHeader(refreshedToken);
-                  operation.setContext(
-                    <String, Map<String, String>>{'headers': headers},
-                  );
-                  yield* forward(operation);
-                } on RevokeTokenException catch (_) {
-                  await tokenStorage.delete();
-                  if (_authenticationStatus !=
-                      AuthenticationStatus.unauthenticated) {
-                    _authenticationStatus =
-                        AuthenticationStatus.unauthenticated;
-                    _controller.add(AuthenticationStatus.unauthenticated);
-                  }
-                  yield result;
-                }
-              } else {
-                yield result;
-              }
-            }
-          },
-        ) {
+        _tokenStorage = tokenStorage {
     unawaited(_getToken(tokenStorage));
+  }
+
+  static FreshLink<OAuth2Token> auth2Token({
+    @required TokenStorage<OAuth2Token> tokenStorage,
+    @required RefreshToken<OAuth2Token> refreshToken,
+    ShouldRefresh shouldRefresh,
+    TokenHeaderBuilder<OAuth2Token> tokenHeader,
+  }) {
+    return FreshLink<OAuth2Token>(
+        refreshToken: refreshToken,
+        tokenStorage: tokenStorage,
+        shouldRefresh: shouldRefresh,
+        tokenHeader: tokenHeader ??
+            (token) {
+              return {
+                'authorization': '${token.tokenType} ${token.accessToken}',
+              };
+            });
+  }
+
+  Link get link => Link(request: _buildRequest);
+
+  Stream<FetchResult> _buildRequest(Operation operation,
+      [Stream<FetchResult> forward(Operation op)]) async* {
+    final token = await _getToken(tokenStorage);
+    final headers =
+        token != null ? await tokenHeader(token) : const <String, String>{};
+
+    operation.setContext(
+      <String, Map<String, String>>{'headers': headers},
+    );
+
+    await for (final result in forward(operation)) {
+      if (token != null && shouldRefresh(result)) {
+        try {
+          final refreshedToken = await refreshToken(token, Client());
+          await tokenStorage.write(refreshedToken);
+          final headers = await tokenHeader(refreshedToken);
+          operation.setContext(
+            <String, Map<String, String>>{'headers': headers},
+          );
+          yield* forward(operation);
+        } on RevokeTokenException catch (_) {
+          await tokenStorage.delete();
+          if (_authenticationStatus != AuthenticationStatus.unauthenticated) {
+            _authenticationStatus = AuthenticationStatus.unauthenticated;
+            _controller.add(AuthenticationStatus.unauthenticated);
+          }
+          yield result;
+        }
+      } else {
+        yield result;
+      }
+    }
   }
 
   static var _controller = StreamController<AuthenticationStatus>();
   static var _authenticationStatus = AuthenticationStatus.initial;
-  static Token _token;
+  T _token;
 
   /// Returns a `Stream<AuthenticationState>` which is updated internally based
   /// on if a valid token exists in [TokenStorage].
@@ -91,7 +114,7 @@ class FreshLink<T extends Token> extends Link {
 
   /// Sets the internal [token] to the provided [token].
   /// This method should be called after making a successful token request.
-  Future<void> setToken(Token token) async {
+  Future<void> setToken(T token) async {
     token == null
         ? await _tokenStorage.delete()
         : await _tokenStorage.write(token);
@@ -109,16 +132,7 @@ class FreshLink<T extends Token> extends Link {
     return result?.statusCode == 401;
   }
 
-  static Map<String, String> _defaultTokenHeader(Token token) {
-    if (token is OAuth2Token) {
-      return {
-        'authorization': '${token.tokenType} ${token.accessToken}',
-      };
-    }
-    throw UnimplementedError();
-  }
-
-  static Future<T> _getToken<T extends Token>(
+  Future<T> _getToken(
     TokenStorage<T> tokenStorage,
   ) async {
     if (_authenticationStatus != AuthenticationStatus.initial) return _token;
@@ -137,7 +151,7 @@ class FreshLink<T extends Token> extends Link {
   /// Internal API to reset the state of the [FreshLink].
   /// This should only be used for testing purposes.
   @visibleForTesting
-  static void reset() {
+  void reset() {
     _authenticationStatus = AuthenticationStatus.initial;
     _token = null;
     _controller?.close();

@@ -1,8 +1,7 @@
 import 'package:fresh/fresh.dart';
-import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
 
-class MockToken extends Mock implements Token {}
+class FakeToken {}
 
 void main() {
   group('OAuth2Token', () {
@@ -20,7 +19,7 @@ void main() {
 
   group('InMemoryStorage', () {
     InMemoryTokenStorage inMemoryTokenStorage;
-    final token = MockToken();
+    final token = FakeToken();
 
     setUp(() {
       inMemoryTokenStorage = InMemoryTokenStorage();
