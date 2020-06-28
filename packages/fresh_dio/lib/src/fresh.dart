@@ -9,6 +9,10 @@ typedef ShouldRefresh = bool Function(Response response);
 
 typedef RefreshToken<T> = Future<T> Function(T token, Dio httpClient);
 
+/// An exception that should be thrown when
+/// an invalid token is passed to the `setToken` function.
+class InvalidTokenException implements Exception {}
+
 /// {@template fresh}
 /// A Dio Interceptor for automatic token refresh.
 /// Requires a concrete implementation of [TokenStorage] and [RefreshToken].
@@ -26,7 +30,7 @@ typedef RefreshToken<T> = Future<T> Function(T token, Dio httpClient);
 class Fresh<T> extends Interceptor {
   /// {@macro fresh}
   Fresh({
-    @required this.tokenHeader,
+    @required TokenHeaderBuilder<T> tokenHeader,
     @required TokenStorage<T> tokenStorage,
     @required RefreshToken<T> refreshToken,
     ShouldRefresh shouldRefresh,
@@ -35,6 +39,7 @@ class Fresh<T> extends Interceptor {
         assert(refreshToken != null),
         _tokenStorage = tokenStorage,
         _refreshToken = refreshToken,
+        _tokenHeader = tokenHeader,
         _shouldRefresh = shouldRefresh ?? _defaultShouldRefresh,
         _httpClient = httpClient ?? Dio() {
     _tokenStorage.read().then((token) {
@@ -47,6 +52,22 @@ class Fresh<T> extends Interceptor {
     });
   }
 
+  /// A Dio Interceptor for automatic token refresh.
+  /// Requires a concrete implementation of [TokenStorage<OAuth2Token>]
+  ///  and [RefreshToken<OAuth2Token>].
+  /// Handles transparently refreshing/caching tokens.
+  ///
+  /// A constructor that returns a Fresh interceptor that uses the
+  /// `OAuth2Token` token, the standard token class.
+  ///
+  /// ```dart
+  /// dio.interceptors.add(
+  ///   Fresh.auth2Token(
+  ///     tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+  ///     refreshToken: (token, client) async {...},
+  ///   ),
+  /// );
+  /// ```
   static Fresh<OAuth2Token> auth2Token({
     @required TokenStorage<OAuth2Token> tokenStorage,
     @required RefreshToken<OAuth2Token> refreshToken,
@@ -73,7 +94,7 @@ class Fresh<T> extends Interceptor {
 
   final Dio _httpClient;
   final TokenStorage<T> _tokenStorage;
-  final TokenHeaderBuilder<T> tokenHeader;
+  final TokenHeaderBuilder<T> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
   final RefreshToken<T> _refreshToken;
 
@@ -95,25 +116,23 @@ class Fresh<T> extends Interceptor {
     yield* _tokenController.stream;
   }
 
-  /// Sets the internal [token] to the provided [token]
-  /// and updates the `AuthenticationStatus` accordingly.
-  /// If the provided token is null, the `AuthenticationStatus` will
-  /// be updated to `AuthenticationStatus.unauthenticated` otherwise it
-  /// will be updated to `AuthenticationStatus.authenticated`.
+  /// Sets the internal [token] to the provided [token] and updates
+  /// the `AuthenticationStatus` to `AuthenticationStatus.authenticated`
+  /// If the provided token is null, a `InvalidTokenException` will be thrown.
   ///
   /// This method should be called after making a successful token request
   /// from the custom `RefreshInterceptor` implementation.
   Future<void> setToken(T token) async {
+    if (token == null) throw InvalidTokenException();
     await _tokenStorage.write(token);
-    final authenticationStatus = token == null
-        ? AuthenticationStatus.unauthenticated
-        : AuthenticationStatus.authenticated;
-    _authenticationStatus = authenticationStatus;
-    _controller.add(authenticationStatus);
+    _controller.add(AuthenticationStatus.authenticated);
     _tokenController.add(token);
     _token = token;
   }
 
+  /// Removes the internal [token]. and updates the `AuthenticationStatus`
+  /// to `AuthenticationStatus.unauthenticated`.
+  /// This method should be called when you want to log off the user.
   Future<void> removeToken() async {
     await _tokenStorage.delete();
     _authenticationStatus = AuthenticationStatus.unauthenticated;
@@ -124,7 +143,7 @@ class Fresh<T> extends Interceptor {
   @override
   Future<dynamic> onRequest(RequestOptions options) async {
     final token = await _getToken();
-    final data = tokenHeader(token);
+    final data = _tokenHeader(token);
 
     if (token != null) {
       (options.headers ?? <String, String>{}).addAll(data);
@@ -168,7 +187,7 @@ class Fresh<T> extends Interceptor {
       onReceiveProgress: response.request.onReceiveProgress,
       onSendProgress: response.request.onSendProgress,
       queryParameters: response.request.queryParameters,
-      options: response.request..headers.addAll(tokenHeader(_token)),
+      options: response.request..headers.addAll(_tokenHeader(_token)),
     );
   }
 
