@@ -43,6 +43,7 @@ class Fresh<T> extends Interceptor {
           ? AuthenticationStatus.authenticated
           : AuthenticationStatus.unauthenticated;
       _controller.add(_authenticationStatus);
+      _tokenController.add(token);
     });
   }
 
@@ -64,9 +65,11 @@ class Fresh<T> extends Interceptor {
             });
   }
 
-  static final StreamController _controller =
+  static final StreamController<AuthenticationStatus> _controller =
       StreamController<AuthenticationStatus>.broadcast()
         ..add(AuthenticationStatus.initial);
+
+  final StreamController<T> _tokenController = StreamController<T>.broadcast();
 
   final Dio _httpClient;
   final TokenStorage<T> _tokenStorage;
@@ -85,6 +88,13 @@ class Fresh<T> extends Interceptor {
     yield* _controller.stream;
   }
 
+  /// Returns a `Stream<T>` which is updated internally based
+  /// on if a valid token exists in [TokenStorage].
+  Stream<T> get currentToken async* {
+    yield _token;
+    yield* _tokenController.stream;
+  }
+
   /// Sets the internal [token] to the provided [token]
   /// and updates the `AuthenticationStatus` accordingly.
   /// If the provided token is null, the `AuthenticationStatus` will
@@ -100,7 +110,15 @@ class Fresh<T> extends Interceptor {
         : AuthenticationStatus.authenticated;
     _authenticationStatus = authenticationStatus;
     _controller.add(authenticationStatus);
+    _tokenController.add(token);
     _token = token;
+  }
+
+  Future<void> removeToken() async {
+    await _tokenStorage.delete();
+    _authenticationStatus = AuthenticationStatus.unauthenticated;
+    _controller.add(_authenticationStatus);
+    _token = null;
   }
 
   @override
