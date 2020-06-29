@@ -15,7 +15,7 @@ class JsonplaceholderClient {
 
   static var _refreshCount = 0;
   static final _fresh = Fresh.auth2Token(
-    tokenStorage: InMemoryTokenStorage(),
+    tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
     refreshToken: (token, client) async {
       print('refreshing token...');
       await Future.delayed(const Duration(seconds: 1));
