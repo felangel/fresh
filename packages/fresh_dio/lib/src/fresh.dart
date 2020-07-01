@@ -63,13 +63,14 @@ class Fresh<T> extends Interceptor {
   ///
   /// ```dart
   /// dio.interceptors.add(
-  ///   Fresh.auth2Token(
+  ///   Fresh.oAuth2Token(
   ///     tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
   ///     refreshToken: (token, client) async {...},
   ///   ),
   /// );
   /// ```
-  static Fresh<OAuth2Token> auth2Token({
+
+  static Fresh<OAuth2Token> oAuth2Token({
     @required TokenStorage<OAuth2Token> tokenStorage,
     @required RefreshToken<OAuth2Token> refreshToken,
     ShouldRefresh shouldRefresh,

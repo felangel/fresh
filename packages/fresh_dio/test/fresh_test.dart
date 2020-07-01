@@ -4,8 +4,8 @@ import 'package:fresh_dio/fresh_dio.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
 
-class MockTokenStorage<OAuth2Token> extends Mock
-    implements TokenStorage<OAuth2Token> {}
+class MockTokenStorage<OoAuth2Token> extends Mock
+    implements TokenStorage<OoAuth2Token> {}
 
 class MockToken extends Mock implements OAuth2Token {}
 
@@ -29,7 +29,7 @@ void main() {
 
     test('throws AssertionError when tokenStorage is null', () {
       expect(
-        () => Fresh.auth2Token(
+        () => Fresh.oAuth2Token(
             tokenStorage: null, refreshToken: emptyRefreshToken),
         throwsA(isA<AssertionError>()),
       );
@@ -37,7 +37,7 @@ void main() {
 
     test('throws AssertionError when refreshToken is null', () {
       expect(
-        () => Fresh.auth2Token(
+        () => Fresh.oAuth2Token(
             tokenStorage: null, refreshToken: emptyRefreshToken),
         throwsA(isA<AssertionError>()),
       );
@@ -46,7 +46,7 @@ void main() {
     group('initial authentication status', () {
       test('is unauthenticated when tokenStorage.read is null', () async {
         when(tokenStorage.read()).thenAnswer((_) async => null);
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
@@ -60,7 +60,7 @@ void main() {
 
       test('is authenticated when tokenStorage.read is not null', () async {
         when(tokenStorage.read()).thenAnswer((_) async => MockToken());
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
@@ -78,7 +78,7 @@ void main() {
         when(tokenStorage.read()).thenAnswer((_) async => MockToken());
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
         final token = MockToken();
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
@@ -89,7 +89,7 @@ void main() {
       test('adds unauthenticated status when call removeToken()', () async {
         when(tokenStorage.read()).thenAnswer((_) async => MockToken());
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
@@ -105,7 +105,7 @@ void main() {
       test('adds authenticated status if token is not null', () async {
         when(tokenStorage.read()).thenAnswer((_) async => null);
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
@@ -121,7 +121,7 @@ void main() {
       test('throws a InvalidTokenException when set a null token', () async {
         when(tokenStorage.read()).thenAnswer((_) async => null);
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
@@ -132,14 +132,14 @@ void main() {
     });
 
     group('onRequest', () {
-      final oauth2Token = OAuth2Token(accessToken: 'accessToken');
+      final ooAuth2Token = OAuth2Token(accessToken: 'accessToken');
       test(
-          'appends token header when token is OAuth2Token '
+          'appends token header when token is OoAuth2Token '
           'and tokenHeader is not provided', () async {
         final options = RequestOptions();
-        when(tokenStorage.read()).thenAnswer((_) async => oauth2Token);
+        when(tokenStorage.read()).thenAnswer((_) async => ooAuth2Token);
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
@@ -154,12 +154,12 @@ void main() {
       });
 
       test(
-          'appends token header when token is OAuth2Token '
+          'appends token header when token is OoAuth2Token '
           'and tokenHeader is provided', () async {
         final options = RequestOptions();
-        when(tokenStorage.read()).thenAnswer((_) async => oauth2Token);
+        when(tokenStorage.read()).thenAnswer((_) async => ooAuth2Token);
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
           tokenHeader: (_) => {'custom-header': 'custom-token'},
@@ -175,12 +175,12 @@ void main() {
       });
 
       test(
-          'appends the standart header when token use OAuth2Token constructor'
+          'appends the standart header when token use OoAuth2Token constructor'
           'but tokenHeader is not provided', () async {
         final options = RequestOptions();
-        when(tokenStorage.read()).thenAnswer((_) async => oauth2Token);
+        when(tokenStorage.read()).thenAnswer((_) async => ooAuth2Token);
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
@@ -190,7 +190,7 @@ void main() {
           {
             'content-type': null,
             'authorization':
-                '${oauth2Token.tokenType} ${oauth2Token.accessToken}',
+                '${ooAuth2Token.tokenType} ${ooAuth2Token.accessToken}',
           },
         );
       });
@@ -201,7 +201,8 @@ void main() {
 
         expect(
           () {
-            final fresh = Fresh(
+            Fresh(
+              tokenHeader: null,
               tokenStorage: tokenStorage,
               refreshToken: emptyRefreshToken,
             );
@@ -216,7 +217,7 @@ void main() {
         when(tokenStorage.read()).thenAnswer((_) async => null);
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
         final response = MockResponse();
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
@@ -231,7 +232,7 @@ void main() {
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
         final response = MockResponse();
         when(response.statusCode).thenReturn(200);
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
@@ -246,7 +247,7 @@ void main() {
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
         final response = MockResponse();
         when(response.statusCode).thenReturn(200);
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
           shouldRefresh: (_) => false,
@@ -341,7 +342,7 @@ void main() {
         tokenStorage = MockTokenStorage<MockToken>();
         when(tokenStorage.read()).thenAnswer((_) async => MockToken());
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
@@ -361,7 +362,7 @@ void main() {
         when(tokenStorage.read()).thenAnswer((_) async => null);
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
         final error = MockDioError();
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
@@ -376,7 +377,7 @@ void main() {
         final response = MockResponse();
         when(response.statusCode).thenReturn(200);
         when(error.response).thenReturn(response);
-        final fresh = Fresh.auth2Token(
+        final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
@@ -434,7 +435,7 @@ void main() {
     });
   });
 
-  group('OAuth2Token', () {
+  group('OoAuth2Token', () {
     test('throws AssertionError when accessToken is null', () {
       expect(
         () => OAuth2Token(accessToken: null),
