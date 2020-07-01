@@ -13,7 +13,9 @@ dependencies:
   dio: ^3.0.9
   meta: ^1.1.8
   fresh:
-    path: ../fresh
+    git: 
+      url: https://github.com/pbissonho/fresh.git
+      path: packages/fresh/
 
 dev_dependencies:
   effective_dart: ^1.2.1

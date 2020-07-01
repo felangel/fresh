@@ -37,6 +37,7 @@ class Fresh<T> extends Interceptor {
     Dio httpClient,
   })  : assert(tokenStorage != null),
         assert(refreshToken != null),
+        assert(tokenHeader != null),
         _tokenStorage = tokenStorage,
         _refreshToken = refreshToken,
         _tokenHeader = tokenHeader,
@@ -125,9 +126,10 @@ class Fresh<T> extends Interceptor {
   Future<void> setToken(T token) async {
     if (token == null) throw InvalidTokenException();
     await _tokenStorage.write(token);
-    _controller.add(AuthenticationStatus.authenticated);
-    _tokenController.add(token);
+    _authenticationStatus = AuthenticationStatus.authenticated;
+    _controller.add(_authenticationStatus);
     _token = token;
+    _tokenController.add(token);
   }
 
   /// Removes the internal [token]. and updates the `AuthenticationStatus`
@@ -138,6 +140,7 @@ class Fresh<T> extends Interceptor {
     _authenticationStatus = AuthenticationStatus.unauthenticated;
     _controller.add(_authenticationStatus);
     _token = null;
+    _tokenController.add(null);
   }
 
   @override

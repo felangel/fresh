@@ -86,33 +86,48 @@ void main() {
         verify(tokenStorage.write(token)).called(1);
       });
 
-      test('adds unauthenticated status if token is null', () async {
+      test('adds unauthenticated status when call removeToken()', () async {
         when(tokenStorage.read()).thenAnswer((_) async => MockToken());
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
         final fresh = Fresh.auth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
-        await fresh.setToken(null);
+        await fresh.removeToken();
         await expectLater(
           fresh.authenticationStatus,
-          emitsInOrder([AuthenticationStatus.unauthenticated]),
+          emitsInOrder([
+            AuthenticationStatus.unauthenticated,
+          ]),
         );
       });
 
-      test('adds unauthenticated status if token is not null', () async {
+      test('adds authenticated status if token is not null', () async {
         when(tokenStorage.read()).thenAnswer((_) async => null);
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
-        final token = MockToken();
         final fresh = Fresh.auth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
-        await fresh.setToken(token);
+
+        await fresh.setToken(MockToken());
+
         await expectLater(
           fresh.authenticationStatus,
           emitsInOrder([AuthenticationStatus.authenticated]),
         );
+      });
+
+      test('throws a InvalidTokenException when set a null token', () async {
+        when(tokenStorage.read()).thenAnswer((_) async => null);
+        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        final fresh = Fresh.auth2Token(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+        );
+        expect(() async {
+          await fresh.setToken(null);
+        }, throwsA(isA<InvalidTokenException>()));
       });
     });
 
@@ -139,7 +154,7 @@ void main() {
       });
 
       test(
-          'appends token header when token is not OAuth2Token '
+          'appends token header when token is OAuth2Token '
           'and tokenHeader is provided', () async {
         final options = RequestOptions();
         when(tokenStorage.read()).thenAnswer((_) async => oauth2Token);
@@ -160,21 +175,40 @@ void main() {
       });
 
       test(
-          'throws unimplemented if token is not OAuth2Token '
-          'and tokenHeader is not provided', () async {
+          'appends the standart header when token use OAuth2Token constructor'
+          'but tokenHeader is not provided', () async {
         final options = RequestOptions();
-        when(tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(tokenStorage.read()).thenAnswer((_) async => oauth2Token);
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
-        final fresh = Fresh(
+        final fresh = Fresh.auth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
-          tokenHeader: (token) {},
         );
+        final actual = await fresh.onRequest(options) as RequestOptions;
         expect(
-          () => fresh.onRequest(options),
-          throwsA(isA<UnimplementedError>()),
+          actual.headers,
+          {
+            'content-type': null,
+            'authorization':
+                '${oauth2Token.tokenType} ${oauth2Token.accessToken}',
+          },
         );
-      }, skip: true);
+      });
+
+      test('throws AssertionError when tokenHeader is null', () async {
+        when(tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+
+        expect(
+          () {
+            final fresh = Fresh(
+              tokenStorage: tokenStorage,
+              refreshToken: emptyRefreshToken,
+            );
+          },
+          throwsA(isA<AssertionError>()),
+        );
+      });
     });
 
     group('onResponse', () {
