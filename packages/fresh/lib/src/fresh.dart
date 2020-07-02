@@ -6,10 +6,6 @@ import 'package:meta/meta.dart';
 /// refresh fails and should result in a force-logout.
 class RevokeTokenException implements Exception {}
 
-/// An exception that should be thrown when
-/// an invalid token is passed to the `setToken` function.
-class InvalidTokenException implements Exception {}
-
 /// {@template oauth2_token}
 /// Standard OAuth2Token as defined by
 /// https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
@@ -96,22 +92,30 @@ class InMemoryTokenStorage<T> implements TokenStorage<T> {
   }
 }
 
+/// {@template controller}
+///A token controller for handles update / caching tokens transparently.
+/// {@endtemplate}
 class FreshController<T> {
+  /// {@macro controller}
   FreshController({@required TokenStorage<T> tokenStorage})
       : _tokenStorage = tokenStorage {
     _tokenStorage.read().then(updateStatus);
   }
 
   final StreamController<AuthenticationStatus> _controller =
-      StreamController<AuthenticationStatus>.broadcast();
-  //   ..add(AuthenticationStatus.initial);
+      StreamController<AuthenticationStatus>.broadcast()
+        ..add(AuthenticationStatus.initial);
 
   final StreamController<T> _tokenController = StreamController<T>.broadcast();
 
   final TokenStorage<T> _tokenStorage;
+
+  /// Current internal token.
   T token;
 
   AuthenticationStatus _authenticationStatus = AuthenticationStatus.initial;
+
+  /// Return the current internal `AuthenticationStatus`.
   AuthenticationStatus get authenticationStatusValue => _authenticationStatus;
 
   /// Returns a `Stream<AuthenticationState>` which is updated internally based
@@ -128,12 +132,25 @@ class FreshController<T> {
     yield* _tokenController.stream;
   }
 
-  /// Sets the internal [token] to the provided [token] and updates
-  /// the `AuthenticationStatus` to `AuthenticationStatus.authenticated`
-  /// If the provided token is null, the `removeToken` will be thrown.
+  ///Sets the internal [token] to the provided [token]
+  ///and updates the `AuthenticationStatus` accordingly.
+  ///If the provided token is null, the `AuthenticationStatus` will
+  ///be updated to `AuthenticationStatus.unauthenticated`
+  ///and the token will be removed from storage, otherwise it
+  ///will be updated to `AuthenticationStatus.authenticated`
+  ///and save to storage.
   ///
-  /// This method should be called after making a successful token request
-  /// from the custom `RefreshInterceptor` implementation.
+  ///This method should be called after making a successful token request
+  ///from the custom `RefreshInterceptor` implementation.
+  ///
+  ///
+  ///If you want to remove the token, set as null and update
+  ///`AuthenticationStatus` to `AuthenticationStatus.unauthenticated`
+  /// you can use removeToken () instead of setToken (null).
+  ///
+  ///
+  ///Using removeToken () or setToken (null)
+  ///the behavior will be the same, but using removeToken () is more clearer.
   Future<void> setToken(T token) async {
     if (token == null) {
       removeToken();
@@ -143,6 +160,12 @@ class FreshController<T> {
     }
   }
 
+  /// Update the internal [token] and updates the
+  /// `AuthenticationStatus` accordingly.
+  ///
+  /// If the provided token is null, the `AuthenticationStatus` will
+  /// be updated to `AuthenticationStatus.unauthenticated` otherwise it
+  /// will be updated to `AuthenticationStatus.authenticated`.
   Future<void> updateStatus(T token) async {
     _authenticationStatus = token != null
         ? AuthenticationStatus.authenticated
