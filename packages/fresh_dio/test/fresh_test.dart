@@ -102,6 +102,22 @@ void main() {
         );
       });
 
+      test('adds unauthenticated status when call setToken(null)', () async {
+        when(tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        final fresh = Fresh.oAuth2Token(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+        );
+        await fresh.setToken(null);
+        await expectLater(
+          fresh.authenticationStatus,
+          emitsInOrder([
+            AuthenticationStatus.unauthenticated,
+          ]),
+        );
+      });
+
       test('adds authenticated status if token is not null', () async {
         when(tokenStorage.read()).thenAnswer((_) async => null);
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
@@ -116,18 +132,6 @@ void main() {
           fresh.authenticationStatus,
           emitsInOrder([AuthenticationStatus.authenticated]),
         );
-      });
-
-      test('throws a InvalidTokenException when set a null token', () async {
-        when(tokenStorage.read()).thenAnswer((_) async => null);
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
-        final fresh = Fresh.oAuth2Token(
-          tokenStorage: tokenStorage,
-          refreshToken: emptyRefreshToken,
-        );
-        expect(() async {
-          await fresh.setToken(null);
-        }, throwsA(isA<InvalidTokenException>()));
       });
     });
 
