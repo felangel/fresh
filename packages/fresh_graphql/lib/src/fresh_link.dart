@@ -26,26 +26,26 @@ typedef RefreshToken<T> = Future<T> Function(T, Client);
 /// );
 /// ```
 /// {@endtemplate}
-class FreshLink<T> {
+class FreshLink<T> extends Link {
   /// {@macro fresh_link}
 
-  TokenStorage<T> tokenStorage;
-  RefreshToken<T> refreshToken;
-  TokenHeaderBuilder<T> tokenHeader;
-  ShouldRefresh shouldRefresh;
-
   FreshLink({
-    @required this.tokenStorage,
-    @required this.refreshToken,
-    @required this.tokenHeader,
-    this.shouldRefresh = _defaultShouldRefresh,
+    TokenStorage<T> tokenStorage,
+    RefreshToken<T> refreshToken,
+    TokenHeaderBuilder<T> tokenHeader,
+    ShouldRefresh shouldRefresh,
   })  : assert(tokenStorage != null),
         assert(refreshToken != null),
-        _tokenStorage = tokenStorage {
-    unawaited(_getToken(tokenStorage));
+        _freshController = FreshController<T>(tokenStorage: tokenStorage),
+        _tokenStorage = tokenStorage,
+        _refreshToken = refreshToken,
+        _tokenHeader = tokenHeader,
+        _shouldRefresh = shouldRefresh ?? _defaultShouldRefresh {
+    unawaited(_getToken());
+    request = _buildRequest;
   }
 
-  static FreshLink<OAuth2Token> auth2Token({
+  static FreshLink<OAuth2Token> oAuth2Token({
     @required TokenStorage<OAuth2Token> tokenStorage,
     @required RefreshToken<OAuth2Token> refreshToken,
     ShouldRefresh shouldRefresh,
@@ -63,34 +63,34 @@ class FreshLink<T> {
             });
   }
 
-  Link get link => Link(request: _buildRequest);
+  final TokenStorage<T> _tokenStorage;
+  final RefreshToken<T> _refreshToken;
+  final FreshController<T> _freshController;
+  final TokenHeaderBuilder<T> _tokenHeader;
+  final ShouldRefresh _shouldRefresh;
 
   Stream<FetchResult> _buildRequest(Operation operation,
       [Stream<FetchResult> forward(Operation op)]) async* {
-    final token = await _getToken(tokenStorage);
+    final token = await _getToken();
     final headers =
-        token != null ? await tokenHeader(token) : const <String, String>{};
+        token != null ? await _tokenHeader(token) : const <String, String>{};
 
     operation.setContext(
       <String, Map<String, String>>{'headers': headers},
     );
 
     await for (final result in forward(operation)) {
-      if (token != null && shouldRefresh(result)) {
+      if (token != null && _shouldRefresh(result)) {
         try {
-          final refreshedToken = await refreshToken(token, Client());
-          await tokenStorage.write(refreshedToken);
-          final headers = await tokenHeader(refreshedToken);
+          final refreshedToken = await _refreshToken(token, Client());
+          await _tokenStorage.write(refreshedToken);
+          final headers = await _tokenHeader(refreshedToken);
           operation.setContext(
             <String, Map<String, String>>{'headers': headers},
           );
           yield* forward(operation);
         } on RevokeTokenException catch (_) {
-          await tokenStorage.delete();
-          if (_authenticationStatus != AuthenticationStatus.unauthenticated) {
-            _authenticationStatus = AuthenticationStatus.unauthenticated;
-            _controller.add(AuthenticationStatus.unauthenticated);
-          }
+          _freshController.revokeToken();
           yield result;
         }
       } else {
@@ -99,62 +99,35 @@ class FreshLink<T> {
     }
   }
 
-  static var _controller = StreamController<AuthenticationStatus>();
-  static var _authenticationStatus = AuthenticationStatus.initial;
-  T _token;
-
   /// Returns a `Stream<AuthenticationState>` which is updated internally based
   /// on if a valid token exists in [TokenStorage].
-  Stream<AuthenticationStatus> get authenticationStatus async* {
-    yield _authenticationStatus;
-    yield* _controller.stream;
-  }
+  Stream<AuthenticationStatus> get authenticationStatus =>
+      _freshController.authenticationStatus;
 
-  final TokenStorage<T> _tokenStorage;
-
-  /// Sets the internal [token] to the provided [token].
-  /// This method should be called after making a successful token request.
+  /// Sets the internal [token] to the provided [token] and updates
+  /// the `AuthenticationStatus` to `AuthenticationStatus.authenticated`
+  /// If the provided token is null, a `InvalidTokenException` will be thrown.
+  ///
+  /// This method should be called after making a successful token request
+  /// from the custom `RefreshInterceptor` implementation.
   Future<void> setToken(T token) async {
-    token == null
-        ? await _tokenStorage.delete()
-        : await _tokenStorage.write(token);
-    final authenticationStatus = token == null
-        ? AuthenticationStatus.unauthenticated
-        : AuthenticationStatus.authenticated;
-    if (_authenticationStatus != authenticationStatus) {
-      _authenticationStatus = authenticationStatus;
-      _controller.add(authenticationStatus);
-    }
-    _token = token;
+    await _freshController.setToken(token);
   }
+
+  /// Removes the internal [token]. and updates the `AuthenticationStatus`
+  /// to `AuthenticationStatus.unauthenticated`.
+  /// This method should be called when you want to log off the user.
+  Future<void> removeToken() => _freshController.removeToken();
 
   static bool _defaultShouldRefresh(FetchResult result) {
     return result?.statusCode == 401;
   }
 
-  Future<T> _getToken(
-    TokenStorage<T> tokenStorage,
-  ) async {
-    if (_authenticationStatus != AuthenticationStatus.initial) return _token;
-    final token = await tokenStorage.read();
-    final authenticationStatus = token != null
-        ? AuthenticationStatus.authenticated
-        : AuthenticationStatus.unauthenticated;
-    if (_authenticationStatus != authenticationStatus) {
-      _authenticationStatus = authenticationStatus;
-      _controller.add(authenticationStatus);
-    }
-    _token = token;
-    return _token;
-  }
-
-  /// Internal API to reset the state of the [FreshLink].
-  /// This should only be used for testing purposes.
-  @visibleForTesting
-  void reset() {
-    _authenticationStatus = AuthenticationStatus.initial;
-    _token = null;
-    _controller?.close();
-    _controller = StreamController<AuthenticationStatus>();
+  Future<T> _getToken() async {
+    if (_freshController.authenticationStatusValue !=
+        AuthenticationStatus.initial) return _freshController.token;
+    final token = await _tokenStorage.read();
+    _freshController.updateStatus(token);
+    return token;
   }
 }
