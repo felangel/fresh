@@ -1,8 +1,14 @@
+import 'dart:async';
+
 import 'package:meta/meta.dart';
 
 /// An Exception that should be thrown when overriding `refreshToken` if the
 /// refresh fails and should result in a force-logout.
 class RevokeTokenException implements Exception {}
+
+/// An exception that should be thrown when
+/// an invalid token is passed to the `setToken` function.
+class InvalidTokenException implements Exception {}
 
 /// {@template oauth2_token}
 /// Standard OAuth2Token as defined by
@@ -87,5 +93,82 @@ class InMemoryTokenStorage<T> implements TokenStorage<T> {
   @override
   Future<void> write(T token) async {
     _token = token;
+  }
+}
+
+class FreshController<T> {
+  FreshController({@required TokenStorage<T> tokenStorage})
+      : _tokenStorage = tokenStorage {
+    _tokenStorage.read().then(updateStatus);
+  }
+
+  final StreamController<AuthenticationStatus> _controller =
+      StreamController<AuthenticationStatus>.broadcast();
+  //   ..add(AuthenticationStatus.initial);
+
+  final StreamController<T> _tokenController = StreamController<T>.broadcast();
+
+  final TokenStorage<T> _tokenStorage;
+  T token;
+
+  AuthenticationStatus _authenticationStatus = AuthenticationStatus.initial;
+  AuthenticationStatus get authenticationStatusValue => _authenticationStatus;
+
+  /// Returns a `Stream<AuthenticationState>` which is updated internally based
+  /// on if a valid token exists in [TokenStorage].
+  Stream<AuthenticationStatus> get authenticationStatus async* {
+    yield _authenticationStatus;
+    yield* _controller.stream;
+  }
+
+  /// Returns a `Stream<T>` which is updated internally based
+  /// on if a valid token exists in [TokenStorage].
+  Stream<T> get currentToken async* {
+    yield token;
+    yield* _tokenController.stream;
+  }
+
+  /// Sets the internal [token] to the provided [token] and updates
+  /// the `AuthenticationStatus` to `AuthenticationStatus.authenticated`
+  /// If the provided token is null, the `removeToken` will be thrown.
+  ///
+  /// This method should be called after making a successful token request
+  /// from the custom `RefreshInterceptor` implementation.
+  Future<void> setToken(T token) async {
+    if (token == null) {
+      removeToken();
+    } else {
+      await _tokenStorage.write(token);
+      updateStatus(token);
+    }
+  }
+
+  Future<void> updateStatus(T token) async {
+    _authenticationStatus = token != null
+        ? AuthenticationStatus.authenticated
+        : AuthenticationStatus.unauthenticated;
+    _controller.add(_authenticationStatus);
+    this.token = token;
+    _tokenController.add(token);
+  }
+
+  /// Delete the storaged [token]. and emit the
+  /// `AuthenticationStatus.unauthenticated` if authenticationStatus
+  /// not is `AuthenticationStatus.unauthenticated`
+  /// This method should be called when the token is no longer valid.
+  Future<void> revokeToken() async {
+    _tokenStorage.delete();
+    if (authenticationStatus != AuthenticationStatus.unauthenticated) {
+      _authenticationStatus = AuthenticationStatus.unauthenticated;
+      _controller.add(_authenticationStatus);
+    }
+  }
+
+  /// Removes the internal [token]. and updates the `AuthenticationStatus`
+  /// to `AuthenticationStatus.unauthenticated`.
+  /// This method should be called when you want to log off the user.
+  Future<void> removeToken() async {
+    await _tokenStorage.delete();
+    updateStatus(null);
   }
 }
