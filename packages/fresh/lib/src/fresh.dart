@@ -92,10 +92,52 @@ class InMemoryTokenStorage<T> implements TokenStorage<T> {
   }
 }
 
+ 
+/// An interface that must be implemented to create an interceptor
+/// that transparently updates / caches tokens.
+abstract class FreshBase<T> {
+  /// {@template removeToken}
+  /// Sets the internal [token] to the provided [token]
+  /// and updates the `AuthenticationStatus` accordingly.
+  /// 
+  /// If the provided token is null, the `AuthenticationStatus` will be updated
+  /// to `unauthenticated` and
+  /// and the token will be removed from storage, otherwise it
+  /// will be updated to `authenticated`
+  /// and save to storage.
+  ///
+  /// This method should be called after making a successful token request
+  /// from the custom `RefreshInterceptor` implementation.
+  ///
+  ///
+  /// If you want to remove the token, set as null and update
+  ///`AuthenticationStatus` to `unauthenticated`
+  /// you can use `removeToken()` instead of `setToken(null)`.
+  ///
+  ///
+  ///Using `removeToken()` or `setToken(null)` the behavior will be the same,
+  ///but using `removeToken()` is more clearer.
+  /// {@endtemplate}
+  Future<void> setToken(T token);
+
+  /// Removes the internal [token] from the storage, sets the internal [token]
+  ///  as null and updates the `AuthenticationStatus` to `unauthenticated`.
+  /// This method should be called when you want to log off the user.
+  Future<void> removeToken();
+
+  /// Returns a `Stream<AuthenticationState>` which is updated internally based
+  /// on if a valid token exists in [TokenStorage].
+  Stream<AuthenticationStatus> get authenticationStatus;
+
+  /// Returns a `Stream<T>` which is updated internally based
+  /// on if a valid token exists in [TokenStorage].
+  Stream<T> get currentToken;
+}
+
 /// {@template controller}
 ///A token controller for handles update / caching tokens transparently.
 /// {@endtemplate}
-class FreshController<T> {
+class FreshController<T> implements FreshBase<T> {
   /// {@macro controller}
   FreshController({@required TokenStorage<T> tokenStorage})
       : _tokenStorage = tokenStorage {
@@ -118,39 +160,16 @@ class FreshController<T> {
   /// Return the current internal `AuthenticationStatus`.
   AuthenticationStatus get authenticationStatusValue => _authenticationStatus;
 
-  /// Returns a `Stream<AuthenticationState>` which is updated internally based
-  /// on if a valid token exists in [TokenStorage].
   Stream<AuthenticationStatus> get authenticationStatus async* {
     yield _authenticationStatus;
     yield* _controller.stream;
   }
 
-  /// Returns a `Stream<T>` which is updated internally based
-  /// on if a valid token exists in [TokenStorage].
   Stream<T> get currentToken async* {
     yield token;
     yield* _tokenController.stream;
   }
 
-  ///Sets the internal [token] to the provided [token]
-  ///and updates the `AuthenticationStatus` accordingly.
-  ///If the provided token is null, the `AuthenticationStatus` will
-  ///be updated to `AuthenticationStatus.unauthenticated`
-  ///and the token will be removed from storage, otherwise it
-  ///will be updated to `AuthenticationStatus.authenticated`
-  ///and save to storage.
-  ///
-  ///This method should be called after making a successful token request
-  ///from the custom `RefreshInterceptor` implementation.
-  ///
-  ///
-  ///If you want to remove the token, set as null and update
-  ///`AuthenticationStatus` to `AuthenticationStatus.unauthenticated`
-  /// you can use removeToken () instead of setToken (null).
-  ///
-  ///
-  ///Using removeToken () or setToken (null)
-  ///the behavior will be the same, but using removeToken () is more clearer.
   Future<void> setToken(T token) async {
     if (token == null) {
       removeToken();
@@ -187,9 +206,6 @@ class FreshController<T> {
     }
   }
 
-  /// Removes the internal [token]. and updates the `AuthenticationStatus`
-  /// to `AuthenticationStatus.unauthenticated`.
-  /// This method should be called when you want to log off the user.
   Future<void> removeToken() async {
     await _tokenStorage.delete();
     updateStatus(null);

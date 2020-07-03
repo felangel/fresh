@@ -9,11 +9,13 @@ typedef ShouldRefresh = bool Function(Response response);
 
 typedef RefreshToken<T> = Future<T> Function(T token, Dio httpClient);
 
-/// {@template fresh}
+/// {@template freshInterceptor}
 /// A Dio Interceptor for automatic token refresh.
 /// Requires a concrete implementation of [TokenStorage] and [RefreshToken].
 /// Handles transparently refreshing/caching tokens.
-///
+/// {@endtemplate}
+
+/// {@template fresh}
 /// ```dart
 /// dio.interceptors.add(
 ///   Fresh<OAuth2Token>(
@@ -23,7 +25,8 @@ typedef RefreshToken<T> = Future<T> Function(T token, Dio httpClient);
 /// );
 /// ```
 /// {@endtemplate}
-class Fresh<T> extends Interceptor {
+class Fresh<T> extends Interceptor implements FreshBase<T> {
+  /// {@macro freshInterceptor}
   /// {@macro fresh}
   Fresh({
     @required TokenHeaderBuilder<T> tokenHeader,
@@ -41,11 +44,7 @@ class Fresh<T> extends Interceptor {
         _freshController = FreshController<T>(tokenStorage: tokenStorage),
         _httpClient = httpClient ?? Dio();
 
-  /// A Dio Interceptor for automatic token refresh.
-  /// Requires a concrete implementation of [TokenStorage<OAuth2Token>]
-  ///  and [RefreshToken<OAuth2Token>].
-  /// Handles transparently refreshing/caching tokens.
-  ///
+  /// {@macro freshInterceptor}.
   /// A constructor that returns a Fresh interceptor that uses the
   /// `OAuth2Token` token, the standard token class.
   ///
@@ -82,24 +81,15 @@ class Fresh<T> extends Interceptor {
   final ShouldRefresh _shouldRefresh;
   final RefreshToken<T> _refreshToken;
 
-  /// Returns a `Stream<AuthenticationState>` which is updated internally based
-  /// on if a valid token exists in [TokenStorage].
+  Stream<T> get currentToken => _freshController.currentToken;
+
   Stream<AuthenticationStatus> get authenticationStatus =>
       _freshController.authenticationStatus;
 
-  /// Sets the internal [token] to the provided [token] and updates
-  /// the `AuthenticationStatus` to `AuthenticationStatus.authenticated`
-  /// If the provided token is null, the `removeToken` will be thrown.
-  ///
-  /// This method should be called after making a successful token request
-  /// from the custom `RefreshInterceptor` implementation.
   Future<void> setToken(T token) async {
     await _freshController.setToken(token);
   }
 
-  /// Removes the internal [token]. and updates the `AuthenticationStatus`
-  /// to `AuthenticationStatus.unauthenticated`.
-  /// This method should be called when you want to log off the user.
   Future<void> removeToken() async {
     await _freshController.removeToken();
   }

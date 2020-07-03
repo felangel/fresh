@@ -13,6 +13,10 @@ typedef RefreshToken<T> = Future<T> Function(T, Client);
 /// {@template fresh_link}
 /// A GraphQL Link which handles manages an authentication token automatically.
 ///
+/// A constructor that returns a Fresh interceptor that uses the
+/// `OAuth2Token` token, the standard token class and define the`
+/// tokenHeader as 'authorization': '${token.tokenType} ${token.accessToken}'
+///
 /// ```dart
 /// final freshLink = FreshLink(
 ///   tokenStorage: InMemoryTokenStorage(),
@@ -26,7 +30,7 @@ typedef RefreshToken<T> = Future<T> Function(T, Client);
 /// );
 /// ```
 /// {@endtemplate}
-class FreshLink<T> extends Link {
+class FreshLink<T> extends Link implements FreshBase<T> {
   /// {@macro fresh_link}
 
   FreshLink({
@@ -45,6 +49,22 @@ class FreshLink<T> extends Link {
     request = _buildRequest;
   }
 
+  ///{@template fresh_link}
+  ///A GraphQL Link which handles manages an authentication token automatically.
+  ///
+  /// ```dart
+  /// final freshLink = FreshLink.oAuth2Token(
+  ///   tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+  ///   refreshToken: (token, client) {
+  ///     // Perform refresh and return new token
+  ///   },
+  /// );
+  /// final graphQLClient = GraphQLClient(
+  ///   cache: InMemoryCache(),
+  ///   link: Link.from([freshLink, HttpLink(uri: 'https://my.graphql.api')]),
+  /// );
+  /// ```
+  /// {@endtemplate}
   static FreshLink<OAuth2Token> oAuth2Token({
     @required TokenStorage<OAuth2Token> tokenStorage,
     @required RefreshToken<OAuth2Token> refreshToken,
@@ -99,24 +119,16 @@ class FreshLink<T> extends Link {
     }
   }
 
-  /// Returns a `Stream<AuthenticationState>` which is updated internally based
-  /// on if a valid token exists in [TokenStorage].
   Stream<AuthenticationStatus> get authenticationStatus =>
       _freshController.authenticationStatus;
 
-  /// Sets the internal [token] to the provided [token] and updates
-  /// the `AuthenticationStatus` to `AuthenticationStatus.authenticated`
-  /// If the provided token is null, a `InvalidTokenException` will be thrown.
-  ///
-  /// This method should be called after making a successful token request
-  /// from the custom `RefreshInterceptor` implementation.
+  @override
+  Stream<T> get currentToken => _freshController.currentToken;
+
   Future<void> setToken(T token) async {
     await _freshController.setToken(token);
   }
 
-  /// Removes the internal [token]. and updates the `AuthenticationStatus`
-  /// to `AuthenticationStatus.unauthenticated`.
-  /// This method should be called when you want to log off the user.
   Future<void> removeToken() => _freshController.removeToken();
 
   static bool _defaultShouldRefresh(FetchResult result) {
