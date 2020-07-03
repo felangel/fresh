@@ -322,7 +322,9 @@ void main() {
             refreshCallCount++;
             throw RevokeTokenException();
           },
-          tokenHeader: (MockToken token) {},
+          tokenHeader: (token) {
+            return {};
+          },
         );
         await expectLater(
           fresh.authenticationStatus,

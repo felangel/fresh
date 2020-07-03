@@ -4,7 +4,6 @@ import 'package:fresh/fresh.dart';
 import 'package:graphql/client.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
-import 'package:pedantic/pedantic.dart';
 
 typedef ShouldRefresh = bool Function(FetchResult);
 
@@ -45,7 +44,6 @@ class FreshLink<T> extends Link implements FreshBase<T> {
         _refreshToken = refreshToken,
         _tokenHeader = tokenHeader,
         _shouldRefresh = shouldRefresh ?? _defaultShouldRefresh {
-    unawaited(_getToken());
     request = _buildRequest;
   }
 

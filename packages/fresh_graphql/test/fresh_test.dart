@@ -136,6 +136,7 @@ void main() {
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
             refreshTokenCallCount++;
+            return OAuth2Token(accessToken: 'token');
           },
         );
         await expectLater(
