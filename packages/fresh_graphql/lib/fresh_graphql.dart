@@ -11,4 +11,3 @@ export 'package:fresh/fresh.dart'
         FreshBase,
         InMemoryTokenStorage;
 export 'src/fresh_link.dart';
-

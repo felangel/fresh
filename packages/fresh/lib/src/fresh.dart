@@ -92,14 +92,13 @@ class InMemoryTokenStorage<T> implements TokenStorage<T> {
   }
 }
 
- 
 /// An interface that must be implemented to create an interceptor
 /// that transparently updates / caches tokens.
 abstract class FreshBase<T> {
   /// {@template removeToken}
   /// Sets the internal [token] to the provided [token]
   /// and updates the `AuthenticationStatus` accordingly.
-  /// 
+  ///
   /// If the provided token is null, the `AuthenticationStatus` will be updated
   /// to `unauthenticated` and
   /// and the token will be removed from storage, otherwise it
