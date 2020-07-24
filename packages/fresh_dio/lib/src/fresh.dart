@@ -97,10 +97,10 @@ class Fresh<T> extends Interceptor implements FreshBase<T> {
   @override
   Future<dynamic> onRequest(RequestOptions options) async {
     final token = await _getToken();
-    final data = _tokenHeader(token);
+    final tokenHeader = _tokenHeader(token);
 
     if (token != null) {
-      (options.headers ?? <String, String>{}).addAll(data);
+      (options.headers ?? <String, String>{}).addAll(tokenHeader);
     }
     return options;
   }
