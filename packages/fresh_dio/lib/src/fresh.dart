@@ -50,13 +50,13 @@ class Fresh<T> extends Interceptor implements FreshBase<T> {
   ///
   /// ```dart
   /// dio.interceptors.add(
-  ///   Fresh.oAuth2Token(
+  ///   Fresh.oAuth2(
   ///     tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
   ///     refreshToken: (token, client) async {...},
   ///   ),
   /// );
   /// ```
-  static Fresh<OAuth2Token> oAuth2Token({
+  static Fresh<OAuth2Token> oAuth2({
     @required TokenStorage<OAuth2Token> tokenStorage,
     @required RefreshToken<OAuth2Token> refreshToken,
     ShouldRefresh shouldRefresh,

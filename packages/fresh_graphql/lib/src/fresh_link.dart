@@ -51,7 +51,7 @@ class FreshLink<T> extends Link implements FreshBase<T> {
   ///A GraphQL Link which handles manages an authentication token automatically.
   ///
   /// ```dart
-  /// final freshLink = FreshLink.oAuth2Token(
+  /// final freshLink = FreshLink.oAuth2(
   ///   tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
   ///   refreshToken: (token, client) {
   ///     // Perform refresh and return new token
@@ -63,7 +63,7 @@ class FreshLink<T> extends Link implements FreshBase<T> {
   /// );
   /// ```
   /// {@endtemplate}
-  static FreshLink<OAuth2Token> oAuth2Token({
+  static FreshLink<OAuth2Token> oAuth2({
     @required TokenStorage<OAuth2Token> tokenStorage,
     @required RefreshToken<OAuth2Token> refreshToken,
     ShouldRefresh shouldRefresh,
