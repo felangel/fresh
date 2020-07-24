@@ -157,4 +157,29 @@ class Fresh<T> extends Interceptor implements FreshBase<T> {
     _freshController.updateStatus(token);
     return token;
   }
+
+
+  /// Sets the internal [token] to the provided [token]
+  /// and updates the `AuthenticationStatus` accordingly.
+  ///
+  /// If the provided token is null, the `AuthenticationStatus` will be updated
+  /// to `unauthenticated` and the token will be removed from storage, otherwise
+  /// it will be updated to `authenticated`and save to storage.
+  /// 
+  /// This is equivalent to `setToken`.
+  @override
+  void add(T token) {
+    _freshController.add(token);
+  }
+
+  /// Closes Fresh stream controllers.
+  ///
+  /// The [add],[setToken] and [removeToken] methods must not be called
+  /// after this method.
+  ///
+  /// Calling this method more than once is allowed, but does nothing.
+  @override
+  void close() {
+    _freshController.close();
+  }
 }

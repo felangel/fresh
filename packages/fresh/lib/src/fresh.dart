@@ -94,16 +94,14 @@ class InMemoryTokenStorage<T> implements TokenStorage<T> {
 
 /// An interface that must be implemented to create an interceptor
 /// that transparently updates / caches tokens.
-abstract class FreshBase<T> {
-  /// {@template removeToken}
+abstract class FreshBase<T> implements Sink<T> {
+  /// {@template  freshBaseSetToken}
   /// Sets the internal [token] to the provided [token]
   /// and updates the `AuthenticationStatus` accordingly.
   ///
   /// If the provided token is null, the `AuthenticationStatus` will be updated
-  /// to `unauthenticated` and
-  /// and the token will be removed from storage, otherwise it
-  /// will be updated to `authenticated`
-  /// and save to storage.
+  /// to `unauthenticated` and the token will be removed from storage, otherwise
+  /// it will be updated to `authenticated`and save to storage.
   ///
   /// This method should be called after making a successful token request
   /// from the custom `RefreshInterceptor` implementation.
@@ -114,8 +112,8 @@ abstract class FreshBase<T> {
   /// you can use `removeToken()` instead of `setToken(null)`.
   ///
   ///
-  ///Using `removeToken()` or `setToken(null)` the behavior will be the same,
-  ///but using `removeToken()` is more clearer.
+  /// Using `removeToken()` or `setToken(null)` the behavior will be the same,
+  /// but using `removeToken()` is more clearer.
   /// {@endtemplate}
   Future<void> setToken(T token);
 
@@ -208,5 +206,30 @@ class FreshController<T> implements FreshBase<T> {
   Future<void> removeToken() async {
     await _tokenStorage.delete();
     updateStatus(null);
+  }
+
+  /// Sets the internal [token] to the provided [token]
+  /// and updates the `AuthenticationStatus` accordingly.
+  ///
+  /// If the provided token is null, the `AuthenticationStatus` will be updated
+  /// to `unauthenticated` and the token will be removed from storage, otherwise
+  /// it will be updated to `authenticated`and save to storage.
+  ///
+  /// This is equivalent to `setToken`.
+  @override
+  void add(T data) {
+    setToken(data);
+  }
+
+  /// Closes Fresh stream controllers.
+  ///
+  /// The [add],[setToken] and [removeToken] methods must not be called
+  /// after this method.
+  ///
+  /// Calling this method more than once is allowed, but does nothing.
+  @override
+  void close() {
+    _tokenController.close();
+    _controller.close();
   }
 }

@@ -118,20 +118,54 @@ void main() {
         );
       });
 
-      test('adds authenticated status if token is not null', () async {
-        when(tokenStorage.read()).thenAnswer((_) async => null);
+      test('adds unauthenticated status when  add(null)', () async {
+        when(tokenStorage.read()).thenAnswer((_) async => MockToken());
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
         final fresh = Fresh.oAuth2Token(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
-
-        await fresh.setToken(MockToken());
-
+        await fresh.add(null);
         await expectLater(
           fresh.authenticationStatus,
-          emitsInOrder([AuthenticationStatus.authenticated]),
+          emitsInOrder([
+            AuthenticationStatus.unauthenticated,
+          ]),
         );
+      });
+
+      group('add', () {
+        test('adds authenticated status if token is not null', () async {
+          when(tokenStorage.read()).thenAnswer((_) async => null);
+          when(tokenStorage.write(any)).thenAnswer((_) async => null);
+          final fresh = Fresh.oAuth2Token(
+            tokenStorage: tokenStorage,
+            refreshToken: emptyRefreshToken,
+          );
+
+          await fresh.add(MockToken());
+
+          await expectLater(
+            fresh.authenticationStatus,
+            emitsInOrder([AuthenticationStatus.authenticated]),
+          );
+        });
+
+        test('adds authenticated status if token is not null', () async {
+          when(tokenStorage.read()).thenAnswer((_) async => null);
+          when(tokenStorage.write(any)).thenAnswer((_) async => null);
+          final fresh = Fresh.oAuth2Token(
+            tokenStorage: tokenStorage,
+            refreshToken: emptyRefreshToken,
+          );
+
+          await fresh.setToken(MockToken());
+
+          await expectLater(
+            fresh.authenticationStatus,
+            emitsInOrder([AuthenticationStatus.authenticated]),
+          );
+        });
       });
     });
 
@@ -437,6 +471,30 @@ void main() {
         expect(actual, response);
         verify(httpClient.request('/mock/path', options: request)).called(1);
         verify(tokenStorage.write(token)).called(1);
+      });
+    });
+    group('close', () {
+      test('shoud close streams', () async {
+        when(tokenStorage.read()).thenAnswer((_) async => null);
+        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        final fresh = Fresh.oAuth2Token(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+        );
+
+        final mockToken = MockToken();
+        await fresh.setToken(mockToken);
+        await fresh.close();
+
+        await expectLater(
+          fresh.authenticationStatus,
+          emitsInOrder([AuthenticationStatus.authenticated, emitsDone]),
+        );
+
+        await expectLater(
+          fresh.currentToken,
+          emitsInOrder([mockToken, emitsDone]),
+        );
       });
     });
   });
