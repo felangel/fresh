@@ -167,8 +167,8 @@ class Fresh<T> extends Interceptor implements FreshBase<T> {
   ///
   /// This is equivalent to `setToken`.
   @override
-  void add(T token) {
-    _freshController.add(token);
+  void add(T token) async {
+    await _freshController.add(token);
   }
 
   /// Closes Fresh stream controllers.
@@ -178,7 +178,7 @@ class Fresh<T> extends Interceptor implements FreshBase<T> {
   ///
   /// Calling this method more than once is allowed, but does nothing.
   @override
-  void close() {
-    _freshController.close();
+  void close() async {
+    await _freshController.close();
   }
 }

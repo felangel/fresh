@@ -256,28 +256,43 @@ void main() {
       });
     });
 
-    group('setToken', () {
-      test('invokes tokenStorage.write for non-null token', () async {
-        when(tokenStorage.read()).thenAnswer((_) async => null);
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
-        final token = MockOAuth2Token();
-        final freshLink = FreshLink.oAuth2(
-          tokenStorage: tokenStorage,
-          refreshToken: emptyRefreshToken,
-        );
-        await freshLink.setToken(token);
-        verify(tokenStorage.write(token)).called(1);
+    group('configure token', () {
+      group('setToken', () {
+        test('invokes tokenStorage.write for non-null token', () async {
+          when(tokenStorage.read()).thenAnswer((_) async => null);
+          when(tokenStorage.write(any)).thenAnswer((_) async => null);
+          final token = MockOAuth2Token();
+          final freshLink = FreshLink.oAuth2(
+            tokenStorage: tokenStorage,
+            refreshToken: emptyRefreshToken,
+          );
+          await freshLink.setToken(token);
+          verify(tokenStorage.write(token)).called(1);
+        });
+
+        test('invokes tokenStorage.delete for null token', () async {
+          when(tokenStorage.read()).thenAnswer((_) async => MockOAuth2Token());
+          when(tokenStorage.write(any)).thenAnswer((_) async => null);
+          final freshLink = FreshLink.oAuth2(
+            tokenStorage: tokenStorage,
+            refreshToken: emptyRefreshToken,
+          );
+          await freshLink.setToken(null);
+          verify(tokenStorage.delete()).called(1);
+        });
       });
 
-      test('invokes tokenStorage.delete for null token', () async {
-        when(tokenStorage.read()).thenAnswer((_) async => MockOAuth2Token());
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
-        final freshLink = FreshLink.oAuth2(
-          tokenStorage: tokenStorage,
-          refreshToken: emptyRefreshToken,
-        );
-        await freshLink.setToken(null);
-        verify(tokenStorage.delete()).called(1);
+      group('remove', () {
+        test('invokes tokenStorage.delete when call removeToken', () async {
+          when(tokenStorage.read()).thenAnswer((_) async => MockOAuth2Token());
+          when(tokenStorage.write(any)).thenAnswer((_) async => null);
+          final freshLink = FreshLink.oAuth2(
+            tokenStorage: tokenStorage,
+            refreshToken: emptyRefreshToken,
+          );
+          await freshLink.removeToken();
+          verify(tokenStorage.delete()).called(1);
+        });
       });
 
       group('add', () {

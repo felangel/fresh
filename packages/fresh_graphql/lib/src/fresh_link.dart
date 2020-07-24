@@ -127,7 +127,7 @@ class FreshLink<T> extends Link implements FreshBase<T> {
     await _freshController.setToken(token);
   }
 
-  Future<void> removeToken() => _freshController.removeToken();
+  Future<void> removeToken() async => await _freshController.removeToken();
 
   static bool _defaultShouldRefresh(FetchResult result) {
     return result?.statusCode == 401;
@@ -150,8 +150,8 @@ class FreshLink<T> extends Link implements FreshBase<T> {
   ///
   /// This is equivalent to `setToken`.
   @override
-  void add(T token) {
-    _freshController.add(token);
+  Future<void> add(T token) async {
+    await _freshController.add(token);
   }
 
   /// Closes Fresh stream controllers.
@@ -161,7 +161,7 @@ class FreshLink<T> extends Link implements FreshBase<T> {
   ///
   /// Calling this method more than once is allowed, but does nothing.
   @override
-  void close() {
-    _freshController.close();
+  Future<void> close() async {
+    await _freshController.close();
   }
 }

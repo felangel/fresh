@@ -45,7 +45,7 @@ class OAuth2Token {
 /// class CustomToken implements Token {}
 /// ```
 /// Just create your Token class without implementing anything.
-/// 
+///
 /// Currently:
 /// ```dart
 /// class CustomToken {}
@@ -183,7 +183,7 @@ class FreshController<T> implements FreshBase<T> {
 
   Future<void> setToken(T token) async {
     if (token == null) {
-      removeToken();
+      await removeToken();
     } else {
       await _tokenStorage.write(token);
       updateStatus(token);
@@ -196,7 +196,7 @@ class FreshController<T> implements FreshBase<T> {
   /// If the provided token is null, the `AuthenticationStatus` will
   /// be updated to `AuthenticationStatus.unauthenticated` otherwise it
   /// will be updated to `AuthenticationStatus.authenticated`.
-  Future<void> updateStatus(T token) async {
+  void updateStatus(T token) {
     _authenticationStatus = token != null
         ? AuthenticationStatus.authenticated
         : AuthenticationStatus.unauthenticated;
@@ -210,7 +210,7 @@ class FreshController<T> implements FreshBase<T> {
   /// not is `AuthenticationStatus.unauthenticated`
   /// This method should be called when the token is no longer valid.
   Future<void> revokeToken() async {
-    _tokenStorage.delete();
+    await _tokenStorage.delete();
     if (authenticationStatus != AuthenticationStatus.unauthenticated) {
       _authenticationStatus = AuthenticationStatus.unauthenticated;
       _controller.add(_authenticationStatus);
@@ -231,8 +231,8 @@ class FreshController<T> implements FreshBase<T> {
   ///
   /// This is equivalent to `setToken`.
   @override
-  void add(T data) {
-    setToken(data);
+  Future<void> add(T data) async {
+    await setToken(data);
   }
 
   /// Closes Fresh stream controllers.
@@ -242,8 +242,10 @@ class FreshController<T> implements FreshBase<T> {
   ///
   /// Calling this method more than once is allowed, but does nothing.
   @override
-  void close() {
-    _tokenController.close();
-    _controller.close();
+  Future<void> close() async {
+    await _tokenController.close();
+    await _controller.close();
   }
 }
+
+
