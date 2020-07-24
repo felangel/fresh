@@ -158,14 +158,13 @@ class Fresh<T> extends Interceptor implements FreshBase<T> {
     return token;
   }
 
-
   /// Sets the internal [token] to the provided [token]
   /// and updates the `AuthenticationStatus` accordingly.
   ///
   /// If the provided token is null, the `AuthenticationStatus` will be updated
   /// to `unauthenticated` and the token will be removed from storage, otherwise
   /// it will be updated to `authenticated`and save to storage.
-  /// 
+  ///
   /// This is equivalent to `setToken`.
   @override
   void add(T token) {

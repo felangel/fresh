@@ -10,7 +10,7 @@ class RevokeTokenException implements Exception {}
 /// Standard OAuth2Token as defined by
 /// https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
 /// {@endtemplate}
-class OAuth2Token implements Token {
+class OAuth2Token {
   /// {macro oauth2_token}
   const OAuth2Token({
     @required this.accessToken,
@@ -38,8 +38,22 @@ class OAuth2Token implements Token {
 }
 
 /// {@template token}
-/// Generic Token Interface
+/// It is no longer necessary to implement Token interface.
+///
+/// Before:
+/// ```dart
+/// class CustomToken implements Token {}
+/// ```
+/// Just create your Token class without implementing anything.
+/// 
+/// Currently:
+/// ```dart
+/// class CustomToken {}
+/// ```
+///
+/// This will be removed in the next versions.
 /// {@endtemplate}
+@deprecated
 abstract class Token {}
 
 /// Enum representing the current authentication status of the application.
