@@ -4,8 +4,8 @@ import 'package:test/test.dart';
 
 class MockToken extends Mock implements OAuth2Token {}
 
-class MockTokenStorage<OoAuth2Token> extends Mock
-    implements TokenStorage<OoAuth2Token> {}
+class MockTokenStorage<OAuth2Token> extends Mock
+    implements TokenStorage<OAuth2Token> {}
 
 void main() {
   group('OAuth2Token', () {
