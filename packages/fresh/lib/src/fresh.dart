@@ -247,5 +247,3 @@ class FreshController<T> implements FreshBase<T> {
     await _controller.close();
   }
 }
-
-
