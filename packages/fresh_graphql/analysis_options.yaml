@@ -9,5 +9,3 @@ linter:
 analyzer:
   exclude:
     - test/.test_coverage.dart
-  errors:
-    deprecated_member_use: ignore

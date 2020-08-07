@@ -9,13 +9,11 @@ typedef ShouldRefresh = bool Function(Response response);
 
 typedef RefreshToken<T> = Future<T> Function(T token, Dio httpClient);
 
-/// {@template freshInterceptor}
+/// {@template fresh}
 /// A Dio Interceptor for automatic token refresh.
 /// Requires a concrete implementation of [TokenStorage] and [RefreshToken].
 /// Handles transparently refreshing/caching tokens.
-/// {@endtemplate}
-
-/// {@template fresh}
+///
 /// ```dart
 /// dio.interceptors.add(
 ///   Fresh<OAuth2Token>(
@@ -25,8 +23,7 @@ typedef RefreshToken<T> = Future<T> Function(T token, Dio httpClient);
 /// );
 /// ```
 /// {@endtemplate}
-class Fresh<T> extends Interceptor implements FreshBase<T> {
-  /// {@macro freshInterceptor}
+class Fresh<T> extends Interceptor with FreshMixin<T> {
   /// {@macro fresh}
   Fresh({
     @required TokenHeaderBuilder<T> tokenHeader,
@@ -39,14 +36,13 @@ class Fresh<T> extends Interceptor implements FreshBase<T> {
         assert(tokenHeader != null),
         _refreshToken = refreshToken,
         _tokenHeader = tokenHeader,
-        _tokenStorage = tokenStorage,
         _shouldRefresh = shouldRefresh ?? _defaultShouldRefresh,
-        _freshController = FreshController<T>(tokenStorage: tokenStorage),
-        _httpClient = httpClient ?? Dio();
+        _httpClient = httpClient ?? Dio() {
+    this.tokenStorage = tokenStorage;
+  }
 
-  /// {@macro freshInterceptor}.
-  /// A constructor that returns a Fresh interceptor that uses the
-  /// `OAuth2Token` token, the standard token class.
+  /// A constructor that returns a [Fresh] interceptor that uses an
+  /// [OAuth2Token] token.
   ///
   /// ```dart
   /// dio.interceptors.add(
@@ -75,31 +71,16 @@ class Fresh<T> extends Interceptor implements FreshBase<T> {
   }
 
   final Dio _httpClient;
-  final FreshController<T> _freshController;
-  final TokenStorage<T> _tokenStorage;
   final TokenHeaderBuilder<T> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
   final RefreshToken<T> _refreshToken;
 
-  Stream<T> get currentToken => _freshController.currentToken;
-
-  Stream<AuthenticationStatus> get authenticationStatus =>
-      _freshController.authenticationStatus;
-
-  Future<void> setToken(T token) async {
-    await _freshController.setToken(token);
-  }
-
-  Future<void> removeToken() async {
-    await _freshController.removeToken();
-  }
-
   @override
   Future<dynamic> onRequest(RequestOptions options) async {
-    final token = await _getToken();
-    final tokenHeader = _tokenHeader(token);
+    final currentToken = await token;
+    final tokenHeader = _tokenHeader(currentToken);
 
-    if (token != null) {
+    if (currentToken != null) {
       (options.headers ?? <String, String>{}).addAll(tokenHeader);
     }
     return options;
@@ -107,17 +88,16 @@ class Fresh<T> extends Interceptor implements FreshBase<T> {
 
   @override
   Future<dynamic> onResponse(Response response) async {
-    if (_freshController.token == null || !_shouldRefresh(response)) {
+    if (token == null || !_shouldRefresh(response)) {
       return response;
     }
-
     return _tryRefresh(response);
   }
 
   @override
   Future<dynamic> onError(DioError err) async {
     final response = err.response;
-    if (_freshController.token == null || !_shouldRefresh(response)) {
+    if (token == null || !_shouldRefresh(response)) {
       return err;
     }
     return _tryRefresh(response);
@@ -126,13 +106,13 @@ class Fresh<T> extends Interceptor implements FreshBase<T> {
   Future<Response> _tryRefresh(Response response) async {
     T refreshedToken;
     try {
-      refreshedToken = await _refreshToken(_freshController.token, _httpClient);
+      refreshedToken = await _refreshToken(await token, _httpClient);
     } on RevokeTokenException catch (_) {
-      await _freshController.removeToken();
+      await clearToken();
       return response;
     }
-    await _tokenStorage.write(refreshedToken);
-    _freshController.token = refreshedToken;
+
+    await setToken(refreshedToken);
 
     return await _httpClient.request(
       response.request.path,
@@ -141,44 +121,11 @@ class Fresh<T> extends Interceptor implements FreshBase<T> {
       onReceiveProgress: response.request.onReceiveProgress,
       onSendProgress: response.request.onSendProgress,
       queryParameters: response.request.queryParameters,
-      options: response.request
-        ..headers.addAll(_tokenHeader(_freshController.token)),
+      options: response.request..headers.addAll(_tokenHeader(await token)),
     );
   }
 
   static bool _defaultShouldRefresh(Response response) {
     return response?.statusCode == 401;
-  }
-
-  Future<T> _getToken() async {
-    if (_freshController.authenticationStatusValue !=
-        AuthenticationStatus.initial) return _freshController.token;
-    final token = await _tokenStorage.read();
-    _freshController.updateStatus(token);
-    return token;
-  }
-
-  /// Sets the internal [token] to the provided [token]
-  /// and updates the `AuthenticationStatus` accordingly.
-  ///
-  /// If the provided token is null, the `AuthenticationStatus` will be updated
-  /// to `unauthenticated` and the token will be removed from storage, otherwise
-  /// it will be updated to `authenticated`and save to storage.
-  ///
-  /// This is equivalent to `setToken`.
-  @override
-  void add(T token) async {
-    await _freshController.add(token);
-  }
-
-  /// Closes Fresh stream controllers.
-  ///
-  /// The [add],[setToken] and [removeToken] methods must not be called
-  /// after this method.
-  ///
-  /// Calling this method more than once is allowed, but does nothing.
-  @override
-  void close() async {
-    await _freshController.close();
   }
 }

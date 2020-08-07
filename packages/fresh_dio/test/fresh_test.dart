@@ -36,7 +36,7 @@ void main() {
 
     test('throws AssertionError when refreshToken is null', () {
       expect(
-        () => Fresh.oAuth2(tokenStorage: null, refreshToken: emptyRefreshToken),
+        () => Fresh.oAuth2(tokenStorage: tokenStorage, refreshToken: null),
         throwsA(isA<AssertionError>()),
       );
     });
@@ -72,52 +72,20 @@ void main() {
         });
       });
 
-      group('removeToken', () {
-        test('adds unauthenticated status when call removeToken()', () async {
+      group('clearToken', () {
+        test('adds unauthenticated status when call clearToken()', () async {
           when(tokenStorage.read()).thenAnswer((_) async => MockToken());
           when(tokenStorage.write(any)).thenAnswer((_) async => null);
           final fresh = Fresh.oAuth2(
             tokenStorage: tokenStorage,
             refreshToken: emptyRefreshToken,
           );
-          await fresh.removeToken();
+          await fresh.clearToken();
           await expectLater(
             fresh.authenticationStatus,
             emitsInOrder([
               AuthenticationStatus.unauthenticated,
             ]),
-          );
-        });
-      });
-      group('add', () {
-        test('adds unauthenticated status when  add(null)', () async {
-          when(tokenStorage.read()).thenAnswer((_) async => MockToken());
-          when(tokenStorage.write(any)).thenAnswer((_) async => null);
-          final fresh = Fresh.oAuth2(
-            tokenStorage: tokenStorage,
-            refreshToken: emptyRefreshToken,
-          );
-          await fresh.add(null);
-          await expectLater(
-            fresh.authenticationStatus,
-            emitsInOrder([
-              AuthenticationStatus.unauthenticated,
-            ]),
-          );
-        });
-        test('adds authenticated status if token is not null', () async {
-          when(tokenStorage.read()).thenAnswer((_) async => null);
-          when(tokenStorage.write(any)).thenAnswer((_) async => null);
-          final fresh = Fresh.oAuth2(
-            tokenStorage: tokenStorage,
-            refreshToken: emptyRefreshToken,
-          );
-
-          await fresh.add(MockToken());
-
-          await expectLater(
-            fresh.authenticationStatus,
-            emitsInOrder([AuthenticationStatus.authenticated]),
           );
         });
       });
@@ -427,6 +395,7 @@ void main() {
         verify(tokenStorage.write(token)).called(1);
       });
     });
+
     group('close', () {
       test('shoud close streams', () async {
         when(tokenStorage.read()).thenAnswer((_) async => null);
@@ -443,11 +412,6 @@ void main() {
         await expectLater(
           fresh.authenticationStatus,
           emitsInOrder([AuthenticationStatus.authenticated, emitsDone]),
-        );
-
-        await expectLater(
-          fresh.currentToken,
-          emitsInOrder([mockToken, emitsDone]),
         );
       });
     });
