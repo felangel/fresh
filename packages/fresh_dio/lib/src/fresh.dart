@@ -23,91 +23,81 @@ typedef RefreshToken<T> = Future<T> Function(T token, Dio httpClient);
 /// );
 /// ```
 /// {@endtemplate}
-class Fresh<T extends Token> extends Interceptor {
+class Fresh<T> extends Interceptor with FreshMixin<T> {
   /// {@macro fresh}
   Fresh({
-    @required TokenStorage tokenStorage,
+    @required TokenHeaderBuilder<T> tokenHeader,
+    @required TokenStorage<T> tokenStorage,
     @required RefreshToken<T> refreshToken,
-    TokenHeaderBuilder<T> tokenHeader,
     ShouldRefresh shouldRefresh,
     Dio httpClient,
   })  : assert(tokenStorage != null),
         assert(refreshToken != null),
-        _tokenStorage = tokenStorage,
+        assert(tokenHeader != null),
         _refreshToken = refreshToken,
-        _tokenHeader = tokenHeader ?? _defaultTokenHeader,
+        _tokenHeader = tokenHeader,
         _shouldRefresh = shouldRefresh ?? _defaultShouldRefresh,
         _httpClient = httpClient ?? Dio() {
-    _tokenStorage.read().then((token) {
-      _token = token;
-      _authenticationStatus = token != null
-          ? AuthenticationStatus.authenticated
-          : AuthenticationStatus.unauthenticated;
-      _controller.add(_authenticationStatus);
-    });
+    this.tokenStorage = tokenStorage;
   }
 
-  static final StreamController _controller =
-      StreamController<AuthenticationStatus>.broadcast()
-        ..add(AuthenticationStatus.initial);
+  /// A constructor that returns a [Fresh] interceptor that uses an
+  /// [OAuth2Token] token.
+  ///
+  /// ```dart
+  /// dio.interceptors.add(
+  ///   Fresh.oAuth2(
+  ///     tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+  ///     refreshToken: (token, client) async {...},
+  ///   ),
+  /// );
+  /// ```
+  static Fresh<OAuth2Token> oAuth2({
+    @required TokenStorage<OAuth2Token> tokenStorage,
+    @required RefreshToken<OAuth2Token> refreshToken,
+    ShouldRefresh shouldRefresh,
+    TokenHeaderBuilder<OAuth2Token> tokenHeader,
+  }) {
+    return Fresh<OAuth2Token>(
+        refreshToken: refreshToken,
+        tokenStorage: tokenStorage,
+        shouldRefresh: shouldRefresh,
+        tokenHeader: tokenHeader ??
+            (token) {
+              return {
+                'authorization': '${token.tokenType} ${token.accessToken}',
+              };
+            });
+  }
 
   final Dio _httpClient;
-  final TokenStorage<T> _tokenStorage;
   final TokenHeaderBuilder<T> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
   final RefreshToken<T> _refreshToken;
 
-  T _token;
-
-  AuthenticationStatus _authenticationStatus = AuthenticationStatus.initial;
-
-  /// Returns a `Stream<AuthenticationState>` which is updated internally based
-  /// on if a valid token exists in [TokenStorage].
-  Stream<AuthenticationStatus> get authenticationStatus async* {
-    yield _authenticationStatus;
-    yield* _controller.stream;
-  }
-
-  /// Sets the internal [token] to the provided [token]
-  /// and updates the `AuthenticationStatus` accordingly.
-  /// If the provided token is null, the `AuthenticationStatus` will
-  /// be updated to `AuthenticationStatus.unauthenticated` otherwise it
-  /// will be updated to `AuthenticationStatus.authenticated`.
-  ///
-  /// This method should be called after making a successful token request
-  /// from the custom `RefreshInterceptor` implementation.
-  Future<void> setToken(T token) async {
-    await _tokenStorage.write(token);
-    final authenticationStatus = token == null
-        ? AuthenticationStatus.unauthenticated
-        : AuthenticationStatus.authenticated;
-    _authenticationStatus = authenticationStatus;
-    _controller.add(authenticationStatus);
-    _token = token;
-  }
-
   @override
   Future<dynamic> onRequest(RequestOptions options) async {
-    final token = await _getToken();
-    if (token != null) {
-      (options.headers ?? <String, String>{}).addAll(_tokenHeader(token));
+    final currentToken = await token;
+    final tokenHeader = _tokenHeader(currentToken);
+
+    if (currentToken != null) {
+      (options.headers ?? <String, String>{}).addAll(tokenHeader);
     }
     return options;
   }
 
   @override
   Future<dynamic> onResponse(Response response) async {
-    if (_token == null || !_shouldRefresh(response)) {
+    if (token == null || !_shouldRefresh(response)) {
       return response;
     }
-
     return _tryRefresh(response);
   }
 
   @override
   Future<dynamic> onError(DioError err) async {
     final response = err.response;
-    if (_token == null || !_shouldRefresh(response)) {
+    if (token == null || !_shouldRefresh(response)) {
       return err;
     }
     return _tryRefresh(response);
@@ -116,13 +106,13 @@ class Fresh<T extends Token> extends Interceptor {
   Future<Response> _tryRefresh(Response response) async {
     T refreshedToken;
     try {
-      refreshedToken = await _refreshToken(_token, _httpClient);
+      refreshedToken = await _refreshToken(await token, _httpClient);
     } on RevokeTokenException catch (_) {
-      await _onRevokeTokenException();
+      await clearToken();
       return response;
     }
-    await _tokenStorage.write(refreshedToken);
-    _token = refreshedToken;
+
+    await setToken(refreshedToken);
 
     return await _httpClient.request(
       response.request.path,
@@ -131,40 +121,11 @@ class Fresh<T extends Token> extends Interceptor {
       onReceiveProgress: response.request.onReceiveProgress,
       onSendProgress: response.request.onSendProgress,
       queryParameters: response.request.queryParameters,
-      options: response.request..headers.addAll(_tokenHeader(_token)),
+      options: response.request..headers.addAll(_tokenHeader(await token)),
     );
-  }
-
-  static Map<String, String> _defaultTokenHeader(Token token) {
-    if (token is OAuth2Token) {
-      return {
-        'authorization': '${token.tokenType} ${token.accessToken}',
-      };
-    }
-    throw UnimplementedError();
   }
 
   static bool _defaultShouldRefresh(Response response) {
     return response?.statusCode == 401;
-  }
-
-  Future<T> _getToken() async {
-    if (_authenticationStatus != AuthenticationStatus.initial) return _token;
-    final token = await _tokenStorage.read();
-    final authenticationStatus = token != null
-        ? AuthenticationStatus.authenticated
-        : AuthenticationStatus.unauthenticated;
-    _authenticationStatus = authenticationStatus;
-    _controller.add(authenticationStatus);
-
-    _token = token;
-    return _token;
-  }
-
-  Future<void> _onRevokeTokenException() async {
-    await _tokenStorage.delete();
-    _token = null;
-    _authenticationStatus = AuthenticationStatus.unauthenticated;
-    _controller.add(AuthenticationStatus.unauthenticated);
   }
 }

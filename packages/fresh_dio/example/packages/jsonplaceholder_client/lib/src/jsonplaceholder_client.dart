@@ -11,10 +11,16 @@ class JsonplaceholderClient {
   JsonplaceholderClient({Dio httpClient})
       : _httpClient = (httpClient ?? Dio())
           ..options.baseUrl = 'https://jsonplaceholder.typicode.com'
-          ..interceptors.add(_fresh);
+          ..interceptors.add(_fresh)
+          ..interceptors.add(LogInterceptor(
+            request: false,
+            requestBody: false,
+            responseBody: false,
+            responseHeader: false,
+          ));
 
   static var _refreshCount = 0;
-  static final _fresh = Fresh<OAuth2Token>(
+  static final _fresh = Fresh.oAuth2(
     tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
     refreshToken: (token, client) async {
       print('refreshing token...');
