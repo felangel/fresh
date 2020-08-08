@@ -4,6 +4,7 @@ import 'package:fresh/fresh.dart';
 import 'package:graphql/client.dart';
 import 'package:http/http.dart';
 import 'package:meta/meta.dart';
+import 'package:pedantic/pedantic.dart';
 
 typedef ShouldRefresh = bool Function(FetchResult);
 
@@ -88,7 +89,7 @@ class FreshLink<T> extends Link with FreshMixin<T> {
       [Stream<FetchResult> forward(Operation op)]) async* {
     final currentToken = await token;
     final headers = currentToken != null && _tokenHeader != null
-        ? await _tokenHeader(currentToken)
+        ? _tokenHeader(currentToken)
         : const <String, String>{};
 
     operation.setContext(
@@ -100,13 +101,13 @@ class FreshLink<T> extends Link with FreshMixin<T> {
         try {
           final refreshedToken = await _refreshToken(await token, Client());
           await setToken(refreshedToken);
-          final headers = await _tokenHeader(refreshedToken);
+          final headers = _tokenHeader(refreshedToken);
           operation.setContext(
             <String, Map<String, String>>{'headers': headers},
           );
           yield* forward(operation);
         } on RevokeTokenException catch (_) {
-          revokeToken();
+          unawaited(revokeToken());
           yield result;
         }
       } else {

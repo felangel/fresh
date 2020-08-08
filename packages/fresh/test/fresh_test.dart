@@ -23,12 +23,12 @@ void main() {
     });
 
     test('tokenType defaults to bearer', () {
-      expect(OAuth2Token(accessToken: 'accessToken').tokenType, 'bearer');
+      expect(const OAuth2Token(accessToken: 'accessToken').tokenType, 'bearer');
     });
   });
 
   group('InMemoryStorage', () {
-    InMemoryTokenStorage inMemoryTokenStorage;
+    InMemoryTokenStorage<MockToken> inMemoryTokenStorage;
     final token = MockToken();
 
     setUp(() {
@@ -84,9 +84,9 @@ void main() {
 
         await freshController.revokeToken();
 
-        expectLater(
+        await expectLater(
           freshController.authenticationStatus,
-          emitsInOrder([
+          emitsInOrder(const <AuthenticationStatus>[
             AuthenticationStatus.unauthenticated,
           ]),
         );
@@ -100,9 +100,9 @@ void main() {
       test('is unauthenticated when tokenStorage.read is null', () async {
         when(tokenStorage.read()).thenAnswer((_) async => null);
         final freshController = FreshController<OAuth2Token>(tokenStorage);
-        expectLater(
+        await expectLater(
           freshController.authenticationStatus,
-          emitsInOrder([
+          emitsInOrder(const <AuthenticationStatus>[
             AuthenticationStatus.unauthenticated,
           ]),
         );
@@ -111,9 +111,9 @@ void main() {
       test('is authenticated when tokenStorage.read is not null', () async {
         when(tokenStorage.read()).thenAnswer((_) async => MockToken());
         final freshController = FreshController<OAuth2Token>(tokenStorage);
-        expectLater(
+        await expectLater(
           freshController.authenticationStatus,
-          emitsInOrder([
+          emitsInOrder(const <AuthenticationStatus>[
             AuthenticationStatus.authenticated,
           ]),
         );
@@ -138,7 +138,7 @@ void main() {
           await freshController.setToken(null);
           await expectLater(
             freshController.authenticationStatus,
-            emitsInOrder([
+            emitsInOrder(const <AuthenticationStatus>[
               AuthenticationStatus.unauthenticated,
             ]),
           );
@@ -152,7 +152,9 @@ void main() {
 
           await expectLater(
             freshController.authenticationStatus,
-            emitsInOrder([AuthenticationStatus.authenticated]),
+            emitsInOrder(
+              const <AuthenticationStatus>[AuthenticationStatus.authenticated],
+            ),
           );
         });
       });
@@ -165,7 +167,7 @@ void main() {
           await freshController.clearToken();
           await expectLater(
             freshController.authenticationStatus,
-            emitsInOrder([
+            emitsInOrder(const <AuthenticationStatus>[
               AuthenticationStatus.unauthenticated,
             ]),
           );
@@ -185,7 +187,9 @@ void main() {
 
         await expectLater(
           freshController.authenticationStatus,
-          emitsInOrder([AuthenticationStatus.authenticated, emitsDone]),
+          emitsInOrder(
+            <Matcher>[equals(AuthenticationStatus.authenticated), emitsDone],
+          ),
         );
       });
     });

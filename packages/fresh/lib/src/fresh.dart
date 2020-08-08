@@ -135,7 +135,7 @@ mixin FreshMixin<T> {
   /// This method should be called when the token is no longer valid.
   Future<void> revokeToken() async {
     await _tokenStorage.delete();
-    if (authenticationStatus != AuthenticationStatus.unauthenticated) {
+    if (_authenticationStatus != AuthenticationStatus.unauthenticated) {
       _authenticationStatus = AuthenticationStatus.unauthenticated;
       _controller.add(_authenticationStatus);
     }
@@ -146,10 +146,9 @@ mixin FreshMixin<T> {
     _updateStatus(null);
   }
 
-  /// Closes Fresh stream controllers.
+  /// Closes Fresh StreamController.
   ///
-  /// The [add],[setToken] and [clearToken] methods must not be called
-  /// after this method.
+  /// [setToken] and [clearToken] must not be called after this method.
   ///
   /// Calling this method more than once is allowed, but does nothing.
   Future<void> close() => _controller.close();

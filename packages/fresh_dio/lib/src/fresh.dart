@@ -114,7 +114,7 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
 
     await setToken(refreshedToken);
 
-    return await _httpClient.request(
+    return await _httpClient.request<dynamic>(
       response.request.path,
       cancelToken: response.request.cancelToken,
       data: response.request.data,

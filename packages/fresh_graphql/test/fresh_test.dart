@@ -13,7 +13,7 @@ class MockOperation extends Mock implements Operation {}
 
 class MockFetchResult extends Mock implements FetchResult {}
 
-Future<T> emptyRefreshToken<T>(_, __) async => null;
+Future<T> emptyRefreshToken<T>(dynamic _, dynamic __) async => null;
 
 void main() {
   group('FreshLink', () {
@@ -44,7 +44,7 @@ void main() {
     });
 
     group('request', () {
-      final token = OAuth2Token(accessToken: 'accessToken');
+      const token = OAuth2Token(accessToken: 'accessToken');
 
       test(
           'uses cached token and sets default '
@@ -61,9 +61,13 @@ void main() {
         );
         await expectLater(
           freshLink.authenticationStatus,
-          emitsInOrder([AuthenticationStatus.authenticated]),
+          emitsInOrder(
+            const <AuthenticationStatus>[
+              AuthenticationStatus.authenticated,
+            ],
+          ),
         );
-        verify(operation.setContext({
+        verify(operation.setContext(<String, dynamic>{
           'headers': {'authorization': 'bearer accessToken'}
         })).called(1);
         verify(tokenStorage.read()).called(1);
@@ -84,7 +88,7 @@ void main() {
           freshLink.request(operation, (operation) async* {}),
           emitsDone,
         );
-        verify(operation.setContext({
+        verify(operation.setContext(<String, dynamic>{
           'headers': {'custom_header': 'custom accessToken'}
         })).called(1);
         verify(tokenStorage.read()).called(1);
@@ -105,9 +109,17 @@ void main() {
         );
         await expectLater(
           freshLink.authenticationStatus,
-          emitsInOrder([AuthenticationStatus.unauthenticated]),
+          emitsInOrder(
+            const <AuthenticationStatus>[
+              AuthenticationStatus.unauthenticated,
+            ],
+          ),
         );
-        verify(operation.setContext({'headers': {}})).called(1);
+        verify(
+          operation.setContext(
+            <String, dynamic>{'headers': <String, String>{}},
+          ),
+        ).called(1);
         verify(tokenStorage.read()).called(1);
       });
 
@@ -117,7 +129,7 @@ void main() {
         tokenStorage = MockTokenStorage<MockToken>();
         when(tokenStorage.read()).thenAnswer((_) async => MockToken());
         final operation = MockOperation();
-        final freshLink = FreshLink(
+        final freshLink = FreshLink<OAuth2Token>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async => null,
         );
@@ -125,7 +137,9 @@ void main() {
           freshLink.request(operation, (operation) async* {}),
           emitsDone,
         );
-        verify(operation.setContext({'headers': {}})).called(1);
+        verify(operation.setContext(
+          <String, dynamic>{'headers': <String, String>{}},
+        )).called(1);
       });
 
       test('does not refresh if token is null', () async {
@@ -138,14 +152,14 @@ void main() {
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
             refreshTokenCallCount++;
-            return OAuth2Token(accessToken: 'token');
+            return const OAuth2Token(accessToken: 'token');
           },
         );
         await expectLater(
           freshLink.request(operation, (operation) async* {
             yield fetchResult;
           }),
-          emitsInOrder([fetchResult]),
+          emitsInOrder(<MockFetchResult>[fetchResult]),
         );
         expect(refreshTokenCallCount, 0);
       });
@@ -170,7 +184,7 @@ void main() {
           freshLink.request(operation, (operation) async* {
             yield fetchResult;
           }),
-          emitsInOrder([fetchResult]),
+          emitsInOrder(<MockFetchResult>[fetchResult]),
         );
         expect(refreshTokenCallCount, 0);
       });
@@ -196,7 +210,7 @@ void main() {
           freshLink.request(operation, (operation) async* {
             yield fetchResult;
           }),
-          emitsInOrder([fetchResult]),
+          emitsInOrder(<MockFetchResult>[fetchResult]),
         );
         expect(refreshTokenCallCount, 0);
       });
@@ -205,7 +219,7 @@ void main() {
           'does refresh if statusCode is 401 '
           'using default shouldRefresh', () async {
         tokenStorage = MockTokenStorage<OAuth2Token>();
-        final refreshedToken = OAuth2Token(accessToken: 'newAccessToken');
+        const refreshedToken = OAuth2Token(accessToken: 'newAccessToken');
         when(tokenStorage.read()).thenAnswer((_) async => token);
         var refreshTokenCallCount = 0;
         final operation = MockOperation();
@@ -222,10 +236,10 @@ void main() {
           freshLink.request(operation, (operation) async* {
             yield fetchResult;
           }),
-          emitsInOrder([fetchResult]),
+          emitsInOrder(<MockFetchResult>[fetchResult]),
         );
         expect(refreshTokenCallCount, 1);
-        verify(operation.setContext({
+        verify(operation.setContext(<String, dynamic>{
           'headers': {'authorization': 'bearer newAccessToken'}
         })).called(1);
       });
@@ -250,7 +264,7 @@ void main() {
           freshLink.request(operation, (operation) async* {
             yield fetchResult;
           }),
-          emitsInOrder([fetchResult]),
+          emitsInOrder(<MockFetchResult>[fetchResult]),
         );
         expect(refreshTokenCallCount, 1);
         verify(tokenStorage.delete()).called(1);
@@ -312,7 +326,12 @@ void main() {
 
         await expectLater(
           fresh.authenticationStatus,
-          emitsInOrder([AuthenticationStatus.authenticated, emitsDone]),
+          emitsInOrder(
+            <Matcher>[
+              equals(AuthenticationStatus.authenticated),
+              emitsDone,
+            ],
+          ),
         );
       });
     });

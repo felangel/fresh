@@ -18,16 +18,15 @@ void main() async {
     refreshToken: (token, client) async {
       // Perform refresh and return new token
       print('refreshing token!');
-      await Future.delayed(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(seconds: 1));
       if (Random().nextInt(1) == 0) {
         throw RevokeTokenException();
       }
-      return OAuth2Token(accessToken: 't0ps3cret_r3fresh3d!');
+      return const OAuth2Token(accessToken: 't0ps3cret_r3fresh3d!');
     },
     shouldRefresh: (_) => Random().nextInt(2) == 0,
-  )
-    ..authenticationStatus.listen(print)
-    ..setToken(OAuth2Token(accessToken: 't0ps3cret!'));
+  )..authenticationStatus.listen(print);
+  await freshLink.setToken(const OAuth2Token(accessToken: 't0ps3cret!'));
   final graphQLClient = GraphQLClient(
     cache: InMemoryCache(),
     link: Link.from([freshLink, HttpLink(uri: 'https://api.graphql.jobs')]),
