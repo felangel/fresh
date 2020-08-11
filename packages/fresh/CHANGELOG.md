@@ -1,3 +1,8 @@
+# 0.3.0
+
+- **BREAKING**: Remove `Token` interface
+- refactor: `FreshMixin` internal implementation improvements
+
 # 0.2.1
 
 - Add `InMemoryTokenStorage`
