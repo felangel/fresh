@@ -1,3 +1,8 @@
+# 0.2.0
+
+- **BREAKING**: update to `fresh: ^0.3.0`
+- fix: throw `DioError` on `RevokeTokenException` ([#26](https://github.com/felangel/fresh/issues/26))
+
 # 0.1.3
 
 - fix: handle `null` response in `onResponse` ([#24](https://github.com/felangel/fresh/pull/24)).
