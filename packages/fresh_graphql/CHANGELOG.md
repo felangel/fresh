@@ -1,3 +1,7 @@
+# 0.3.0
+
+- **BREAKING**: update to `fresh: ^0.3.0`
+
 # 0.2.0
 
 - **BREAKING** remove `onRefreshFailure` from `FreshLink`

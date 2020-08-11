@@ -17,7 +17,7 @@ A [graphql](https://pub.dev/packages/graphql) link for built-in token refresh. B
 ## Usage
 
 ```dart
-final freshLink = FreshLink(
+final freshLink = FreshLink.oAuth2(
   tokenStorage: InMemoryTokenStorage(),
   refreshToken: (token, client) {
     // Perform refresh and return new token
