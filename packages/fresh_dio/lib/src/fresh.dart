@@ -96,19 +96,25 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
   @override
   Future<dynamic> onError(DioError err) async {
     final response = err.response;
-    if (token == null || !_shouldRefresh(response)) {
+    if (token == null ||
+        err?.error is RevokeTokenException ||
+        !_shouldRefresh(response)) {
       return err;
     }
     return _tryRefresh(response);
   }
 
-  Future<Response> _tryRefresh(Response response) async {
+  Future<dynamic> _tryRefresh(Response response) async {
     T refreshedToken;
     try {
       refreshedToken = await _refreshToken(await token, _httpClient);
-    } on RevokeTokenException catch (_) {
+    } on RevokeTokenException catch (error) {
       await clearToken();
-      return response;
+      return DioError(
+        error: error,
+        request: response.request,
+        response: response,
+      );
     }
 
     await setToken(refreshedToken);

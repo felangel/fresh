@@ -273,6 +273,8 @@ void main() {
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
         when(tokenStorage.delete()).thenAnswer((_) async => null);
         final response = MockResponse<dynamic>();
+        final request = MockRequestOptions();
+        when(response.request).thenReturn(request);
         when(response.statusCode).thenReturn(401);
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
@@ -290,7 +292,7 @@ void main() {
             AuthenticationStatus.authenticated,
           ]),
         );
-        final actual = await fresh.onResponse(response) as MockResponse;
+        final actual = await fresh.onResponse(response) as DioError;
         await expectLater(
           fresh.authenticationStatus,
           emitsInOrder(const <AuthenticationStatus>[
@@ -298,7 +300,9 @@ void main() {
           ]),
         );
         expect(refreshCallCount, 1);
-        expect(actual, response);
+        expect(actual.request, request);
+        expect(actual.response, response);
+        expect(actual.error, isA<RevokeTokenException>());
         verify(tokenStorage.delete()).called(1);
       });
 
@@ -326,6 +330,20 @@ void main() {
         when(tokenStorage.read()).thenAnswer((_) async => null);
         when(tokenStorage.write(any)).thenAnswer((_) async => null);
         final error = MockDioError();
+        final fresh = Fresh.oAuth2(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+        );
+        final actual = await fresh.onError(error) as MockDioError;
+        expect(actual, error);
+      });
+
+      test('returns error when error is RevokeTokenException', () async {
+        when(tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        final revokeTokenException = RevokeTokenException();
+        final error = MockDioError();
+        when<dynamic>(error.error).thenReturn(revokeTokenException);
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
