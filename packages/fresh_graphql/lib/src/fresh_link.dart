@@ -33,8 +33,8 @@ typedef RefreshToken<T> = Future<T> Function(T, Client);
 class FreshLink<T> extends Link with FreshMixin<T> {
   /// {@macro fresh_link}
   FreshLink({
-    TokenStorage<T> tokenStorage,
-    RefreshToken<T> refreshToken,
+    @required TokenStorage<T> tokenStorage,
+    @required RefreshToken<T> refreshToken,
     TokenHeaderBuilder<T> tokenHeader,
     ShouldRefresh shouldRefresh,
   })  : assert(tokenStorage != null),
@@ -85,8 +85,10 @@ class FreshLink<T> extends Link with FreshMixin<T> {
   final TokenHeaderBuilder<T> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
 
-  Stream<FetchResult> _buildRequest(Operation operation,
-      [Stream<FetchResult> forward(Operation op)]) async* {
+  Stream<FetchResult> _buildRequest(
+    Operation operation, [
+    Stream<FetchResult> Function(Operation op) forward,
+  ]) async* {
     final currentToken = await token;
     final headers = currentToken != null && _tokenHeader != null
         ? _tokenHeader(currentToken)

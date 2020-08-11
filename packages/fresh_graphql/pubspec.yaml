@@ -10,8 +10,7 @@ environment:
   sdk: ">=2.6.0 <3.0.0"
 
 dependencies:
-  fresh:
-    path: ../fresh
+  fresh: ^0.3.0
   graphql: ^3.0.2
   http: ^0.12.1
   meta: ^1.1.8
