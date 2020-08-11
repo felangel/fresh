@@ -78,11 +78,10 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
   @override
   Future<dynamic> onRequest(RequestOptions options) async {
     final currentToken = await token;
-    final tokenHeader = _tokenHeader(currentToken);
-
-    if (currentToken != null) {
-      (options.headers ?? <String, String>{}).addAll(tokenHeader);
-    }
+    final headers = currentToken != null && _tokenHeader != null
+        ? _tokenHeader(currentToken)
+        : const <String, String>{};
+    (options.headers ?? <String, String>{}).addAll(headers);
     return options;
   }
 
