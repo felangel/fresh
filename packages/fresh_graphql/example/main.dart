@@ -28,11 +28,11 @@ void main() async {
   )..authenticationStatus.listen(print);
   await freshLink.setToken(const OAuth2Token(accessToken: 't0ps3cret!'));
   final graphQLClient = GraphQLClient(
-    cache: InMemoryCache(),
-    link: Link.from([freshLink, HttpLink(uri: 'https://api.graphql.jobs')]),
+    cache: GraphQLCache(),
+    link: Link.from([freshLink, HttpLink('https://api.graphql.jobs')]),
   );
   final result = await graphQLClient.query(
-    QueryOptions(documentNode: gql(getJobsQuery)),
+    QueryOptions(document: gql(getJobsQuery)),
   );
   print(result.data);
   exit(0);
