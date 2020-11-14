@@ -97,7 +97,9 @@ class FreshLink<T> extends Link with FreshMixin<T> {
 
     request.updateContextEntry<HttpLinkHeaders>(
       (headers) => HttpLinkHeaders(
-        headers: tokenHeaders,
+        headers: {
+          ...headers?.headers ?? <String, String>{},
+        }..addAll(tokenHeaders),
       ),
     );
 
@@ -112,7 +114,9 @@ class FreshLink<T> extends Link with FreshMixin<T> {
           final tokenHeaders = _tokenHeader(refreshedToken);
           request.updateContextEntry<HttpLinkHeaders>(
             (headers) => HttpLinkHeaders(
-              headers: tokenHeaders,
+              headers: {
+                ...headers?.headers ?? <String, String>{},
+              }..addAll(tokenHeaders),
             ),
           );
           yield* forward(request);
