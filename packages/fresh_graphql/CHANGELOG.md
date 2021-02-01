@@ -1,3 +1,11 @@
+# 0.4.0
+
+- **BREAKING** update to `graphql: ^4.0.0`
+
+# 0.4.0-dev.1
+
+- **BREAKING** update to `graphql: ^4.0.0-beta.5`
+
 # 0.3.0
 
 - **BREAKING**: update to `fresh: ^0.3.0`

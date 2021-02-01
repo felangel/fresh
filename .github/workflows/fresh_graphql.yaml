@@ -23,7 +23,7 @@ jobs:
         working-directory: packages/fresh_graphql
     runs-on: ubuntu-latest
     container:
-      image: google/dart:2.8.3
+      image: google/dart:2.10.0
     steps:
       - uses: actions/checkout@v2
       - name: Install Dependencies
@@ -33,6 +33,6 @@ jobs:
       - name: Analyze
         run: dartanalyzer --fatal-infos --fatal-warnings lib test
       - name: Run tests
-        run: pub run test_coverage
+        run: dart test --coverage=coverage && pub run coverage:format_coverage --lcov --in=coverage --out=coverage/lcov.info --packages=.packages --report-on=lib
       - name: Check Code Coverage
         uses: ChicagoFlutter/lcov-cop@v1.0.0

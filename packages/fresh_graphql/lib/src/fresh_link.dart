@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:fresh/fresh.dart';
 import 'package:graphql/client.dart';
-import 'package:http/http.dart';
+import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
 
-typedef ShouldRefresh = bool Function(FetchResult);
+typedef ShouldRefresh = bool Function(Response);
 
-typedef RefreshToken<T> = Future<T> Function(T, Client);
+typedef RefreshToken<T> = Future<T> Function(T, http.Client);
 
 /// {@template fresh_link}
 /// A GraphQL Link which handles manages an authentication token automatically.
@@ -35,15 +35,15 @@ class FreshLink<T> extends Link with FreshMixin<T> {
   FreshLink({
     @required TokenStorage<T> tokenStorage,
     @required RefreshToken<T> refreshToken,
+    @required ShouldRefresh shouldRefresh,
     TokenHeaderBuilder<T> tokenHeader,
-    ShouldRefresh shouldRefresh,
   })  : assert(tokenStorage != null),
         assert(refreshToken != null),
+        assert(shouldRefresh != null),
         _refreshToken = refreshToken,
         _tokenHeader = tokenHeader,
-        _shouldRefresh = shouldRefresh ?? _defaultShouldRefresh {
+        _shouldRefresh = shouldRefresh {
     this.tokenStorage = tokenStorage;
-    request = _buildRequest;
   }
 
   ///{@template fresh_link}
@@ -65,7 +65,7 @@ class FreshLink<T> extends Link with FreshMixin<T> {
   static FreshLink<OAuth2Token> oAuth2({
     @required TokenStorage<OAuth2Token> tokenStorage,
     @required RefreshToken<OAuth2Token> refreshToken,
-    ShouldRefresh shouldRefresh,
+    @required ShouldRefresh shouldRefresh,
     TokenHeaderBuilder<OAuth2Token> tokenHeader,
   }) {
     return FreshLink<OAuth2Token>(
@@ -85,29 +85,41 @@ class FreshLink<T> extends Link with FreshMixin<T> {
   final TokenHeaderBuilder<T> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
 
-  Stream<FetchResult> _buildRequest(
-    Operation operation, [
-    Stream<FetchResult> Function(Operation op) forward,
+  @override
+  Stream<Response> request(
+    Request request, [
+    NextLink forward,
   ]) async* {
     final currentToken = await token;
-    final headers = currentToken != null && _tokenHeader != null
+    final tokenHeaders = currentToken != null && _tokenHeader != null
         ? _tokenHeader(currentToken)
         : const <String, String>{};
 
-    operation.setContext(
-      <String, Map<String, String>>{'headers': headers},
+    request.updateContextEntry<HttpLinkHeaders>(
+      (headers) => HttpLinkHeaders(
+        headers: {
+          ...headers?.headers ?? <String, String>{},
+        }..addAll(tokenHeaders),
+      ),
     );
 
-    await for (final result in forward(operation)) {
+    await for (final result in forward(request)) {
       if (token != null && _shouldRefresh(result)) {
         try {
-          final refreshedToken = await _refreshToken(await token, Client());
-          await setToken(refreshedToken);
-          final headers = _tokenHeader(refreshedToken);
-          operation.setContext(
-            <String, Map<String, String>>{'headers': headers},
+          final refreshedToken = await _refreshToken(
+            await token,
+            http.Client(),
           );
-          yield* forward(operation);
+          await setToken(refreshedToken);
+          final tokenHeaders = _tokenHeader(refreshedToken);
+          request.updateContextEntry<HttpLinkHeaders>(
+            (headers) => HttpLinkHeaders(
+              headers: {
+                ...headers?.headers ?? <String, String>{},
+              }..addAll(tokenHeaders),
+            ),
+          );
+          yield* forward(request);
         } on RevokeTokenException catch (_) {
           unawaited(revokeToken());
           yield result;
@@ -116,9 +128,5 @@ class FreshLink<T> extends Link with FreshMixin<T> {
         yield result;
       }
     }
-  }
-
-  static bool _defaultShouldRefresh(FetchResult result) {
-    return result?.statusCode == 401;
   }
 }
