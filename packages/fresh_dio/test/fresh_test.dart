@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:fresh/fresh.dart';
 import 'package:fresh_dio/fresh_dio.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
 class MockTokenStorage<T> extends Mock implements TokenStorage<T> {}
@@ -10,53 +10,50 @@ class MockToken extends Mock implements OAuth2Token {}
 
 class MockRequestOptions extends Mock implements RequestOptions {}
 
+class MockOptions extends Mock implements BaseOptions {}
+
 class MockResponse<T> extends Mock implements Response<T> {}
 
 class MockDioError extends Mock implements DioError {}
 
 class MockHttpClient extends Mock implements Dio {}
 
-Future<T> emptyRefreshToken<T>(dynamic _, dynamic __) async => null;
+Future<OAuth2Token> emptyRefreshToken(OAuth2Token? _, Dio __) async {
+  return MockToken();
+}
 
 void main() {
   group('Fresh', () {
-    TokenStorage<OAuth2Token> tokenStorage;
+    late TokenStorage<OAuth2Token> tokenStorage;
+
+    setUpAll(() {
+      registerFallbackValue<OAuth2Token>(MockToken());
+      registerFallbackValue<MockToken>(MockToken());
+      registerFallbackValue<Options?>(null);
+    });
 
     setUp(() {
       tokenStorage = MockTokenStorage<OAuth2Token>();
     });
 
-    test('throws AssertionError when tokenStorage is null', () {
-      expect(
-        () => Fresh.oAuth2(tokenStorage: null, refreshToken: emptyRefreshToken),
-        throwsA(isA<AssertionError>()),
-      );
-    });
-
-    test('throws AssertionError when refreshToken is null', () {
-      expect(
-        () => Fresh.oAuth2(tokenStorage: tokenStorage, refreshToken: null),
-        throwsA(isA<AssertionError>()),
-      );
-    });
-
     group('configure token', () {
       group('setToken', () {
         test('invokes tokenStorage.write', () async {
-          when(tokenStorage.read()).thenAnswer((_) async => MockToken());
-          when(tokenStorage.write(any)).thenAnswer((_) async => null);
+          when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+          when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
           final token = MockToken();
           final fresh = Fresh.oAuth2(
             tokenStorage: tokenStorage,
             refreshToken: emptyRefreshToken,
           );
           await fresh.setToken(token);
-          verify(tokenStorage.write(token)).called(1);
+          verify(() => tokenStorage.write(token)).called(1);
         });
 
         test('adds unauthenticated status when call setToken(null)', () async {
-          when(tokenStorage.read()).thenAnswer((_) async => MockToken());
-          when(tokenStorage.write(any)).thenAnswer((_) async => null);
+          when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+          when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+          when(() => tokenStorage.delete()).thenAnswer((_) async => null);
           final fresh = Fresh.oAuth2(
             tokenStorage: tokenStorage,
             refreshToken: emptyRefreshToken,
@@ -73,8 +70,9 @@ void main() {
 
       group('clearToken', () {
         test('adds unauthenticated status when call clearToken()', () async {
-          when(tokenStorage.read()).thenAnswer((_) async => MockToken());
-          when(tokenStorage.write(any)).thenAnswer((_) async => null);
+          when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+          when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+          when(() => tokenStorage.delete()).thenAnswer((_) async => null);
           final fresh = Fresh.oAuth2(
             tokenStorage: tokenStorage,
             refreshToken: emptyRefreshToken,
@@ -95,9 +93,9 @@ void main() {
       test(
           'appends token header when token is OAuth2Token '
           'and tokenHeader is not provided', () async {
-        final options = RequestOptions();
-        when(tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        final options = RequestOptions(path: '');
+        when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -106,7 +104,7 @@ void main() {
         expect(
           actual.headers,
           {
-            'content-type': null,
+            'content-type': 'application/json; charset=utf-8',
             'authorization': 'bearer accessToken',
           },
         );
@@ -115,9 +113,9 @@ void main() {
       test(
           'appends token header when token is OAuth2Token '
           'and tokenHeader is provided', () async {
-        final options = RequestOptions();
-        when(tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        final options = RequestOptions(path: '');
+        when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -127,7 +125,7 @@ void main() {
         expect(
           actual.headers,
           {
-            'content-type': null,
+            'content-type': 'application/json; charset=utf-8',
             'custom-header': 'custom-token',
           },
         );
@@ -136,9 +134,9 @@ void main() {
       test(
           'appends the standart header when token use OAuth2Token constructor'
           'but tokenHeader is not provided', () async {
-        final options = RequestOptions();
-        when(tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        final options = RequestOptions(path: '');
+        when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -147,34 +145,18 @@ void main() {
         expect(
           actual.headers,
           {
-            'content-type': null,
+            'content-type': 'application/json; charset=utf-8',
             'authorization':
                 '${oAuth2Token.tokenType} ${oAuth2Token.accessToken}',
           },
-        );
-      });
-
-      test('throws AssertionError when tokenHeader is null', () async {
-        when(tokenStorage.read()).thenAnswer((_) async => MockToken());
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
-
-        expect(
-          () {
-            Fresh<OAuth2Token>(
-              tokenHeader: null,
-              tokenStorage: tokenStorage,
-              refreshToken: emptyRefreshToken,
-            );
-          },
-          throwsA(isA<AssertionError>()),
         );
       });
     });
 
     group('onResponse', () {
       test('returns untouched response when token is null', () async {
-        when(tokenStorage.read()).thenAnswer((_) async => null);
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        when(() => tokenStorage.read()).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
         final response = MockResponse<dynamic>();
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
@@ -187,10 +169,10 @@ void main() {
       test(
           'returns untouched response when '
           'shouldRefresh (default) is false', () async {
-        when(tokenStorage.read()).thenAnswer((_) async => MockToken());
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
         final response = MockResponse<dynamic>();
-        when(response.statusCode).thenReturn(200);
+        when(() => response.statusCode).thenReturn(200);
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -202,10 +184,10 @@ void main() {
       test(
           'returns untouched response when '
           'shouldRefresh (custom) is false', () async {
-        when(tokenStorage.read()).thenAnswer((_) async => MockToken());
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
         final response = MockResponse<dynamic>();
-        when(response.statusCode).thenReturn(200);
+        when(() => response.statusCode).thenReturn(200);
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -221,24 +203,41 @@ void main() {
         var refreshCallCount = 0;
         final token = MockToken();
         final tokenStorage = MockTokenStorage<MockToken>();
-        when(tokenStorage.read()).thenAnswer((_) async => token);
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        when(tokenStorage.read).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
         final request = MockRequestOptions();
-        when(request.path).thenReturn('/mock/path');
-        when(request.headers).thenReturn(<String, String>{});
+        when(() => request.path).thenReturn('/mock/path');
+        when(() => request.baseUrl).thenReturn('https://test.com');
+        when(() => request.headers).thenReturn(<String, String>{});
+        when(() => request.queryParameters).thenReturn(<String, String>{});
+        when(() => request.method).thenReturn('GET');
+        when(() => request.sendTimeout).thenReturn(0);
+        when(() => request.receiveTimeout).thenReturn(0);
+        when(() => request.extra).thenReturn(<String, String>{});
+        when(() => request.responseType).thenReturn(ResponseType.json);
+        when(() => request.validateStatus).thenReturn((_) => false);
+        when(() => request.receiveDataWhenStatusError).thenReturn(false);
+        when(() => request.followRedirects).thenReturn(false);
+        when(() => request.maxRedirects).thenReturn(0);
+        when(() => request.listFormat).thenReturn(ListFormat.csv);
         final response = MockResponse<dynamic>();
-        when(response.statusCode).thenReturn(401);
-        when(response.request).thenReturn(request);
+        when(() => response.statusCode).thenReturn(401);
+        when(() => response.request).thenReturn(request);
+        when(() => response.request).thenReturn(request);
+        final options = MockOptions();
         final httpClient = MockHttpClient();
-        when(httpClient.request<dynamic>(
-          any,
-          cancelToken: anyNamed('cancelToken'),
-          data: anyNamed('data'),
-          onReceiveProgress: anyNamed('onReceiveProgress'),
-          onSendProgress: anyNamed('onSendProgress'),
-          queryParameters: anyNamed('queryParameters'),
-          options: anyNamed('options'),
-        )).thenAnswer((_) async => response);
+        when(() => httpClient.options).thenReturn(options);
+        when(
+          () => httpClient.request<dynamic>(
+            any(),
+            cancelToken: any(named: 'cancelToken'),
+            data: any<dynamic>(named: 'data'),
+            onReceiveProgress: any(named: 'onReceiveProgress'),
+            onSendProgress: any(named: 'onSendProgress'),
+            queryParameters: any(named: 'queryParameters'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer((_) async => response);
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
@@ -259,9 +258,19 @@ void main() {
         final actual = await fresh.onResponse(response) as MockResponse;
         expect(refreshCallCount, 1);
         expect(actual, response);
-        verify(httpClient.request<dynamic>('/mock/path', options: request))
-            .called(1);
-        verify(tokenStorage.write(token)).called(1);
+        verify(() => options.baseUrl = 'https://test.com').called(1);
+        verify(
+          () => httpClient.request<dynamic>(
+            '/mock/path',
+            data: null,
+            queryParameters: <String, String>{},
+            cancelToken: null,
+            onSendProgress: null,
+            onReceiveProgress: null,
+            options: any(named: 'options'),
+          ),
+        ).called(1);
+        verify(() => tokenStorage.write(token)).called(1);
       });
 
       test(
@@ -269,13 +278,13 @@ void main() {
           'to unauthenticated when RevokeTokenException is thrown.', () async {
         var refreshCallCount = 0;
         final tokenStorage = MockTokenStorage<MockToken>();
-        when(tokenStorage.read()).thenAnswer((_) async => MockToken());
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
-        when(tokenStorage.delete()).thenAnswer((_) async => null);
+        when(tokenStorage.read).thenAnswer((_) async => MockToken());
+        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(tokenStorage.delete).thenAnswer((_) async => null);
         final response = MockResponse<dynamic>();
         final request = MockRequestOptions();
-        when(response.request).thenReturn(request);
-        when(response.statusCode).thenReturn(401);
+        when(() => response.request).thenReturn(request);
+        when(() => response.statusCode).thenReturn(401);
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
@@ -303,13 +312,13 @@ void main() {
         expect(actual.request, request);
         expect(actual.response, response);
         expect(actual.error, isA<RevokeTokenException>());
-        verify(tokenStorage.delete()).called(1);
+        verify(tokenStorage.delete).called(1);
       });
 
-      test('returns null when token exists and response is null', () async {
+      test('returns same response when token exists', () async {
         tokenStorage = MockTokenStorage<MockToken>();
-        when(tokenStorage.read()).thenAnswer((_) async => MockToken());
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -320,15 +329,16 @@ void main() {
             AuthenticationStatus.authenticated,
           ]),
         );
-        final actual = await fresh.onResponse(null) as MockResponse;
-        expect(actual, null);
+        final response = MockResponse<dynamic>();
+        final actual = await fresh.onResponse(response) as MockResponse;
+        expect(actual, response);
       });
     });
 
     group('onError', () {
       test('returns error when token is null', () async {
-        when(tokenStorage.read()).thenAnswer((_) async => null);
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        when(() => tokenStorage.read()).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
         final error = MockDioError();
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
@@ -339,11 +349,11 @@ void main() {
       });
 
       test('returns error when error is RevokeTokenException', () async {
-        when(tokenStorage.read()).thenAnswer((_) async => MockToken());
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
         final revokeTokenException = RevokeTokenException();
         final error = MockDioError();
-        when<dynamic>(error.error).thenReturn(revokeTokenException);
+        when<dynamic>(() => error.error).thenReturn(revokeTokenException);
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -353,12 +363,12 @@ void main() {
       });
 
       test('returns error when shouldRefresh (default) is false', () async {
-        when(tokenStorage.read()).thenAnswer((_) async => MockToken());
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
         final error = MockDioError();
         final response = MockResponse<dynamic>();
-        when(response.statusCode).thenReturn(200);
-        when(error.response).thenReturn(response);
+        when(() => response.statusCode).thenReturn(200);
+        when(() => error.response).thenReturn(response);
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -373,26 +383,42 @@ void main() {
         var refreshCallCount = 0;
         final token = MockToken();
         final tokenStorage = MockTokenStorage<MockToken>();
-        when(tokenStorage.read()).thenAnswer((_) async => token);
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        when(tokenStorage.read).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
         final request = MockRequestOptions();
-        when(request.path).thenReturn('/mock/path');
-        when(request.headers).thenReturn(<String, String>{});
+        when(() => request.path).thenReturn('/mock/path');
+        when(() => request.baseUrl).thenReturn('https://test.com');
+        when(() => request.headers).thenReturn(<String, String>{});
+        when(() => request.queryParameters).thenReturn(<String, String>{});
+        when(() => request.method).thenReturn('GET');
+        when(() => request.sendTimeout).thenReturn(0);
+        when(() => request.receiveTimeout).thenReturn(0);
+        when(() => request.extra).thenReturn(<String, String>{});
+        when(() => request.responseType).thenReturn(ResponseType.json);
+        when(() => request.validateStatus).thenReturn((_) => false);
+        when(() => request.receiveDataWhenStatusError).thenReturn(false);
+        when(() => request.followRedirects).thenReturn(false);
+        when(() => request.maxRedirects).thenReturn(0);
+        when(() => request.listFormat).thenReturn(ListFormat.csv);
         final error = MockDioError();
         final response = MockResponse<dynamic>();
-        when(response.statusCode).thenReturn(401);
-        when(error.response).thenReturn(response);
-        when(response.request).thenReturn(request);
+        when(() => response.statusCode).thenReturn(401);
+        when(() => error.response).thenReturn(response);
+        when(() => response.request).thenReturn(request);
+        final options = MockOptions();
         final httpClient = MockHttpClient();
-        when(httpClient.request<dynamic>(
-          any,
-          cancelToken: anyNamed('cancelToken'),
-          data: anyNamed('data'),
-          onReceiveProgress: anyNamed('onReceiveProgress'),
-          onSendProgress: anyNamed('onSendProgress'),
-          queryParameters: anyNamed('queryParameters'),
-          options: anyNamed('options'),
-        )).thenAnswer((_) async => response);
+        when(() => httpClient.options).thenReturn(options);
+        when(
+          () => httpClient.request<dynamic>(
+            any(),
+            cancelToken: any(named: 'cancelToken'),
+            data: any<dynamic>(named: 'data'),
+            onReceiveProgress: any(named: 'onReceiveProgress'),
+            onSendProgress: any(named: 'onSendProgress'),
+            queryParameters: any(named: 'queryParameters'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer((_) async => response);
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
@@ -415,16 +441,26 @@ void main() {
         final actual = await fresh.onError(error) as MockResponse;
         expect(refreshCallCount, 1);
         expect(actual, response);
-        verify(httpClient.request<dynamic>('/mock/path', options: request))
-            .called(1);
-        verify(tokenStorage.write(token)).called(1);
+        verify(() => options.baseUrl = 'https://test.com').called(1);
+        verify(
+          () => httpClient.request<dynamic>(
+            '/mock/path',
+            data: null,
+            queryParameters: <String, String>{},
+            cancelToken: null,
+            onSendProgress: null,
+            onReceiveProgress: null,
+            options: any(named: 'options'),
+          ),
+        ).called(1);
+        verify(() => tokenStorage.write(token)).called(1);
       });
     });
 
     group('close', () {
       test('shoud close streams', () async {
-        when(tokenStorage.read()).thenAnswer((_) async => null);
-        when(tokenStorage.write(any)).thenAnswer((_) async => null);
+        when(() => tokenStorage.read()).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -442,15 +478,6 @@ void main() {
           ]),
         );
       });
-    });
-  });
-
-  group('OAuth2Token', () {
-    test('throws AssertionError when accessToken is null', () {
-      expect(
-        () => OAuth2Token(accessToken: null),
-        throwsA(isA<AssertionError>()),
-      );
     });
   });
 }

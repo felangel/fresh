@@ -1,5 +1,4 @@
 import 'package:jsonplaceholder_client/jsonplaceholder_client.dart';
-import 'package:meta/meta.dart';
 
 enum UserAuthenticationStatus {
   unknown,
@@ -28,8 +27,8 @@ class UserRepository {
   }
 
   Future<void> signIn({
-    @required String username,
-    @required String password,
+    required String username,
+    required String password,
   }) async {
     await _jsonplaceholderClient.authenticate(
       username: username,

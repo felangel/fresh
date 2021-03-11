@@ -5,12 +5,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photos_repository/photos_repository.dart';
 
 class PhotosPage extends StatelessWidget {
-  const PhotosPage._({Key key}) : super(key: key);
+  const PhotosPage._({Key? key}) : super(key: key);
 
   static Route route() {
     return MaterialPageRoute(
       builder: (_) => BlocProvider(
-        create: (context) => PhotosBloc(context.repository<PhotosRepository>())
+        create: (context) => PhotosBloc(context.read<PhotosRepository>())
           ..add(PhotosRequested()),
         child: const PhotosPage._(),
       ),
@@ -29,14 +29,14 @@ class PhotosPage extends StatelessWidget {
           FloatingActionButton(
             heroTag: 0,
             child: const Icon(Icons.refresh),
-            onPressed: () => context.bloc<PhotosBloc>().add(PhotosRequested()),
+            onPressed: () => context.read<PhotosBloc>().add(PhotosRequested()),
           ),
           const SizedBox(height: 8),
           FloatingActionButton(
             heroTag: 1,
             child: const Icon(Icons.exit_to_app),
             onPressed: () {
-              context.bloc<AuthenticationBloc>().add(LoggedOut());
+              context.read<AuthenticationBloc>().add(LoggedOut());
             },
           ),
         ],
@@ -63,7 +63,7 @@ class Photos extends StatelessWidget {
 }
 
 class _PhotosGrid extends StatelessWidget {
-  const _PhotosGrid({Key key, @required this.photos}) : super(key: key);
+  const _PhotosGrid({Key? key, required this.photos}) : super(key: key);
 
   final List<String> photos;
 

@@ -3,12 +3,11 @@ import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:fresh_dio/fresh_dio.dart';
 import 'package:jsonplaceholder_client/jsonplaceholder_client.dart';
-import 'package:meta/meta.dart';
 
 class PhotosRequestFailureException implements Exception {}
 
 class JsonplaceholderClient {
-  JsonplaceholderClient({Dio httpClient})
+  JsonplaceholderClient({Dio? httpClient})
       : _httpClient = (httpClient ?? Dio())
           ..options.baseUrl = 'https://jsonplaceholder.typicode.com'
           ..interceptors.add(_fresh)
@@ -45,8 +44,8 @@ class JsonplaceholderClient {
       _fresh.authenticationStatus;
 
   Future<void> authenticate({
-    @required String username,
-    @required String password,
+    required String username,
+    required String password,
   }) async {
     await Future.delayed(const Duration(seconds: 1));
     await _fresh.setToken(
