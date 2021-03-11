@@ -19,7 +19,7 @@ A [dio](https://pub.dev/packages/dio) interceptor for built-in token refresh. Bu
 ```dart
 dio.interceptors.add(
   Fresh.oAuth2(
-    tokenStorage: InMemoryTokenStorage(),
+    tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
     refreshToken: (token, client) {
       // Perform refresh and return new token
     },

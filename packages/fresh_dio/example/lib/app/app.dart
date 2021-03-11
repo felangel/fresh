@@ -9,9 +9,9 @@ import 'package:user_repository/user_repository.dart';
 
 class App extends StatefulWidget {
   const App({
-    Key key,
-    @required this.photosRepository,
-    @required this.userRepository,
+    Key? key,
+    required this.photosRepository,
+    required this.userRepository,
   }) : super(key: key);
 
   final PhotosRepository photosRepository;
@@ -24,7 +24,7 @@ class App extends StatefulWidget {
 class _AppState extends State<App> {
   final _navigatorKey = GlobalKey<NavigatorState>();
 
-  NavigatorState get _navigator => _navigatorKey.currentState;
+  NavigatorState get _navigator => _navigatorKey.currentState!;
 
   @override
   Widget build(BuildContext context) {
@@ -34,9 +34,7 @@ class _AppState extends State<App> {
         RepositoryProvider.value(value: widget.userRepository),
       ],
       child: BlocProvider(
-        create: (context) {
-          return AuthenticationBloc(context.repository<UserRepository>());
-        },
+        create: (context) => AuthenticationBloc(context.read<UserRepository>()),
         child: MaterialApp(
           navigatorKey: _navigatorKey,
           builder: (context, child) {

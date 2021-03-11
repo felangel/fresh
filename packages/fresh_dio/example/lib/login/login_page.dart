@@ -13,7 +13,7 @@ class LoginPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Login')),
       body: BlocProvider(
-        create: (context) => LoginBloc(context.repository<UserRepository>()),
+        create: (context) => LoginBloc(context.read<UserRepository>()),
         child: Login(),
       ),
     );
@@ -26,7 +26,7 @@ class Login extends StatelessWidget {
     return BlocListener<LoginBloc, LoginState>(
       listener: (context, state) {
         if (state.status == LoginStatus.submissionFailure) {
-          Scaffold.of(context)
+          ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(SnackBar(content: const Text('Login Failure')));
         }
@@ -35,24 +35,24 @@ class Login extends StatelessWidget {
         children: <Widget>[
           TextField(
             onChanged: (value) {
-              context.bloc<LoginBloc>().add(LoginUsernameChanged(value));
+              context.read<LoginBloc>().add(LoginUsernameChanged(value));
             },
             decoration: InputDecoration(labelText: 'Username'),
           ),
           TextField(
             onChanged: (value) {
-              context.bloc<LoginBloc>().add(LoginPasswordChanged(value));
+              context.read<LoginBloc>().add(LoginPasswordChanged(value));
             },
             decoration: InputDecoration(labelText: 'Password'),
           ),
           BlocBuilder<LoginBloc, LoginState>(
             builder: (context, state) {
-              return RaisedButton(
+              return ElevatedButton(
                 child: state.status == LoginStatus.submissionInProgress
                     ? const CircularProgressIndicator()
                     : const Text('Login'),
                 onPressed: state.submissionEnabled
-                    ? () => context.bloc<LoginBloc>().add(LoginSubmitted())
+                    ? () => context.read<LoginBloc>().add(LoginSubmitted())
                     : null,
               );
             },

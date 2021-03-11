@@ -1,3 +1,9 @@
+# 0.3.0-nullsafety.0
+
+- **BREAKING**: update to dart 2.12 with null safety
+- **BREAKING**: update to `fresh: ^0.4.0`
+- **BREAKING**: update to `dio: ^4.0.0-beta7`
+
 # 0.2.0
 
 - **BREAKING**: update to `fresh: ^0.3.0`

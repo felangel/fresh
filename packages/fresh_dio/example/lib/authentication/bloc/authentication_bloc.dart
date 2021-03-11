@@ -10,18 +10,15 @@ part 'authentication_state.dart';
 class AuthenticationBloc
     extends Bloc<AuthenticationEvent, AuthenticationState> {
   AuthenticationBloc(UserRepository userRepository)
-      : assert(userRepository != null),
-        _userRepository = userRepository {
+      : _userRepository = userRepository,
+        super(AuthenticationUnknown()) {
     _subscription = _userRepository.authenticationStatus.listen((status) {
       add(AuthenticationStatusChanged(status));
     });
   }
 
-  StreamSubscription<UserAuthenticationStatus> _subscription;
+  late StreamSubscription<UserAuthenticationStatus> _subscription;
   final UserRepository _userRepository;
-
-  @override
-  AuthenticationState get initialState => AuthenticationUnknown();
 
   @override
   Stream<AuthenticationState> mapEventToState(
@@ -50,7 +47,7 @@ class AuthenticationBloc
 
   @override
   Future<void> close() async {
-    await _subscription?.cancel();
+    await _subscription.cancel();
     return super.close();
   }
 }

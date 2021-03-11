@@ -24,9 +24,9 @@ class LoginState extends Equatable {
       password.isNotEmpty;
 
   LoginState copyWith({
-    LoginStatus status,
-    String username,
-    String password,
+    LoginStatus? status,
+    String? username,
+    String? password,
   }) {
     return LoginState(
       status: status ?? this.status,

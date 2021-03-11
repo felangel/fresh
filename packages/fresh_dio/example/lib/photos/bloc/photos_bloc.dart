@@ -9,13 +9,10 @@ part 'photos_state.dart';
 
 class PhotosBloc extends Bloc<PhotosEvent, PhotosState> {
   PhotosBloc(PhotosRepository photosRepository)
-      : assert(photosRepository != null),
-        _photosRepository = photosRepository;
+      : _photosRepository = photosRepository,
+        super(PhotosLoadInProgress());
 
   final PhotosRepository _photosRepository;
-
-  @override
-  PhotosState get initialState => PhotosLoadInProgress();
 
   @override
   Stream<PhotosState> mapEventToState(

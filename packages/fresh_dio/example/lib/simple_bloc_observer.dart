@@ -1,8 +1,8 @@
 import 'package:bloc/bloc.dart';
 
-class SimpleBlocDelegate extends BlocDelegate {
+class SimpleBlocObserver extends BlocObserver {
   @override
-  void onEvent(Bloc bloc, Object event) {
+  void onEvent(Bloc bloc, Object? event) {
     print('onEvent ${bloc.runtimeType} $event');
     super.onEvent(bloc, event);
   }

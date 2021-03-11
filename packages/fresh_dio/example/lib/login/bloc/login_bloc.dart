@@ -9,13 +9,10 @@ part 'login_state.dart';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   LoginBloc(UserRepository userRepository)
-      : assert(userRepository != null),
-        _userRepository = userRepository;
+      : _userRepository = userRepository,
+        super(LoginState());
 
   final UserRepository _userRepository;
-
-  @override
-  LoginState get initialState => LoginState();
 
   @override
   Stream<LoginState> mapEventToState(
