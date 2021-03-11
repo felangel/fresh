@@ -34,5 +34,7 @@ jobs:
         run: dartanalyzer --fatal-infos --fatal-warnings lib test
       - name: Run tests
         run: pub run test_coverage
-      - name: Check Code Coverage
+      - name: Check Code Coverage        
         uses: VeryGoodOpenSource/very_good_coverage@v1.1.1
+        with:
+          path: packages/fresh/coverage/lcov.info
