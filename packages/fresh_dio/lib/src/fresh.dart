@@ -117,7 +117,7 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
 
     await setToken(refreshedToken);
     if (response != null) {
-      _httpClient..options.baseUrl = response.request.baseUrl;
+      _httpClient.options.baseUrl = response.request.baseUrl;
       return _httpClient.request<dynamic>(
         response.request.path,
         cancelToken: response.request.cancelToken,
