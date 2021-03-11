@@ -1,7 +1,7 @@
 import 'package:fresh/fresh.dart';
 
 class InMemoryTokenStorage implements TokenStorage<OAuth2Token> {
-  OAuth2Token _token;
+  OAuth2Token? _token;
 
   @override
   Future<void> delete() async {
@@ -9,7 +9,7 @@ class InMemoryTokenStorage implements TokenStorage<OAuth2Token> {
   }
 
   @override
-  Future<OAuth2Token> read() async {
+  Future<OAuth2Token?> read() async {
     return _token;
   }
 
