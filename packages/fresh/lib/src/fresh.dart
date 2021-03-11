@@ -80,7 +80,7 @@ class InMemoryTokenStorage<T> implements TokenStorage<T> {
   }
 
   @override
-  Future<void> write(T? token) async {
+  Future<void> write(T token) async {
     _token = token;
   }
 }
