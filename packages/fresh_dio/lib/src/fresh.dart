@@ -74,7 +74,10 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
   final RefreshToken<T> _refreshToken;
 
   @override
-  Future<dynamic> onRequest(RequestOptions options) async {
+  Future<dynamic> onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
     final currentToken = await token;
     final headers = currentToken != null
         ? _tokenHeader(currentToken)
@@ -84,7 +87,10 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
   }
 
   @override
-  Future<dynamic> onResponse(Response response) async {
+  Future<dynamic> onResponse(
+    Response response,
+    ResponseInterceptorHandler handler,
+  ) async {
     if (await token == null || !_shouldRefresh(response)) {
       return response;
     }
@@ -92,7 +98,10 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
   }
 
   @override
-  Future<dynamic> onError(DioError err) async {
+  Future<dynamic> onError(
+    DioError err,
+    ErrorInterceptorHandler handler,
+  ) async {
     final response = err.response;
     if (await token == null ||
         err.error is RevokeTokenException ||
@@ -109,38 +118,38 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
     } on RevokeTokenException catch (error) {
       await clearToken();
       return DioError(
+        requestOptions: response!.requestOptions,
         error: error,
-        request: response?.request,
         response: response,
       );
     }
 
     await setToken(refreshedToken);
     if (response != null) {
-      _httpClient.options.baseUrl = response.request.baseUrl;
+      _httpClient.options.baseUrl = response.requestOptions.baseUrl;
       return _httpClient.request<dynamic>(
-        response.request.path,
-        cancelToken: response.request.cancelToken,
-        data: response.request.data,
-        onReceiveProgress: response.request.onReceiveProgress,
-        onSendProgress: response.request.onSendProgress,
-        queryParameters: response.request.queryParameters,
+        response.requestOptions.path,
+        cancelToken: response.requestOptions.cancelToken,
+        data: response.requestOptions.data,
+        onReceiveProgress: response.requestOptions.onReceiveProgress,
+        onSendProgress: response.requestOptions.onSendProgress,
+        queryParameters: response.requestOptions.queryParameters,
         options: Options(
-          method: response.request.method,
-          sendTimeout: response.request.sendTimeout,
-          receiveTimeout: response.request.receiveTimeout,
-          extra: response.request.extra,
-          headers: response.request.headers,
-          responseType: response.request.responseType,
-          contentType: response.request.contentType,
-          validateStatus: response.request.validateStatus,
+          method: response.requestOptions.method,
+          sendTimeout: response.requestOptions.sendTimeout,
+          receiveTimeout: response.requestOptions.receiveTimeout,
+          extra: response.requestOptions.extra,
+          headers: response.requestOptions.headers,
+          responseType: response.requestOptions.responseType,
+          contentType: response.requestOptions.contentType,
+          validateStatus: response.requestOptions.validateStatus,
           receiveDataWhenStatusError:
-              response.request.receiveDataWhenStatusError,
-          followRedirects: response.request.followRedirects,
-          maxRedirects: response.request.maxRedirects,
-          requestEncoder: response.request.requestEncoder,
-          responseDecoder: response.request.responseDecoder,
-          listFormat: response.request.listFormat,
+              response.requestOptions.receiveDataWhenStatusError,
+          followRedirects: response.requestOptions.followRedirects,
+          maxRedirects: response.requestOptions.maxRedirects,
+          requestEncoder: response.requestOptions.requestEncoder,
+          responseDecoder: response.requestOptions.responseDecoder,
+          listFormat: response.requestOptions.listFormat,
         ),
       );
     }

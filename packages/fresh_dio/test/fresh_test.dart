@@ -10,11 +10,20 @@ class MockToken extends Mock implements OAuth2Token {}
 
 class MockRequestOptions extends Mock implements RequestOptions {}
 
+class MockRequestInterceptorHandler extends Mock
+    implements RequestInterceptorHandler {}
+
 class MockOptions extends Mock implements BaseOptions {}
 
 class MockResponse<T> extends Mock implements Response<T> {}
 
+class MockResponseInterceptorHandler extends Mock
+    implements ResponseInterceptorHandler {}
+
 class MockDioError extends Mock implements DioError {}
+
+class MockErrorInterceptorHandler extends Mock
+    implements ErrorInterceptorHandler {}
 
 class MockHttpClient extends Mock implements Dio {}
 
@@ -25,6 +34,9 @@ Future<OAuth2Token> emptyRefreshToken(OAuth2Token? _, Dio __) async {
 void main() {
   group('Fresh', () {
     late TokenStorage<OAuth2Token> tokenStorage;
+    late RequestInterceptorHandler requestHandler;
+    late ResponseInterceptorHandler responseHandler;
+    late ErrorInterceptorHandler errorHandler;
 
     setUpAll(() {
       registerFallbackValue<OAuth2Token>(MockToken());
@@ -34,6 +46,9 @@ void main() {
 
     setUp(() {
       tokenStorage = MockTokenStorage<OAuth2Token>();
+      requestHandler = MockRequestInterceptorHandler();
+      responseHandler = MockResponseInterceptorHandler();
+      errorHandler = MockErrorInterceptorHandler();
     });
 
     group('configure token', () {
@@ -100,7 +115,8 @@ void main() {
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
-        final actual = await fresh.onRequest(options) as RequestOptions;
+        final actual =
+            await fresh.onRequest(options, requestHandler) as RequestOptions;
         expect(
           actual.headers,
           {
@@ -121,7 +137,8 @@ void main() {
           refreshToken: emptyRefreshToken,
           tokenHeader: (_) => {'custom-header': 'custom-token'},
         );
-        final actual = await fresh.onRequest(options) as RequestOptions;
+        final actual =
+            await fresh.onRequest(options, requestHandler) as RequestOptions;
         expect(
           actual.headers,
           {
@@ -141,7 +158,8 @@ void main() {
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
-        final actual = await fresh.onRequest(options) as RequestOptions;
+        final actual =
+            await fresh.onRequest(options, requestHandler) as RequestOptions;
         expect(
           actual.headers,
           {
@@ -162,7 +180,8 @@ void main() {
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
-        final actual = await fresh.onResponse(response) as MockResponse;
+        final actual =
+            await fresh.onResponse(response, responseHandler) as MockResponse;
         expect(actual, response);
       });
 
@@ -177,7 +196,8 @@ void main() {
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
-        final actual = await fresh.onResponse(response) as MockResponse;
+        final actual =
+            await fresh.onResponse(response, responseHandler) as MockResponse;
         expect(actual, response);
       });
 
@@ -193,7 +213,8 @@ void main() {
           refreshToken: emptyRefreshToken,
           shouldRefresh: (_) => false,
         );
-        final actual = await fresh.onResponse(response) as MockResponse;
+        final actual =
+            await fresh.onResponse(response, responseHandler) as MockResponse;
         expect(actual, response);
       });
 
@@ -222,8 +243,8 @@ void main() {
         when(() => request.listFormat).thenReturn(ListFormat.csv);
         final response = MockResponse<dynamic>();
         when(() => response.statusCode).thenReturn(401);
-        when(() => response.request).thenReturn(request);
-        when(() => response.request).thenReturn(request);
+        when(() => response.requestOptions).thenReturn(request);
+        when(() => response.requestOptions).thenReturn(request);
         final options = MockOptions();
         final httpClient = MockHttpClient();
         when(() => httpClient.options).thenReturn(options);
@@ -255,7 +276,8 @@ void main() {
             const <AuthenticationStatus>[AuthenticationStatus.authenticated],
           ),
         );
-        final actual = await fresh.onResponse(response) as MockResponse;
+        final actual =
+            await fresh.onResponse(response, responseHandler) as MockResponse;
         expect(refreshCallCount, 1);
         expect(actual, response);
         verify(() => options.baseUrl = 'https://test.com').called(1);
@@ -283,7 +305,7 @@ void main() {
         when(tokenStorage.delete).thenAnswer((_) async => null);
         final response = MockResponse<dynamic>();
         final request = MockRequestOptions();
-        when(() => response.request).thenReturn(request);
+        when(() => response.requestOptions).thenReturn(request);
         when(() => response.statusCode).thenReturn(401);
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
@@ -301,7 +323,8 @@ void main() {
             AuthenticationStatus.authenticated,
           ]),
         );
-        final actual = await fresh.onResponse(response) as DioError;
+        final actual =
+            await fresh.onResponse(response, responseHandler) as DioError;
         await expectLater(
           fresh.authenticationStatus,
           emitsInOrder(const <AuthenticationStatus>[
@@ -309,7 +332,7 @@ void main() {
           ]),
         );
         expect(refreshCallCount, 1);
-        expect(actual.request, request);
+        expect(actual.requestOptions, request);
         expect(actual.response, response);
         expect(actual.error, isA<RevokeTokenException>());
         verify(tokenStorage.delete).called(1);
@@ -330,7 +353,8 @@ void main() {
           ]),
         );
         final response = MockResponse<dynamic>();
-        final actual = await fresh.onResponse(response) as MockResponse;
+        final actual =
+            await fresh.onResponse(response, responseHandler) as MockResponse;
         expect(actual, response);
       });
     });
@@ -344,7 +368,7 @@ void main() {
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
-        final actual = await fresh.onError(error) as MockDioError;
+        final actual = await fresh.onError(error, errorHandler) as MockDioError;
         expect(actual, error);
       });
 
@@ -358,7 +382,7 @@ void main() {
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
-        final actual = await fresh.onError(error) as MockDioError;
+        final actual = await fresh.onError(error, errorHandler) as MockDioError;
         expect(actual, error);
       });
 
@@ -373,7 +397,7 @@ void main() {
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
-        final actual = await fresh.onError(error) as MockDioError;
+        final actual = await fresh.onError(error, errorHandler) as MockDioError;
         expect(actual, error);
       });
 
@@ -404,7 +428,7 @@ void main() {
         final response = MockResponse<dynamic>();
         when(() => response.statusCode).thenReturn(401);
         when(() => error.response).thenReturn(response);
-        when(() => response.request).thenReturn(request);
+        when(() => response.requestOptions).thenReturn(request);
         final options = MockOptions();
         final httpClient = MockHttpClient();
         when(() => httpClient.options).thenReturn(options);
@@ -438,7 +462,7 @@ void main() {
             ],
           ),
         );
-        final actual = await fresh.onError(error) as MockResponse;
+        final actual = await fresh.onError(error, errorHandler) as MockResponse;
         expect(refreshCallCount, 1);
         expect(actual, response);
         verify(() => options.baseUrl = 'https://test.com').called(1);
