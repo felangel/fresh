@@ -5,8 +5,10 @@ import 'package:graphql/client.dart';
 import 'package:http/http.dart' as http;
 import 'package:pedantic/pedantic.dart';
 
+/// Signature for `shouldRefresh` on [FreshLink].
 typedef ShouldRefresh = bool Function(Response);
 
+/// Signature for `refreshToken` on [FreshLink].
 typedef RefreshToken<T> = Future<T?> Function(T?, http.Client);
 
 /// {@template fresh_link}
