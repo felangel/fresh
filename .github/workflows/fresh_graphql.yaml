@@ -23,7 +23,7 @@ jobs:
         working-directory: packages/fresh_graphql
     runs-on: ubuntu-latest
     container:
-      image: google/dart:2.10.0
+      image: google/dart:2.12.2
     steps:
       - uses: actions/checkout@v2
       - name: Install Dependencies
