@@ -9,7 +9,7 @@ import 'package:pedantic/pedantic.dart';
 typedef ShouldRefresh = bool Function(Response);
 
 /// Signature for `refreshToken` on [FreshLink].
-typedef RefreshToken<T> = Future<T?> Function(T?, http.Client);
+typedef RefreshToken<T> = Future<T> Function(T, http.Client);
 
 /// {@template fresh_link}
 /// A GraphQL Link which handles manages an authentication token automatically.
@@ -39,7 +39,7 @@ class FreshLink<T> extends Link with FreshMixin<T> {
     required ShouldRefresh shouldRefresh,
     TokenHeaderBuilder<T?>? tokenHeader,
   })  : _refreshToken = refreshToken,
-        _tokenHeader = tokenHeader,
+        _tokenHeader = (tokenHeader ?? (_) => <String, String>{}),
         _shouldRefresh = shouldRefresh {
     this.tokenStorage = tokenStorage;
   }
@@ -80,17 +80,14 @@ class FreshLink<T> extends Link with FreshMixin<T> {
   }
 
   final RefreshToken<T?> _refreshToken;
-  final TokenHeaderBuilder<T?>? _tokenHeader;
+  final TokenHeaderBuilder<T?> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
 
   @override
-  Stream<Response> request(
-    Request request, [
-    NextLink? forward,
-  ]) async* {
+  Stream<Response> request(Request request, [NextLink? forward]) async* {
     final currentToken = await token;
-    final tokenHeaders = currentToken != null && _tokenHeader != null
-        ? _tokenHeader!(currentToken)
+    final tokenHeaders = currentToken != null
+        ? _tokenHeader(currentToken)
         : const <String, String>{};
 
     request.updateContextEntry<HttpLinkHeaders>(
@@ -111,7 +108,7 @@ class FreshLink<T> extends Link with FreshMixin<T> {
               http.Client(),
             );
             await setToken(refreshedToken);
-            final tokenHeaders = _tokenHeader!(refreshedToken);
+            final tokenHeaders = _tokenHeader(refreshedToken);
             request.updateContextEntry<HttpLinkHeaders>(
               (headers) => HttpLinkHeaders(
                 headers: {
