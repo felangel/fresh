@@ -83,7 +83,7 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
         ? _tokenHeader(currentToken)
         : const <String, String>{};
     options.headers.addAll(headers);
-    return options;
+    handler.next(options);
   }
 
   @override
@@ -92,9 +92,14 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
     ResponseInterceptorHandler handler,
   ) async {
     if (await token == null || !_shouldRefresh(response)) {
-      return response;
+      return handler.next(response);
     }
-    return _tryRefresh(response);
+    try {
+      final refreshResponse = await _tryRefresh(response);
+      handler.resolve(refreshResponse);
+    } on DioError catch (error) {
+      handler.reject(error);
+    }
   }
 
   @override
@@ -103,56 +108,63 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
     ErrorInterceptorHandler handler,
   ) async {
     final response = err.response;
-    if (await token == null ||
+    if (response == null ||
+        await token == null ||
         err.error is RevokeTokenException ||
         !_shouldRefresh(response)) {
-      return err;
+      return handler.next(err);
     }
-    return _tryRefresh(response);
+    try {
+      final refreshResponse = await _tryRefresh(response);
+      handler.resolve(refreshResponse);
+    } on DioError catch (error) {
+      handler.next(error);
+    }
   }
 
-  Future<dynamic> _tryRefresh(Response? response) async {
-    T refreshedToken;
+  Future<Response<dynamic>> _tryRefresh(Response response) async {
+    late final T refreshedToken;
     try {
+      _httpClient.lock();
       refreshedToken = await _refreshToken(await token, _httpClient);
     } on RevokeTokenException catch (error) {
       await clearToken();
-      return DioError(
-        requestOptions: response!.requestOptions,
+      throw DioError(
+        requestOptions: response.requestOptions,
         error: error,
         response: response,
       );
+    } finally {
+      _httpClient.unlock();
     }
 
     await setToken(refreshedToken);
-    if (response != null) {
-      _httpClient.options.baseUrl = response.requestOptions.baseUrl;
-      return _httpClient.request<dynamic>(
-        response.requestOptions.path,
-        cancelToken: response.requestOptions.cancelToken,
-        data: response.requestOptions.data,
-        onReceiveProgress: response.requestOptions.onReceiveProgress,
-        onSendProgress: response.requestOptions.onSendProgress,
-        queryParameters: response.requestOptions.queryParameters,
-        options: Options(
-          method: response.requestOptions.method,
-          sendTimeout: response.requestOptions.sendTimeout,
-          receiveTimeout: response.requestOptions.receiveTimeout,
-          extra: response.requestOptions.extra,
-          headers: response.requestOptions.headers,
-          responseType: response.requestOptions.responseType,
-          contentType: response.requestOptions.contentType,
-          validateStatus: response.requestOptions.validateStatus,
-          receiveDataWhenStatusError:
-              response.requestOptions.receiveDataWhenStatusError,
-          followRedirects: response.requestOptions.followRedirects,
-          maxRedirects: response.requestOptions.maxRedirects,
-          requestEncoder: response.requestOptions.requestEncoder,
-          responseDecoder: response.requestOptions.responseDecoder,
-          listFormat: response.requestOptions.listFormat,
-        ),
-      );
-    }
+    _httpClient.options.baseUrl = response.requestOptions.baseUrl;
+    return await _httpClient.request<dynamic>(
+      response.requestOptions.path,
+      cancelToken: response.requestOptions.cancelToken,
+      data: response.requestOptions.data,
+      onReceiveProgress: response.requestOptions.onReceiveProgress,
+      onSendProgress: response.requestOptions.onSendProgress,
+      queryParameters: response.requestOptions.queryParameters,
+      options: Options(
+        method: response.requestOptions.method,
+        sendTimeout: response.requestOptions.sendTimeout,
+        receiveTimeout: response.requestOptions.receiveTimeout,
+        extra: response.requestOptions.extra,
+        headers: response.requestOptions.headers,
+        responseType: response.requestOptions.responseType,
+        contentType: response.requestOptions.contentType,
+        validateStatus: response.requestOptions.validateStatus,
+        receiveDataWhenStatusError:
+            response.requestOptions.receiveDataWhenStatusError,
+        followRedirects: response.requestOptions.followRedirects,
+        maxRedirects: response.requestOptions.maxRedirects,
+        requestEncoder: response.requestOptions.requestEncoder,
+        responseDecoder: response.requestOptions.responseDecoder,
+        listFormat: response.requestOptions.listFormat,
+      ),
+    );
   }
 
   static bool _defaultShouldRefresh(Response? response) {
