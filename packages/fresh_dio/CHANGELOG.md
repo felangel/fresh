@@ -1,3 +1,8 @@
+# 0.3.0
+
+- **BREAKING**: update to `dio: ^4.0.0`
+- fix: queue concurrent requests during refresh
+
 # 0.3.0-nullsafety.0
 
 - **BREAKING**: update to dart 2.12 with null safety
