@@ -53,8 +53,11 @@ void main() {
           refreshToken: (_, __) async => null,
           shouldRefresh: (_) => false,
         );
+        late MockRequest updatedRequest;
         await expectLater(
-          freshLink.request(request, (operation) async* {}),
+          freshLink.request(request, (operation) async* {
+            updatedRequest = operation as MockRequest;
+          }),
           emitsDone,
         );
         await expectLater(
@@ -66,6 +69,7 @@ void main() {
           ),
         );
         expect(request.headers, {'authorization': 'bearer accessToken'});
+        expect(updatedRequest.headers, {'authorization': 'bearer accessToken'});
         verify(() => tokenStorage.read()).called(1);
       });
 
@@ -81,11 +85,15 @@ void main() {
           tokenHeader: (token) =>
               {'custom_header': 'custom ${token?.accessToken}'},
         );
+        late MockRequest updatedRequest;
         await expectLater(
-          freshLink.request(request, (operation) async* {}),
+          freshLink.request(request, (operation) async* {
+            updatedRequest = operation as MockRequest;
+          }),
           emitsDone,
         );
         expect(request.headers, {'custom_header': 'custom accessToken'});
+        expect(updatedRequest.headers, {'custom_header': 'custom accessToken'});
         verify(() => tokenStorage.read()).called(1);
       });
 

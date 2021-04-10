@@ -90,7 +90,7 @@ class FreshLink<T> extends Link with FreshMixin<T> {
         ? _tokenHeader(currentToken)
         : const <String, String>{};
 
-    request.updateContextEntry<HttpLinkHeaders>(
+    final updatedRequest = request.updateContextEntry<HttpLinkHeaders>(
       (headers) => HttpLinkHeaders(
         headers: {
           ...headers?.headers ?? <String, String>{},
@@ -99,7 +99,7 @@ class FreshLink<T> extends Link with FreshMixin<T> {
     );
 
     if (forward != null) {
-      await for (final result in forward(request)) {
+      await for (final result in forward(updatedRequest)) {
         final nextToken = await token;
         if (nextToken != null && _shouldRefresh(result)) {
           try {
@@ -109,14 +109,13 @@ class FreshLink<T> extends Link with FreshMixin<T> {
             );
             await setToken(refreshedToken);
             final tokenHeaders = _tokenHeader(refreshedToken);
-            request.updateContextEntry<HttpLinkHeaders>(
+            yield* forward(request.updateContextEntry<HttpLinkHeaders>(
               (headers) => HttpLinkHeaders(
                 headers: {
                   ...headers?.headers ?? <String, String>{},
                 }..addAll(tokenHeaders),
               ),
-            );
-            yield* forward(request);
+            ));
           } on RevokeTokenException catch (_) {
             unawaited(revokeToken());
             yield result;
