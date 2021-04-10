@@ -49,7 +49,7 @@ class JsonplaceholderClient {
   }) async {
     await Future.delayed(const Duration(seconds: 1));
     await _fresh.setToken(
-      OAuth2Token(
+      const OAuth2Token(
         accessToken: 'initial_access_token',
         refreshToken: 'initial_refresh_token',
       ),

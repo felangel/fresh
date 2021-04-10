@@ -28,7 +28,7 @@ class Login extends StatelessWidget {
         if (state.status == LoginStatus.submissionFailure) {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: const Text('Login Failure')));
+            ..showSnackBar(const SnackBar(content: Text('Login Failure')));
         }
       },
       child: Column(
@@ -37,13 +37,13 @@ class Login extends StatelessWidget {
             onChanged: (value) {
               context.read<LoginBloc>().add(LoginUsernameChanged(value));
             },
-            decoration: InputDecoration(labelText: 'Username'),
+            decoration: const InputDecoration(labelText: 'Username'),
           ),
           TextField(
             onChanged: (value) {
               context.read<LoginBloc>().add(LoginPasswordChanged(value));
             },
-            decoration: InputDecoration(labelText: 'Password'),
+            decoration: const InputDecoration(labelText: 'Password'),
           ),
           BlocBuilder<LoginBloc, LoginState>(
             builder: (context, state) {
