@@ -1,3 +1,7 @@
+# 0.5.1
+
+- fix: incorrect usage of `updateContextEntry`
+
 # 0.5.0
 
 - **BREAKING** update to null safety (Dart v2.12.0)
