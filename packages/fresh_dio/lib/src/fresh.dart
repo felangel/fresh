@@ -150,7 +150,7 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
         receiveTimeout: response.requestOptions.receiveTimeout,
         extra: response.requestOptions.extra,
         headers: response.requestOptions.headers
-            ..addAll(_tokenHeader(refreshedToken)),
+          ..addAll(_tokenHeader(refreshedToken)),
         responseType: response.requestOptions.responseType,
         contentType: response.requestOptions.contentType,
         validateStatus: response.requestOptions.validateStatus,
