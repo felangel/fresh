@@ -1,3 +1,7 @@
+# 0.3.1
+
+- fix: remove httpClient lock and add token into headers to refresh request
+
 # 0.3.0
 
 - **BREAKING**: update to `dio: ^4.0.0`
