@@ -1,6 +1,6 @@
 # 0.3.1
 
-- fix: remove httpClient lock and add token into headers to refresh request
+- fix: remove httpClient lock and add token header to refresh
 
 # 0.3.0
 
