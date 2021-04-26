@@ -125,7 +125,6 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
   Future<Response<dynamic>> _tryRefresh(Response response) async {
     late final T refreshedToken;
     try {
-      _httpClient.lock();
       refreshedToken = await _refreshToken(await token, _httpClient);
     } on RevokeTokenException catch (error) {
       await clearToken();
@@ -134,8 +133,6 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
         error: error,
         response: response,
       );
-    } finally {
-      _httpClient.unlock();
     }
 
     await setToken(refreshedToken);
@@ -152,7 +149,8 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
         sendTimeout: response.requestOptions.sendTimeout,
         receiveTimeout: response.requestOptions.receiveTimeout,
         extra: response.requestOptions.extra,
-        headers: response.requestOptions.headers,
+        headers: response.requestOptions.headers
+            ..addAll(_tokenHeader(refreshedToken)),
         responseType: response.requestOptions.responseType,
         contentType: response.requestOptions.contentType,
         validateStatus: response.requestOptions.validateStatus,
