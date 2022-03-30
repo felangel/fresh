@@ -432,7 +432,7 @@ void main() {
         when(() => request.followRedirects).thenReturn(false);
         when(() => request.maxRedirects).thenReturn(0);
         when(() => request.listFormat).thenReturn(ListFormat.csv);
-        final response = MockResponse();
+        final response = MockResponse<dynamic>();
         when(() => response.requestOptions).thenReturn(request);
         when(() => error.response).thenReturn(response);
         await fresh.onError(error, errorHandler);
