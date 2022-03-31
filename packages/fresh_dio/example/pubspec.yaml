@@ -7,9 +7,9 @@ environment:
   sdk: ">=2.12.0-0 <3.0.0"
 
 dependencies:
+  equatable: ^2.0.0
   flutter:
     sdk: flutter
-  equatable: ^2.0.0
   flutter_bloc: ^7.0.0
   jsonplaceholder_client:
     path: packages/jsonplaceholder_client
