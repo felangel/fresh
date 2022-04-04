@@ -31,8 +31,8 @@ void main() async {
     cache: GraphQLCache(),
     link: Link.from([freshLink, HttpLink('https://api.graphql.jobs')]),
   );
-  final result = await graphQLClient.query(
-    QueryOptions(document: gql(getJobsQuery)),
+  final result = await graphQLClient.query<dynamic>(
+    QueryOptions<dynamic>(document: gql(getJobsQuery)),
   );
   print(result.data);
   exit(0);

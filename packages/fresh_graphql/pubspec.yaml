@@ -11,11 +11,9 @@ environment:
 
 dependencies:
   fresh: ^0.4.0
-  graphql: ^5.0.0-nullsafety.3
+  graphql: ^5.0.0
   http: ^0.13.1
-  pedantic: ^1.11.0
 
 dev_dependencies:
-  coverage: ^1.0.2
-  mocktail: ^0.1.1
+  mocktail: ^0.3.0
   test: ^1.16.8

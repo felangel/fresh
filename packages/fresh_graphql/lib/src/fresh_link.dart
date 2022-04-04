@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:fresh/fresh.dart';
 import 'package:graphql/client.dart';
 import 'package:http/http.dart' as http;
-import 'package:pedantic/pedantic.dart';
 
 /// Signature for `shouldRefresh` on [FreshLink].
 typedef ShouldRefresh = bool Function(Response);

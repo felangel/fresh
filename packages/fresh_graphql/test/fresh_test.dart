@@ -30,7 +30,7 @@ Future<T?> emptyRefreshToken<T>(dynamic _, dynamic __) async => null;
 
 void main() {
   setUpAll(() {
-    registerFallbackValue<OAuth2Token>(MockToken());
+    registerFallbackValue(MockToken());
   });
 
   group('FreshLink', () {
