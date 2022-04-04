@@ -1,3 +1,8 @@
+# 0.4.1
+
+- chore: upgrade dev dependencies
+  - upgrade to `mocktail ^0.3.0`
+
 # 0.4.0
 
 - **BREAKING**: Migrate to Dart 2.12.0 with Null Safety
