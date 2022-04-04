@@ -1,3 +1,9 @@
+# 0.5.2
+
+- feat: upgrade dependencies
+  - `graphql: ^5.0.0`
+  - `mocktail: ^0.3.0` (dev)
+
 # 0.5.1
 
 - fix: incorrect usage of `updateContextEntry`
