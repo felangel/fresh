@@ -1,3 +1,10 @@
+# 0.3.2
+
+- feat: add httpClient parameter to Fresh.oAuth2 ([#60](https://github.com/felangel/fresh/issues/60))
+- chore: upgrade dev dependencies
+  - `mocktail: ^0.3.0`
+  - `very_good_analysis: ^2.4.0`
+
 # 0.3.1
 
 - fix: remove httpClient lock and add token header to refresh
