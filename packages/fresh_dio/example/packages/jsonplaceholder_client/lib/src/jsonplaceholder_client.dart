@@ -11,19 +11,16 @@ class JsonplaceholderClient {
       : _httpClient = (httpClient ?? Dio())
           ..options.baseUrl = 'https://jsonplaceholder.typicode.com'
           ..interceptors.add(_fresh)
-          ..interceptors.add(LogInterceptor(
-            request: false,
-            requestBody: false,
-            responseBody: false,
-            responseHeader: false,
-          ));
+          ..interceptors.add(
+            LogInterceptor(request: false, responseHeader: false),
+          );
 
   static var _refreshCount = 0;
   static final _fresh = Fresh.oAuth2(
     tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
     refreshToken: (token, client) async {
       print('refreshing token...');
-      await Future.delayed(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(seconds: 1));
       if (Random().nextInt(3) == 0) {
         print('token revoked!');
         throw RevokeTokenException();
@@ -47,7 +44,7 @@ class JsonplaceholderClient {
     required String username,
     required String password,
   }) async {
-    await Future.delayed(const Duration(seconds: 1));
+    await Future<void>.delayed(const Duration(seconds: 1));
     await _fresh.setToken(
       const OAuth2Token(
         accessToken: 'initial_access_token',
@@ -57,17 +54,19 @@ class JsonplaceholderClient {
   }
 
   Future<void> unauthenticate() async {
-    await Future.delayed(const Duration(seconds: 1));
+    await Future<void>.delayed(const Duration(seconds: 1));
     await _fresh.setToken(null);
   }
 
   Future<List<Photo>> photos() async {
-    final response = await _httpClient.get('/photos');
+    final response = await _httpClient.get<dynamic>('/photos');
 
     if (response.statusCode != 200) {
       throw PhotosRequestFailureException();
     }
 
-    return (response.data as List).map((item) => Photo.fromJson(item)).toList();
+    return (response.data as List)
+        .map((dynamic item) => Photo.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 }

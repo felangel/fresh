@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:user_repository/user_repository.dart';
-import 'package:very_good_analysis/very_good_analysis.dart';
 
 part 'authentication_event.dart';
 part 'authentication_state.dart';
@@ -16,34 +15,33 @@ class AuthenticationBloc
     _subscription = _userRepository.authenticationStatus.listen((status) {
       add(AuthenticationStatusChanged(status));
     });
+
+    on<AuthenticationStatusChanged>(_onAuthenticationStatusChanged);
+    on<LoggedOut>(_onLoggedOut);
   }
 
   late StreamSubscription<UserAuthenticationStatus> _subscription;
   final UserRepository _userRepository;
 
-  @override
-  Stream<AuthenticationState> mapEventToState(
-    AuthenticationEvent event,
-  ) async* {
-    if (event is AuthenticationStatusChanged) {
-      yield _mapAuthenticationStatusChangedToState(event);
-    } else if (event is LoggedOut) {
-      unawaited(_userRepository.signOut());
-    }
-  }
-
-  AuthenticationState _mapAuthenticationStatusChangedToState(
+  void _onAuthenticationStatusChanged(
     AuthenticationStatusChanged event,
+    Emitter<AuthenticationState> emit,
   ) {
     switch (event.authenticationStatus) {
       case UserAuthenticationStatus.signedIn:
-        return AuthenticationAuthenticated();
+        return emit(AuthenticationAuthenticated());
       case UserAuthenticationStatus.signedOut:
-        return AuthenticationUnauthenticated();
+        return emit(AuthenticationUnauthenticated());
       case UserAuthenticationStatus.unknown:
-      default:
-        return AuthenticationUnknown();
+        return emit(AuthenticationUnknown());
     }
+  }
+
+  void _onLoggedOut(
+    LoggedOut event,
+    Emitter<AuthenticationState> emit,
+  ) {
+    _userRepository.signOut().ignore();
   }
 
   @override

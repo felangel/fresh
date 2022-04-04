@@ -5,7 +5,7 @@ import 'package:fresh_example/splash/splash_page.dart';
 void main() {
   group('SplashPage', () {
     testWidgets('should render "Splash Page"', (tester) async {
-      await tester.pumpWidget(MaterialApp(home: SplashPage()));
+      await tester.pumpWidget(const MaterialApp(home: SplashPage()));
       expect(find.text('Splash Page'), findsOneWidget);
     });
   });
