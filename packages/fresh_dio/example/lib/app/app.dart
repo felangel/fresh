@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fresh_example/authentication/bloc/authentication_bloc.dart';
 import 'package:fresh_example/login/login_page.dart';
 import 'package:fresh_example/photos/photos_page.dart';
 import 'package:fresh_example/splash/splash_page.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photos_repository/photos_repository.dart';
 import 'package:user_repository/user_repository.dart';
 
@@ -18,7 +18,7 @@ class App extends StatefulWidget {
   final UserRepository userRepository;
 
   @override
-  _AppState createState() => _AppState();
+  State<App> createState() => _AppState();
 }
 
 class _AppState extends State<App> {
@@ -41,12 +41,12 @@ class _AppState extends State<App> {
             return BlocListener<AuthenticationBloc, AuthenticationState>(
               listener: (context, state) {
                 if (state is AuthenticationAuthenticated) {
-                  _navigator.pushAndRemoveUntil(
+                  _navigator.pushAndRemoveUntil<void>(
                     PhotosPage.route(),
                     (_) => false,
                   );
                 } else if (state is AuthenticationUnauthenticated) {
-                  _navigator.pushAndRemoveUntil(
+                  _navigator.pushAndRemoveUntil<void>(
                     LoginPage.route(),
                     (_) => false,
                   );

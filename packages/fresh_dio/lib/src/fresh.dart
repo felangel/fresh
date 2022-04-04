@@ -57,15 +57,16 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
     TokenHeaderBuilder<OAuth2Token>? tokenHeader,
   }) {
     return Fresh<OAuth2Token>(
-        refreshToken: refreshToken,
-        tokenStorage: tokenStorage,
-        shouldRefresh: shouldRefresh,
-        tokenHeader: tokenHeader ??
-            (token) {
-              return {
-                'authorization': '${token.tokenType} ${token.accessToken}',
-              };
-            });
+      refreshToken: refreshToken,
+      tokenStorage: tokenStorage,
+      shouldRefresh: shouldRefresh,
+      tokenHeader: tokenHeader ??
+          (token) {
+            return {
+              'authorization': '${token.tokenType} ${token.accessToken}',
+            };
+          },
+    );
   }
 
   final Dio _httpClient;
@@ -137,7 +138,7 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
 
     await setToken(refreshedToken);
     _httpClient.options.baseUrl = response.requestOptions.baseUrl;
-    return await _httpClient.request<dynamic>(
+    return _httpClient.request<dynamic>(
       response.requestOptions.path,
       cancelToken: response.requestOptions.cancelToken,
       data: response.requestOptions.data,

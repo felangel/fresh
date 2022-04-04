@@ -10,29 +10,41 @@ part 'login_state.dart';
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
   LoginBloc(UserRepository userRepository)
       : _userRepository = userRepository,
-        super(const LoginState());
+        super(const LoginState()) {
+    on<LoginUsernameChanged>(_onLoginUsernameChanged);
+    on<LoginPasswordChanged>(_onLoginPasswordChanged);
+    on<LoginSubmitted>(_onLoginSubmitted);
+  }
 
   final UserRepository _userRepository;
 
-  @override
-  Stream<LoginState> mapEventToState(
-    LoginEvent event,
-  ) async* {
-    if (event is LoginUsernameChanged) {
-      yield state.copyWith(username: event.username);
-    } else if (event is LoginPasswordChanged) {
-      yield state.copyWith(password: event.password);
-    } else if (event is LoginSubmitted) {
-      yield state.copyWith(status: LoginStatus.submissionInProgress);
-      try {
-        await _userRepository.signIn(
-          username: state.username,
-          password: state.password,
-        );
-        yield state.copyWith(status: LoginStatus.submissionSuccess);
-      } on Exception catch (_) {
-        yield state.copyWith(status: LoginStatus.submissionFailure);
-      }
+  void _onLoginUsernameChanged(
+    LoginUsernameChanged event,
+    Emitter<LoginState> emit,
+  ) {
+    emit(state.copyWith(username: event.username));
+  }
+
+  void _onLoginPasswordChanged(
+    LoginPasswordChanged event,
+    Emitter<LoginState> emit,
+  ) {
+    emit(state.copyWith(password: event.password));
+  }
+
+  Future<void> _onLoginSubmitted(
+    LoginSubmitted event,
+    Emitter<LoginState> emit,
+  ) async {
+    emit(state.copyWith(status: LoginStatus.submissionInProgress));
+    try {
+      await _userRepository.signIn(
+        username: state.username,
+        password: state.password,
+      );
+      emit(state.copyWith(status: LoginStatus.submissionSuccess));
+    } catch (_) {
+      emit(state.copyWith(status: LoginStatus.submissionFailure));
     }
   }
 }

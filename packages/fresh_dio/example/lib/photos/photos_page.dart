@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fresh_example/authentication/bloc/authentication_bloc.dart';
 import 'package:fresh_example/photos/bloc/photos_bloc.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:photos_repository/photos_repository.dart';
 
 class PhotosPage extends StatelessWidget {
   const PhotosPage._({Key? key}) : super(key: key);
 
   static Route route() {
-    return MaterialPageRoute(
+    return MaterialPageRoute<void>(
       builder: (_) => BlocProvider(
         create: (context) => PhotosBloc(context.read<PhotosRepository>())
           ..add(PhotosRequested()),
@@ -21,7 +21,7 @@ class PhotosPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Photos')),
-      body: Photos(),
+      body: const Photos(),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.end,
@@ -46,6 +46,8 @@ class PhotosPage extends StatelessWidget {
 }
 
 class Photos extends StatelessWidget {
+  const Photos({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<PhotosBloc, PhotosState>(
@@ -72,7 +74,6 @@ class _PhotosGrid extends StatelessWidget {
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 150,
-        childAspectRatio: 1,
       ),
       itemBuilder: (context, index) => Image.network(photos[index]),
     );
