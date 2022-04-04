@@ -53,12 +53,14 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
     required TokenStorage<OAuth2Token> tokenStorage,
     required RefreshToken<OAuth2Token> refreshToken,
     ShouldRefresh? shouldRefresh,
+    Dio? httpClient,
     TokenHeaderBuilder<OAuth2Token>? tokenHeader,
   }) {
     return Fresh<OAuth2Token>(
       refreshToken: refreshToken,
       tokenStorage: tokenStorage,
       shouldRefresh: shouldRefresh,
+      httpClient: httpClient,
       tokenHeader: tokenHeader ??
           (token) {
             return {
