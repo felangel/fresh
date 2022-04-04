@@ -34,7 +34,7 @@ jobs:
         run: dart format --set-exit-if-changed .
 
       - name: Analyze
-        run: dart analyze --fatal-infos --fatal-warnings .
+        run: dart analyze --fatal-infos --fatal-warnings lib test
 
       - name: Run Tests
         run: |

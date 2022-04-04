@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:fresh/fresh.dart';
 import 'package:fresh_dio/fresh_dio.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';

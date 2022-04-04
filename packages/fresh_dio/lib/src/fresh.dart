@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import 'package:fresh/fresh.dart';
 import 'package:fresh_dio/fresh_dio.dart';
 
 /// Signature for `shouldRefresh` on [Fresh].
