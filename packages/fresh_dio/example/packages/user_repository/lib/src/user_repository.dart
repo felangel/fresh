@@ -20,7 +20,6 @@ class UserRepository {
         case AuthenticationStatus.unauthenticated:
           return UserAuthenticationStatus.signedOut;
         case AuthenticationStatus.initial:
-        default:
           return UserAuthenticationStatus.unknown;
       }
     });
