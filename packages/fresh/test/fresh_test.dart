@@ -117,7 +117,7 @@ void main() {
 
     group('configureToken', () {
       setUpAll(() {
-        registerFallbackValue<OAuth2Token>(FakeOAuth2Token());
+        registerFallbackValue(FakeOAuth2Token());
       });
 
       group('setToken', () {
