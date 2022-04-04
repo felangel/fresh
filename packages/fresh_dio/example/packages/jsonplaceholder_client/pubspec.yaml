@@ -4,14 +4,15 @@ version: 1.0.0+1
 publish_to: none
 
 environment:
-  sdk: ">=2.12.0-0 <3.0.0"
+  sdk: ">=2.12.0 <3.0.0"
 
 dependencies:
-  dio: ^4.0.0-beta7
+  dio: ^4.0.0
   fresh_dio:
     path: ../../../
   json_annotation: ^4.0.0
 
 dev_dependencies:
-  json_serializable: ^4.0.0
   build_runner: ^1.11.5
+  json_serializable: ^4.0.0
+  very_good_analysis: ^2.4.0

@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:fresh/fresh.dart';
 import 'package:fresh_dio/fresh_dio.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
@@ -45,12 +44,11 @@ void main() {
     late ErrorInterceptorHandler errorHandler;
 
     setUpAll(() {
-      registerFallbackValue<OAuth2Token>(MockToken());
-      registerFallbackValue<MockToken>(MockToken());
-      registerFallbackValue<Options?>(null);
-      registerFallbackValue<RequestOptions>(FakeRequestOptions());
-      registerFallbackValue<Response<dynamic>>(FakeResponse<dynamic>());
-      registerFallbackValue<DioError>(FakeDioError());
+      registerFallbackValue(MockToken());
+      registerFallbackValue(MockToken());
+      registerFallbackValue(FakeRequestOptions());
+      registerFallbackValue(FakeResponse<dynamic>());
+      registerFallbackValue(FakeDioError());
     });
 
     setUp(() {
@@ -64,7 +62,7 @@ void main() {
       group('setToken', () {
         test('invokes tokenStorage.write', () async {
           when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
-          when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           final token = MockToken();
           final fresh = Fresh.oAuth2(
             tokenStorage: tokenStorage,
@@ -76,8 +74,8 @@ void main() {
 
         test('adds unauthenticated status when call setToken(null)', () async {
           when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
-          when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
-          when(() => tokenStorage.delete()).thenAnswer((_) async => null);
+          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+          when(() => tokenStorage.delete()).thenAnswer((_) async {});
           final fresh = Fresh.oAuth2(
             tokenStorage: tokenStorage,
             refreshToken: emptyRefreshToken,
@@ -95,8 +93,8 @@ void main() {
       group('clearToken', () {
         test('adds unauthenticated status when call clearToken()', () async {
           when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
-          when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
-          when(() => tokenStorage.delete()).thenAnswer((_) async => null);
+          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+          when(() => tokenStorage.delete()).thenAnswer((_) async {});
           final fresh = Fresh.oAuth2(
             tokenStorage: tokenStorage,
             refreshToken: emptyRefreshToken,
@@ -119,7 +117,7 @@ void main() {
           'and tokenHeader is not provided', () async {
         final options = RequestOptions(path: '');
         when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -143,7 +141,7 @@ void main() {
           'and tokenHeader is provided', () async {
         final options = RequestOptions(path: '');
         when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -164,11 +162,11 @@ void main() {
       });
 
       test(
-          'appends the standart header when token use OAuth2Token constructor'
+          'appends the standart header when token use OAuth2Token constructor '
           'but tokenHeader is not provided', () async {
         final options = RequestOptions(path: '');
         when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -192,7 +190,7 @@ void main() {
     group('onResponse', () {
       test('returns untouched response when token is null', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final response = MockResponse<dynamic>();
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
@@ -210,7 +208,7 @@ void main() {
           'returns untouched response when '
           'shouldRefresh (default) is false', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final response = MockResponse<dynamic>();
         when(() => response.statusCode).thenReturn(200);
         final fresh = Fresh.oAuth2(
@@ -229,7 +227,7 @@ void main() {
           'returns untouched response when '
           'shouldRefresh (custom) is false', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final response = MockResponse<dynamic>();
         when(() => response.statusCode).thenReturn(200);
         final fresh = Fresh.oAuth2(
@@ -252,7 +250,7 @@ void main() {
         final token = MockToken();
         final tokenStorage = MockTokenStorage<MockToken>();
         when(tokenStorage.read).thenAnswer((_) async => token);
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final request = MockRequestOptions();
         when(() => request.path).thenReturn('/mock/path');
         when(() => request.baseUrl).thenReturn('https://test.com');
@@ -330,8 +328,8 @@ void main() {
         var refreshCallCount = 0;
         final tokenStorage = MockTokenStorage<MockToken>();
         when(tokenStorage.read).thenAnswer((_) async => MockToken());
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
-        when(tokenStorage.delete).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+        when(tokenStorage.delete).thenAnswer((_) async {});
         final response = MockResponse<dynamic>();
         final request = MockRequestOptions();
         when(() => response.requestOptions).thenReturn(request);
@@ -373,7 +371,7 @@ void main() {
       test('returns same response when token exists', () async {
         tokenStorage = MockTokenStorage<MockToken>();
         when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -395,7 +393,7 @@ void main() {
     group('onError', () {
       test('returns error when token is null', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final error = MockDioError();
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
@@ -409,8 +407,8 @@ void main() {
 
       test('returns error tryRefresh throws DioError', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
-        when(() => tokenStorage.delete()).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+        when(() => tokenStorage.delete()).thenAnswer((_) async {});
         final error = MockDioError();
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
@@ -432,7 +430,7 @@ void main() {
         when(() => request.followRedirects).thenReturn(false);
         when(() => request.maxRedirects).thenReturn(0);
         when(() => request.listFormat).thenReturn(ListFormat.csv);
-        final response = MockResponse();
+        final response = MockResponse<dynamic>();
         when(() => response.requestOptions).thenReturn(request);
         when(() => error.response).thenReturn(response);
         await fresh.onError(error, errorHandler);
@@ -442,7 +440,7 @@ void main() {
 
       test('returns error when error is RevokeTokenException', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final revokeTokenException = RevokeTokenException();
         final error = MockDioError();
         when<dynamic>(() => error.error).thenReturn(revokeTokenException);
@@ -457,7 +455,7 @@ void main() {
 
       test('returns error when shouldRefresh (default) is false', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final error = MockDioError();
         final response = MockResponse<dynamic>();
         when(() => response.statusCode).thenReturn(200);
@@ -478,7 +476,7 @@ void main() {
         final token = MockToken();
         final tokenStorage = MockTokenStorage<MockToken>();
         when(tokenStorage.read).thenAnswer((_) async => token);
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final request = MockRequestOptions();
         when(() => request.path).thenReturn('/mock/path');
         when(() => request.baseUrl).thenReturn('https://test.com');
@@ -557,7 +555,7 @@ void main() {
     group('close', () {
       test('shoud close streams', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,

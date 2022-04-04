@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:fresh_example/login/bloc/login_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fresh_example/login/bloc/login_bloc.dart';
 import 'package:user_repository/user_repository.dart';
 
 class LoginPage extends StatelessWidget {
+  const LoginPage({Key? key}) : super(key: key);
+
   static Route route() {
-    return MaterialPageRoute(builder: (_) => LoginPage());
+    return MaterialPageRoute<void>(builder: (_) => const LoginPage());
   }
 
   @override
@@ -14,13 +16,15 @@ class LoginPage extends StatelessWidget {
       appBar: AppBar(title: const Text('Login')),
       body: BlocProvider(
         create: (context) => LoginBloc(context.read<UserRepository>()),
-        child: Login(),
+        child: const Login(),
       ),
     );
   }
 }
 
 class Login extends StatelessWidget {
+  const Login({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<LoginBloc, LoginState>(
@@ -48,12 +52,12 @@ class Login extends StatelessWidget {
           BlocBuilder<LoginBloc, LoginState>(
             builder: (context, state) {
               return ElevatedButton(
-                child: state.status == LoginStatus.submissionInProgress
-                    ? const CircularProgressIndicator()
-                    : const Text('Login'),
                 onPressed: state.submissionEnabled
                     ? () => context.read<LoginBloc>().add(LoginSubmitted())
                     : null,
+                child: state.status == LoginStatus.submissionInProgress
+                    ? const CircularProgressIndicator()
+                    : const Text('Login'),
               );
             },
           )
