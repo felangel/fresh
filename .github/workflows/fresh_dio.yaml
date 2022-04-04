@@ -23,7 +23,7 @@ jobs:
         working-directory: packages/fresh_dio
     runs-on: ubuntu-latest
     container:
-      image: google/dart:2.12
+      image: google/dart:stable
 
     steps:
       - uses: actions/checkout@v2
