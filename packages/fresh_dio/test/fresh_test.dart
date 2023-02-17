@@ -257,8 +257,8 @@ void main() {
         when(() => request.headers).thenReturn(<String, String>{});
         when(() => request.queryParameters).thenReturn(<String, String>{});
         when(() => request.method).thenReturn('GET');
-        when(() => request.sendTimeout).thenReturn(0);
-        when(() => request.receiveTimeout).thenReturn(0);
+        when(() => request.sendTimeout).thenReturn(Duration.zero);
+        when(() => request.receiveTimeout).thenReturn(Duration.zero);
         when(() => request.extra).thenReturn(<String, String>{});
         when(() => request.responseType).thenReturn(ResponseType.json);
         when(() => request.validateStatus).thenReturn((_) => false);
@@ -421,8 +421,8 @@ void main() {
         when(() => request.headers).thenReturn(<String, String>{});
         when(() => request.queryParameters).thenReturn(<String, String>{});
         when(() => request.method).thenReturn('GET');
-        when(() => request.sendTimeout).thenReturn(0);
-        when(() => request.receiveTimeout).thenReturn(0);
+        when(() => request.sendTimeout).thenReturn(Duration.zero);
+        when(() => request.receiveTimeout).thenReturn(Duration.zero);
         when(() => request.extra).thenReturn(<String, String>{});
         when(() => request.responseType).thenReturn(ResponseType.json);
         when(() => request.validateStatus).thenReturn((_) => false);
@@ -483,8 +483,8 @@ void main() {
         when(() => request.headers).thenReturn(<String, String>{});
         when(() => request.queryParameters).thenReturn(<String, String>{});
         when(() => request.method).thenReturn('GET');
-        when(() => request.sendTimeout).thenReturn(0);
-        when(() => request.receiveTimeout).thenReturn(0);
+        when(() => request.sendTimeout).thenReturn(Duration.zero);
+        when(() => request.receiveTimeout).thenReturn(Duration.zero);
         when(() => request.extra).thenReturn(<String, String>{});
         when(() => request.responseType).thenReturn(ResponseType.json);
         when(() => request.validateStatus).thenReturn((_) => false);
@@ -553,7 +553,7 @@ void main() {
     });
 
     group('close', () {
-      test('shoud close streams', () async {
+      test('should close streams', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final fresh = Fresh.oAuth2(
