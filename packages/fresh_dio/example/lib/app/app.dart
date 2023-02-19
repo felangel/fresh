@@ -9,9 +9,9 @@ import 'package:user_repository/user_repository.dart';
 
 class App extends StatefulWidget {
   const App({
-    Key? key,
     required this.photosRepository,
     required this.userRepository,
+    Key? key,
   }) : super(key: key);
 
   final PhotosRepository photosRepository;

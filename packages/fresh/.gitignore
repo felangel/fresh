@@ -9,3 +9,4 @@ coverage/
 *.lcov
 
 .DS_Store
+build/

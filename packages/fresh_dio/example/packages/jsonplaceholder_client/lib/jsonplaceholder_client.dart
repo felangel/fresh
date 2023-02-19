@@ -1,3 +1,4 @@
+///
 library jsonplaceholder_client;
 
 export 'package:fresh_dio/fresh_dio.dart' show AuthenticationStatus;

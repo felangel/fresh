@@ -7,7 +7,7 @@ import 'package:photos_repository/photos_repository.dart';
 class PhotosPage extends StatelessWidget {
   const PhotosPage._({Key? key}) : super(key: key);
 
-  static Route route() {
+  static Route<void> route() {
     return MaterialPageRoute<void>(
       builder: (_) => BlocProvider(
         create: (context) => PhotosBloc(context.read<PhotosRepository>())
@@ -65,7 +65,7 @@ class Photos extends StatelessWidget {
 }
 
 class _PhotosGrid extends StatelessWidget {
-  const _PhotosGrid({Key? key, required this.photos}) : super(key: key);
+  const _PhotosGrid({required this.photos, Key? key}) : super(key: key);
 
   final List<String> photos;
 

@@ -6,7 +6,7 @@ import 'package:user_repository/user_repository.dart';
 class LoginPage extends StatelessWidget {
   const LoginPage({Key? key}) : super(key: key);
 
-  static Route route() {
+  static Route<void> route() {
     return MaterialPageRoute<void>(builder: (_) => const LoginPage());
   }
 
