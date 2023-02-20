@@ -115,7 +115,7 @@ void main() {
       test(
           'appends token header when token is OAuth2Token '
           'and tokenHeader is not provided', () async {
-        final options = RequestOptions(path: '');
+        final options = RequestOptions();
         when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final fresh = Fresh.oAuth2(
@@ -139,7 +139,7 @@ void main() {
       test(
           'appends token header when token is OAuth2Token '
           'and tokenHeader is provided', () async {
-        final options = RequestOptions(path: '');
+        final options = RequestOptions();
         when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final fresh = Fresh.oAuth2(
@@ -164,7 +164,7 @@ void main() {
       test(
           'appends the standart header when token use OAuth2Token constructor '
           'but tokenHeader is not provided', () async {
-        final options = RequestOptions(path: '');
+        final options = RequestOptions();
         when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final fresh = Fresh.oAuth2(
@@ -311,11 +311,7 @@ void main() {
         verify(
           () => httpClient.request<dynamic>(
             '/mock/path',
-            data: null,
             queryParameters: <String, String>{},
-            cancelToken: null,
-            onSendProgress: null,
-            onReceiveProgress: null,
             options: any(named: 'options'),
           ),
         ).called(1);
@@ -540,11 +536,7 @@ void main() {
         verify(
           () => httpClient.request<dynamic>(
             '/mock/path',
-            data: null,
             queryParameters: <String, String>{},
-            cancelToken: null,
-            onSendProgress: null,
-            onReceiveProgress: null,
             options: any(named: 'options'),
           ),
         ).called(1);
