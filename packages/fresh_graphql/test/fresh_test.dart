@@ -1,7 +1,7 @@
 // ignore_for_file: must_be_immutable
 
 import 'package:fresh_graphql/fresh_graphql.dart';
-import 'package:graphql/client.dart';
+import 'package:gql_exec/gql_exec.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
