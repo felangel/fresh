@@ -9,4 +9,4 @@ environment:
 dependencies:
   jsonplaceholder_client:
     path: ../jsonplaceholder_client
-  very_good_analysis: ^2.4.0
+  very_good_analysis: ^4.0.0+1
