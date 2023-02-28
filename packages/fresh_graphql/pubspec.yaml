@@ -11,7 +11,8 @@ environment:
 
 dependencies:
   fresh: ^0.4.0
-  graphql: ^5.0.0
+  gql_exec: ^0.4.3
+  gql_link: ^0.5.1
   http: ^0.13.1
 
 dev_dependencies:
