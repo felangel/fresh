@@ -130,7 +130,6 @@ void main() {
         expect(
           (result.captured.first as RequestOptions).headers,
           {
-            // 'content-type': 'application/json; charset=utf-8',
             'authorization': 'bearer accessToken',
           },
         );
@@ -155,7 +154,6 @@ void main() {
         expect(
           (result.captured.first as RequestOptions).headers,
           {
-            // 'content-type': 'application/json; charset=utf-8',
             'custom-header': 'custom-token',
           },
         );
@@ -179,7 +177,6 @@ void main() {
         expect(
           (result.captured.first as RequestOptions).headers,
           {
-            // 'content-type': 'application/json; charset=utf-8',
             'authorization':
                 '${oAuth2Token.tokenType} ${oAuth2Token.accessToken}',
           },
