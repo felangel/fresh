@@ -11,7 +11,7 @@ void main() {
   final jsonplaceholderClient = JsonplaceholderClient();
   final photosRepository = PhotosRepository(jsonplaceholderClient);
   final userRepository = UserRepository(jsonplaceholderClient);
-  
+
   runApp(
     App(
       photosRepository: photosRepository,
