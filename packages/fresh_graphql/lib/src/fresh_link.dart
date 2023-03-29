@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:fresh/fresh.dart';
-import 'package:graphql/client.dart';
+import 'package:gql_exec/gql_exec.dart';
+import 'package:gql_link/gql_link.dart';
 import 'package:http/http.dart' as http;
 
 /// Signature for `shouldRefresh` on [FreshLink].
