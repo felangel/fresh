@@ -1,3 +1,8 @@
+# 0.4.0
+
+- feat: upgrade to `dio ^0.5.0`
+- feat: upgrade dart to `sdk: ">=2.15.0 <3.0.0"`
+
 # 0.3.2
 
 - feat: add httpClient parameter to Fresh.oAuth2 ([#60](https://github.com/felangel/fresh/issues/60))
