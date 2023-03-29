@@ -7,18 +7,15 @@ import 'package:photos_repository/photos_repository.dart';
 import 'package:user_repository/user_repository.dart';
 
 void main() {
-  BlocOverrides.runZoned(
-    () {
-      final jsonplaceholderClient = JsonplaceholderClient();
-      final photosRepository = PhotosRepository(jsonplaceholderClient);
-      final userRepository = UserRepository(jsonplaceholderClient);
-      runApp(
-        App(
-          photosRepository: photosRepository,
-          userRepository: userRepository,
-        ),
-      );
-    },
-    blocObserver: SimpleBlocObserver(),
+  Bloc.observer = SimpleBlocObserver();
+  final jsonplaceholderClient = JsonplaceholderClient();
+  final photosRepository = PhotosRepository(jsonplaceholderClient);
+  final userRepository = UserRepository(jsonplaceholderClient);
+
+  runApp(
+    App(
+      photosRepository: photosRepository,
+      userRepository: userRepository,
+    ),
   );
 }

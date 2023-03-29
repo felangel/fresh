@@ -115,7 +115,7 @@ void main() {
       test(
           'appends token header when token is OAuth2Token '
           'and tokenHeader is not provided', () async {
-        final options = RequestOptions(path: '');
+        final options = RequestOptions();
         when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final fresh = Fresh.oAuth2(
@@ -130,7 +130,6 @@ void main() {
         expect(
           (result.captured.first as RequestOptions).headers,
           {
-            'content-type': 'application/json; charset=utf-8',
             'authorization': 'bearer accessToken',
           },
         );
@@ -139,7 +138,7 @@ void main() {
       test(
           'appends token header when token is OAuth2Token '
           'and tokenHeader is provided', () async {
-        final options = RequestOptions(path: '');
+        final options = RequestOptions();
         when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final fresh = Fresh.oAuth2(
@@ -155,7 +154,6 @@ void main() {
         expect(
           (result.captured.first as RequestOptions).headers,
           {
-            'content-type': 'application/json; charset=utf-8',
             'custom-header': 'custom-token',
           },
         );
@@ -164,7 +162,7 @@ void main() {
       test(
           'appends the standart header when token use OAuth2Token constructor '
           'but tokenHeader is not provided', () async {
-        final options = RequestOptions(path: '');
+        final options = RequestOptions();
         when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final fresh = Fresh.oAuth2(
@@ -179,7 +177,6 @@ void main() {
         expect(
           (result.captured.first as RequestOptions).headers,
           {
-            'content-type': 'application/json; charset=utf-8',
             'authorization':
                 '${oAuth2Token.tokenType} ${oAuth2Token.accessToken}',
           },
@@ -257,8 +254,8 @@ void main() {
         when(() => request.headers).thenReturn(<String, String>{});
         when(() => request.queryParameters).thenReturn(<String, String>{});
         when(() => request.method).thenReturn('GET');
-        when(() => request.sendTimeout).thenReturn(0);
-        when(() => request.receiveTimeout).thenReturn(0);
+        when(() => request.sendTimeout).thenReturn(Duration.zero);
+        when(() => request.receiveTimeout).thenReturn(Duration.zero);
         when(() => request.extra).thenReturn(<String, String>{});
         when(() => request.responseType).thenReturn(ResponseType.json);
         when(() => request.validateStatus).thenReturn((_) => false);
@@ -311,11 +308,7 @@ void main() {
         verify(
           () => httpClient.request<dynamic>(
             '/mock/path',
-            data: null,
             queryParameters: <String, String>{},
-            cancelToken: null,
-            onSendProgress: null,
-            onReceiveProgress: null,
             options: any(named: 'options'),
           ),
         ).called(1);
@@ -421,8 +414,8 @@ void main() {
         when(() => request.headers).thenReturn(<String, String>{});
         when(() => request.queryParameters).thenReturn(<String, String>{});
         when(() => request.method).thenReturn('GET');
-        when(() => request.sendTimeout).thenReturn(0);
-        when(() => request.receiveTimeout).thenReturn(0);
+        when(() => request.sendTimeout).thenReturn(Duration.zero);
+        when(() => request.receiveTimeout).thenReturn(Duration.zero);
         when(() => request.extra).thenReturn(<String, String>{});
         when(() => request.responseType).thenReturn(ResponseType.json);
         when(() => request.validateStatus).thenReturn((_) => false);
@@ -483,8 +476,8 @@ void main() {
         when(() => request.headers).thenReturn(<String, String>{});
         when(() => request.queryParameters).thenReturn(<String, String>{});
         when(() => request.method).thenReturn('GET');
-        when(() => request.sendTimeout).thenReturn(0);
-        when(() => request.receiveTimeout).thenReturn(0);
+        when(() => request.sendTimeout).thenReturn(Duration.zero);
+        when(() => request.receiveTimeout).thenReturn(Duration.zero);
         when(() => request.extra).thenReturn(<String, String>{});
         when(() => request.responseType).thenReturn(ResponseType.json);
         when(() => request.validateStatus).thenReturn((_) => false);
@@ -540,11 +533,7 @@ void main() {
         verify(
           () => httpClient.request<dynamic>(
             '/mock/path',
-            data: null,
             queryParameters: <String, String>{},
-            cancelToken: null,
-            onSendProgress: null,
-            onReceiveProgress: null,
             options: any(named: 'options'),
           ),
         ).called(1);
@@ -553,7 +542,7 @@ void main() {
     });
 
     group('close', () {
-      test('shoud close streams', () async {
+      test('should close streams', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final fresh = Fresh.oAuth2(
