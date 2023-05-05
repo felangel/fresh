@@ -99,30 +99,47 @@ class FreshLink<T> extends Link with FreshMixin<T> {
     );
 
     if (forward != null) {
-      await for (final result in forward(updatedRequest)) {
-        final nextToken = await token;
-        if (nextToken != null && _shouldRefresh(result)) {
-          try {
-            final refreshedToken = await _refreshToken(
-              nextToken,
-              http.Client(),
-            );
-            await setToken(refreshedToken);
-            final tokenHeaders = _tokenHeader(refreshedToken);
-            yield* forward(request.updateContextEntry<HttpLinkHeaders>(
-              (headers) => HttpLinkHeaders(
-                headers: {
-                  ...headers?.headers ?? <String, String>{},
-                }..addAll(tokenHeaders),
-              ),
-            ));
-          } on RevokeTokenException catch (_) {
-            unawaited(revokeToken());
+      try {
+        await for (final result in forward(updatedRequest)) {
+          final nextToken = await token;
+          if (nextToken != null && _shouldRefresh(result)) {
+            try {
+              final refreshedToken = await _refreshToken(
+                nextToken,
+                http.Client(),
+              );
+              await setToken(refreshedToken);
+              final tokenHeaders = _tokenHeader(refreshedToken);
+              yield* forward(request.updateContextEntry<HttpLinkHeaders>(
+                (headers) => HttpLinkHeaders(
+                  headers: {
+                    ...headers?.headers ?? <String, String>{},
+                  }..addAll(tokenHeaders),
+                ),
+              ));
+            } on RevokeTokenException catch (_) {
+              unawaited(revokeToken());
+              yield result;
+            }
+          } else {
             yield result;
           }
-        } else {
-          yield result;
         }
+      } on ServerException {
+        final nextToken = await token;
+        final refreshedToken = await _refreshToken(
+          nextToken,
+          http.Client(),
+        );
+        await setToken(refreshedToken);
+        final tokenHeaders = _tokenHeader(refreshedToken);
+        yield* forward(request.updateContextEntry<HttpLinkHeaders>(
+          (headers) => HttpLinkHeaders(
+            headers: {
+              ...headers?.headers ?? <String, String>{},
+            }..addAll(tokenHeaders),
+          ),
+        ));
       }
     }
   }
