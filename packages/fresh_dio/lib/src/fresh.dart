@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:fresh_dio/fresh_dio.dart';
 
 /// Signature for `shouldRefresh` on [Fresh].
-typedef ShouldRefresh = bool Function(Response? response);
+typedef ShouldRefresh = bool Function(Response<dynamic>? response);
 
 /// Signature for `refreshToken` on [Fresh].
 typedef RefreshToken<T> = Future<T> Function(T? token, Dio httpClient);
@@ -90,7 +90,7 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
 
   @override
   Future<dynamic> onResponse(
-    Response response,
+    Response<dynamic> response,
     ResponseInterceptorHandler handler,
   ) async {
     if (await token == null || !_shouldRefresh(response)) {
@@ -99,14 +99,14 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
     try {
       final refreshResponse = await _tryRefresh(response);
       handler.resolve(refreshResponse);
-    } on DioError catch (error) {
+    } on DioException catch (error) {
       handler.reject(error);
     }
   }
 
   @override
   Future<dynamic> onError(
-    DioError err,
+    DioException err,
     ErrorInterceptorHandler handler,
   ) async {
     final response = err.response;
@@ -119,18 +119,18 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
     try {
       final refreshResponse = await _tryRefresh(response);
       handler.resolve(refreshResponse);
-    } on DioError catch (error) {
+    } on DioException catch (error) {
       handler.next(error);
     }
   }
 
-  Future<Response<dynamic>> _tryRefresh(Response response) async {
+  Future<Response<dynamic>> _tryRefresh(Response<dynamic> response) async {
     late final T refreshedToken;
     try {
       refreshedToken = await _refreshToken(await token, _httpClient);
     } on RevokeTokenException catch (error) {
       await clearToken();
-      throw DioError(
+      throw DioException(
         requestOptions: response.requestOptions,
         error: error,
         response: response,
@@ -167,7 +167,7 @@ class Fresh<T> extends Interceptor with FreshMixin<T> {
     );
   }
 
-  static bool _defaultShouldRefresh(Response? response) {
+  static bool _defaultShouldRefresh(Response<dynamic>? response) {
     return response?.statusCode == 401;
   }
 }

@@ -4,9 +4,9 @@ import 'package:fresh_example/login/bloc/login_bloc.dart';
 import 'package:user_repository/user_repository.dart';
 
 class LoginPage extends StatelessWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
-  static Route route() {
+  static Route<void> route() {
     return MaterialPageRoute<void>(builder: (_) => const LoginPage());
   }
 
@@ -23,7 +23,7 @@ class LoginPage extends StatelessWidget {
 }
 
 class Login extends StatelessWidget {
-  const Login({Key? key}) : super(key: key);
+  const Login({super.key});
 
   @override
   Widget build(BuildContext context) {
