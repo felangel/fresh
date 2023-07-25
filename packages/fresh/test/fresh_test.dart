@@ -73,7 +73,7 @@ void main() {
       test('add unauthenticated when call revokeToken', () async {
         final mockToken = MockToken();
         when(() => tokenStorage.read()).thenAnswer((_) async => mockToken);
-        when(() => tokenStorage.delete()).thenAnswer((_) async => null);
+        when(() => tokenStorage.delete()).thenAnswer((_) async {});
 
         final freshController = FreshController<OAuth2Token>(tokenStorage);
 
@@ -123,7 +123,7 @@ void main() {
       group('setToken', () {
         test('invokes tokenStorage.write', () async {
           when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
-          when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           final token = MockToken();
           final freshController = FreshController<OAuth2Token>(tokenStorage);
           await freshController.setToken(token);
@@ -132,8 +132,8 @@ void main() {
 
         test('adds unauthenticated status when call setToken(null)', () async {
           when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
-          when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
-          when(() => tokenStorage.delete()).thenAnswer((_) async => null);
+          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+          when(() => tokenStorage.delete()).thenAnswer((_) async {});
           final freshController = FreshController<OAuth2Token>(tokenStorage);
           await freshController.setToken(null);
           await expectLater(
@@ -145,7 +145,7 @@ void main() {
         });
         test('adds authenticated status if token is not null', () async {
           when(() => tokenStorage.read()).thenAnswer((_) async => null);
-          when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           final freshController = FreshController<OAuth2Token>(tokenStorage);
 
           await freshController.setToken(MockToken());
@@ -162,8 +162,8 @@ void main() {
       group('clearToken', () {
         test('adds unauthenticated status when call clearToken()', () async {
           when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
-          when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
-          when(() => tokenStorage.delete()).thenAnswer((_) async => null);
+          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+          when(() => tokenStorage.delete()).thenAnswer((_) async {});
           final freshController = FreshController<OAuth2Token>(tokenStorage);
           await freshController.clearToken();
           await expectLater(
@@ -179,7 +179,7 @@ void main() {
     group('close', () {
       test('shoud close streams', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
-        when(() => tokenStorage.write(any())).thenAnswer((_) async => null);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final freshController = FreshController<OAuth2Token>(tokenStorage);
 
         final mockToken = MockToken();

@@ -2,7 +2,7 @@ name: ci
 
 on:
   pull_request:
-    path:
+    paths:
       - "!packages/fresh_dio/lib/**"
       - "!packages/fresh_dio/test/**"
       - "!packages/fresh_dio/example/**"
