@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - ".github/workflows/fresh_dio.yaml"
+      - "packages/fresh_dio/pubspec.yaml"
       - "packages/fresh_dio/lib/**"
       - "packages/fresh_dio/test/**"
   pull_request:
@@ -13,6 +14,7 @@ on:
       - master
     paths:
       - ".github/workflows/fresh_dio.yaml"
+      - "packages/fresh_dio/pubspec.yaml"
       - "packages/fresh_dio/lib/**"
       - "packages/fresh_dio/test/**"
 
