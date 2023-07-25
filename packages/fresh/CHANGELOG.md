@@ -1,3 +1,8 @@
+# 0.4.2
+
+- chore: adjust dart sdk constraint to `">=2.12.0 <4.0.0"`
+- chore: use more strict analysis options
+
 # 0.4.1
 
 - chore: upgrade dev dependencies
