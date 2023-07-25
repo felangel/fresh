@@ -1,3 +1,14 @@
+# 0.6.0
+
+- **BREAKING**: deps: remove `package:graphql` dependency
+- deps: upgrade dependencies
+  - `gql_exec: ^1.0.0`
+  - `gql_link: ^1.0.0`
+  - `http: ^1.0.0`
+- docs: minor updates to `LICENSE` and `README`
+- chore: adjust dart sdk constraint to `">=2.15.0 <4.0.0"`
+- chore: use more strict analysis options
+
 # 0.5.2
 
 - feat: upgrade dependencies
