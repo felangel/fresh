@@ -23,7 +23,7 @@ typedef RefreshToken<T> = Future<T> Function(T? token, Dio httpClient);
 /// );
 /// ```
 /// {@endtemplate}
-class Fresh<T> extends Interceptor with FreshMixin<T> {
+class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   /// {@macro fresh}
   Fresh({
     required TokenHeaderBuilder<T> tokenHeader,
