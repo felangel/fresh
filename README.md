@@ -1,7 +1,7 @@
 # Fresh 🍋
 
 [![ci](https://github.com/felangel/fresh/actions/workflows/ci.yaml/badge.svg)](https://github.com/felangel/fresh/actions/workflows/ci.yaml)
-[![style: effective dart](https://img.shields.io/badge/style-effective_dart-40c4ff.svg)](https://github.com/tenhobi/effective_dart)
+[![coverage](./packages/fresh/coverage_badge.svg)](https://github.com/felangel/fresh/actions/workflows/ci.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-purple.svg)](https://opensource.org/licenses/MIT)
 
 ---
