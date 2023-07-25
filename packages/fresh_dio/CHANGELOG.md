@@ -1,3 +1,12 @@
+# 0.4.1
+
+- fix: replace `Interceptor` with `QueuedInterceptor`
+- refactor: use `DioException` instead of deprecated `DioError`
+- docs: minor updates to `LICENSE` and `README`
+- chore: adjust dart sdk constraint to `">=2.15.0 <4.0.0"`
+- chore: use more strict analysis options
+- chore: various updates to example app
+
 # 0.4.0
 
 - feat: upgrade to `dio ^0.5.0`
