@@ -1,0 +1,12 @@
+name: fresh_graphql_example
+description: An example of how to use package:fresh_graphql
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  fresh_graphql:
+    path: ../
+  graphql: ^5.1.3

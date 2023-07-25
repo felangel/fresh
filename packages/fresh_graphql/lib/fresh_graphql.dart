@@ -1,11 +1,9 @@
-library fresh_graphql;
-
 export 'package:fresh/fresh.dart'
     show
-        RevokeTokenException,
-        OAuth2Token,
         AuthenticationStatus,
-        TokenStorage,
+        InMemoryTokenStorage,
+        OAuth2Token,
+        RevokeTokenException,
         TokenHeaderBuilder,
-        InMemoryTokenStorage;
+        TokenStorage;
 export 'src/fresh_link.dart';

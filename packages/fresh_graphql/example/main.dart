@@ -1,10 +1,12 @@
+// ignore_for_file: avoid_print
+
 import 'dart:io';
 import 'dart:math';
 
 import 'package:fresh_graphql/fresh_graphql.dart';
 import 'package:graphql/client.dart';
 
-const getJobsQuery = r'''
+const getJobsQuery = '''
   query GetJobs() {
     jobs {
       title
