@@ -109,13 +109,15 @@ class FreshLink<T> extends Link with FreshMixin<T> {
             );
             await setToken(refreshedToken);
             final tokenHeaders = _tokenHeader(refreshedToken);
-            yield* forward(request.updateContextEntry<HttpLinkHeaders>(
-              (headers) => HttpLinkHeaders(
-                headers: {
-                  ...headers?.headers ?? <String, String>{},
-                }..addAll(tokenHeaders),
+            yield* forward(
+              request.updateContextEntry<HttpLinkHeaders>(
+                (headers) => HttpLinkHeaders(
+                  headers: {
+                    ...headers?.headers ?? <String, String>{},
+                  }..addAll(tokenHeaders),
+                ),
               ),
-            ));
+            );
           } on RevokeTokenException catch (_) {
             unawaited(revokeToken());
             yield result;

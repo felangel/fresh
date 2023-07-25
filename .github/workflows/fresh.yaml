@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - ".github/workflows/fresh.yaml"
+      - "packages/fresh/pubspec.yaml"
       - "packages/fresh/lib/**"
       - "packages/fresh/test/**"
   pull_request:
@@ -13,6 +14,7 @@ on:
       - master
     paths:
       - ".github/workflows/fresh.yaml"
+      - "packages/fresh/pubspec.yaml"
       - "packages/fresh/lib/**"
       - "packages/fresh/test/**"
 

@@ -19,7 +19,7 @@ class MockResponse<T> extends Mock implements Response<T> {}
 class MockResponseInterceptorHandler extends Mock
     implements ResponseInterceptorHandler {}
 
-class MockDioError extends Mock implements DioError {}
+class MockDioException extends Mock implements DioException {}
 
 class MockErrorInterceptorHandler extends Mock
     implements ErrorInterceptorHandler {}
@@ -30,7 +30,7 @@ class FakeRequestOptions extends Fake implements RequestOptions {}
 
 class FakeResponse<T> extends Fake implements Response<T> {}
 
-class FakeDioError extends Fake implements DioError {}
+class FakeDioException extends Fake implements DioException {}
 
 Future<OAuth2Token> emptyRefreshToken(OAuth2Token? _, Dio __) async {
   return MockToken();
@@ -48,7 +48,7 @@ void main() {
       registerFallbackValue(MockToken());
       registerFallbackValue(FakeRequestOptions());
       registerFallbackValue(FakeResponse<dynamic>());
-      registerFallbackValue(FakeDioError());
+      registerFallbackValue(FakeDioException());
     });
 
     setUp(() {
@@ -347,7 +347,7 @@ void main() {
         await fresh.onResponse(response, responseHandler);
         final result = verify(() => responseHandler.reject(captureAny()))
           ..called(1);
-        final actual = result.captured.first as DioError;
+        final actual = result.captured.first as DioException;
         await expectLater(
           fresh.authenticationStatus,
           emitsInOrder(const <AuthenticationStatus>[
@@ -387,7 +387,7 @@ void main() {
       test('returns error when token is null', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
-        final error = MockDioError();
+        final error = MockDioException();
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -402,7 +402,7 @@ void main() {
         when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         when(() => tokenStorage.delete()).thenAnswer((_) async {});
-        final error = MockDioError();
+        final error = MockDioException();
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           shouldRefresh: (_) => true,
@@ -428,14 +428,14 @@ void main() {
         when(() => error.response).thenReturn(response);
         await fresh.onError(error, errorHandler);
         final result = verify(() => errorHandler.next(captureAny()))..called(1);
-        expect(result.captured.first, isA<DioError>());
+        expect(result.captured.first, isA<DioException>());
       });
 
       test('returns error when error is RevokeTokenException', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final revokeTokenException = RevokeTokenException();
-        final error = MockDioError();
+        final error = MockDioException();
         when<dynamic>(() => error.error).thenReturn(revokeTokenException);
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
@@ -449,7 +449,7 @@ void main() {
       test('returns error when shouldRefresh (default) is false', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
-        final error = MockDioError();
+        final error = MockDioException();
         final response = MockResponse<dynamic>();
         when(() => response.statusCode).thenReturn(200);
         when(() => error.response).thenReturn(response);
@@ -485,7 +485,7 @@ void main() {
         when(() => request.followRedirects).thenReturn(false);
         when(() => request.maxRedirects).thenReturn(0);
         when(() => request.listFormat).thenReturn(ListFormat.csv);
-        final error = MockDioError();
+        final error = MockDioException();
         final response = MockResponse<dynamic>();
         when(() => response.statusCode).thenReturn(401);
         when(() => error.response).thenReturn(response);
