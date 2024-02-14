@@ -107,7 +107,7 @@ mixin FreshMixin<T> {
   /// Returns the current token.
   Future<T?> get token async {
     if (_authenticationStatus != AuthenticationStatus.initial) return _token;
-    await authenticationStatus.first;
+    await authenticationStatus.firstWhere((status) => status != AuthenticationStatus.initial);
     return _token;
   }
 
