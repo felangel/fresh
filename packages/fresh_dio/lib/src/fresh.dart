@@ -82,9 +82,9 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   ) async {
     assert(
       _httpClient.interceptors.every(
-        (interceptor) => interceptor is! Fresh<T>,
+        (interceptor) => interceptor != this,
       ),
-      'A Fresh interceptor must not be added to httpClient. '
+      'The Fresh instance must not be added to httpClient as an interceptor. '
       'This will cause an infinite loop on token refresh.',
     );
 

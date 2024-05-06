@@ -115,7 +115,7 @@ void main() {
 
       test(
         'throws AssertionError when httpClient.interceptors '
-        'contains a Fresh interceptor',
+        'contains the Fresh instance as an interceptor',
         () {
           when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
 
