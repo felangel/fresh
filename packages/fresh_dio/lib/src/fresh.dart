@@ -80,6 +80,14 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    assert(
+      _httpClient.interceptors.every(
+        (interceptor) => interceptor is! Fresh<T>,
+      ),
+      'A Fresh interceptor must not be added to httpClient. '
+      'This will cause an infinite loop on token refresh.',
+    );
+
     final currentToken = await token;
     final headers = currentToken != null
         ? _tokenHeader(currentToken)
