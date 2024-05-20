@@ -28,7 +28,7 @@ class MockRequest extends Mock implements Request {
 
 class MockResponse extends Mock implements Response {}
 
-Future<T?> emptyRefreshToken<T>(dynamic _, dynamic __) async => null;
+Future<T?> emptyRefreshToken<T>(dynamic _) async => null;
 
 void main() {
   setUpAll(() {
@@ -52,7 +52,7 @@ void main() {
         final request = MockRequest();
         final freshLink = FreshLink.oAuth2(
           tokenStorage: tokenStorage,
-          refreshToken: (_, __) async => null,
+          refreshToken: (_) async => null,
           shouldRefresh: (_) => false,
         );
         late MockRequest updatedRequest;
@@ -82,7 +82,7 @@ void main() {
         final request = MockRequest();
         final freshLink = FreshLink.oAuth2(
           tokenStorage: tokenStorage,
-          refreshToken: (_, __) async => null,
+          refreshToken: (_) async => null,
           shouldRefresh: (_) => false,
           tokenHeader: (token) =>
               {'custom_header': 'custom ${token?.accessToken}'},
@@ -106,7 +106,7 @@ void main() {
         final request = MockRequest();
         final freshLink = FreshLink.oAuth2(
           tokenStorage: tokenStorage,
-          refreshToken: (_, __) async => null,
+          refreshToken: (_) async => null,
           shouldRefresh: (_) => false,
         );
         await expectLater(
@@ -134,7 +134,7 @@ void main() {
         final freshLink = FreshLink<OAuth2Token>(
           shouldRefresh: (_) => false,
           tokenStorage: tokenStorage,
-          refreshToken: (_, __) async => null,
+          refreshToken: (_) async => null,
         );
         await expectLater(
           freshLink.request(request, (operation) async* {}),
@@ -151,7 +151,7 @@ void main() {
         final response = MockResponse();
         final freshLink = FreshLink.oAuth2(
           tokenStorage: tokenStorage,
-          refreshToken: (_, __) async {
+          refreshToken: (_) async {
             refreshTokenCallCount++;
             return const OAuth2Token(accessToken: 'token');
           },
@@ -177,7 +177,7 @@ void main() {
             .thenReturn([const GraphQLError(message: 'oops')]);
         final freshLink = FreshLink.oAuth2(
           tokenStorage: tokenStorage,
-          refreshToken: (_, __) async {
+          refreshToken: (_) async {
             refreshTokenCallCount++;
             return null;
           },
@@ -206,7 +206,7 @@ void main() {
             .thenReturn([const GraphQLError(message: 'oops')]);
         final freshLink = FreshLink.oAuth2(
           tokenStorage: tokenStorage,
-          refreshToken: (_, __) async {
+          refreshToken: (_) async {
             refreshTokenCallCount++;
             return refreshedToken;
           },
@@ -233,7 +233,7 @@ void main() {
         final response = MockResponse();
         final freshLink = FreshLink.oAuth2(
           tokenStorage: tokenStorage,
-          refreshToken: (_, __) async {
+          refreshToken: (_) async {
             refreshTokenCallCount++;
             throw RevokeTokenException();
           },

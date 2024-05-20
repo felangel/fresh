@@ -3,13 +3,12 @@ import 'dart:async';
 import 'package:fresh/fresh.dart';
 import 'package:gql_exec/gql_exec.dart';
 import 'package:gql_link/gql_link.dart';
-import 'package:http/http.dart' as http;
 
 /// Signature for `shouldRefresh` on [FreshLink].
 typedef ShouldRefresh = bool Function(Response);
 
 /// Signature for `refreshToken` on [FreshLink].
-typedef RefreshToken<T> = Future<T> Function(T, http.Client);
+typedef RefreshToken<T> = Future<T> Function(T);
 
 /// {@template fresh_link}
 /// A GraphQL Link which handles manages an authentication token automatically.
@@ -103,10 +102,7 @@ class FreshLink<T> extends Link with FreshMixin<T> {
         final nextToken = await token;
         if (nextToken != null && _shouldRefresh(result)) {
           try {
-            final refreshedToken = await _refreshToken(
-              nextToken,
-              http.Client(),
-            );
+            final refreshedToken = await _refreshToken(nextToken);
             await setToken(refreshedToken);
             final tokenHeaders = _tokenHeader(refreshedToken);
             yield* forward(
