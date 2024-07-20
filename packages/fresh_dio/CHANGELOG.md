@@ -1,3 +1,11 @@
+# 0.4.2
+
+- feat: add `assert` to prevent infinite refresh loop
+- fix: tighten `package:dio` version constraint
+- chore: update copyright year
+- chore: add funding to `pubspec.yaml`
+- ci: revamp ci setup
+
 # 0.4.1
 
 - fix: replace `Interceptor` with `QueuedInterceptor`
