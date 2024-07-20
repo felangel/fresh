@@ -1,0 +1,121 @@
+name: build
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  semantic_pull_request:
+    name: ✅ Semantic Pull Request
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/semantic_pull_request.yml@v1
+
+  changes:
+    runs-on: ubuntu-latest
+
+    if: github.event.pull_request.draft == false
+
+    outputs:
+      needs_dart_package_checks: ${{ steps.needs_dart_package_checks.outputs.changes }}
+      needs_flutter_package_checks: ${{ steps.needs_flutter_package_checks.outputs.changes }}
+
+    name: 👀 Detect Changes
+
+    steps:
+      - name: 📚 Git Checkout
+        uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        name: Dart Package Detection
+        id: needs_dart_package_checks
+        with:
+          filters: |
+            fresh:
+              - ./.github/workflows/main.yaml
+              - ./.github/actions/dart_package/action.yaml
+              - packages/fresh/**
+            fresh_graphql:
+              - ./.github/workflows/main.yaml
+              - ./.github/actions/dart_package/action.yaml
+              - packages/fresh_dio/**
+
+      - uses: dorny/paths-filter@v3
+        name: Flutter Package Detection
+        id: needs_flutter_package_checks
+        with:
+          filters: |
+            fresh_dio:
+              - ./.github/workflows/main.yaml
+              - ./.github/actions/dart_package/action.yaml
+              - packages/fresh_dio/**
+            fresh_dio/example:
+              - ./.github/workflows/main.yaml
+              - ./.github/actions/dart_package/action.yaml
+              - packages/fresh_dio/**
+
+  dart_package_checks:
+    needs: changes
+    if: ${{ needs.changes.outputs.needs_dart_package_checks != '[]' }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.changes.outputs.needs_dart_package_checks) }}
+
+    runs-on: ubuntu-latest
+
+    name: 🎯 ${{ matrix.package }}
+
+    steps:
+      - name: 📚 Git Checkout
+        uses: actions/checkout@v4
+
+      - name: 🎯 Build ${{ matrix.package }}
+        uses: ./.github/actions/dart_package
+        with:
+          working_directory: packages/${{ matrix.package }}
+          min_coverage: 100
+
+  flutter_package_checks:
+    needs: changes
+    if: ${{ needs.changes.outputs.needs_flutter_package_checks != '[]' }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.changes.outputs.needs_flutter_package_checks) }}
+
+    runs-on: ubuntu-latest
+
+    name: 🐦 ${{ matrix.package }}
+
+    steps:
+      - name: 📚 Git Checkout
+        uses: actions/checkout@v4
+
+      - name: 🎯 Build ${{ matrix.package }}
+        uses: ./.github/actions/flutter_package
+        with:
+          working_directory: packages/${{ matrix.package }}
+          min_coverage: 100
+
+  build:
+    needs: [semantic_pull_request, dart_package_checks, flutter_package_checks]
+
+    if: ${{ always() }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⛔️ exit(1) on failure
+        if: ${{ contains(join(needs.*.result, ','), 'failure') }}
+        run: exit 1
