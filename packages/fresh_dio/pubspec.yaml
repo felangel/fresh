@@ -3,6 +3,7 @@ description: An http interceptor for token refresh. Fresh is built on top of pac
 repository: https://github.com/felangel/fresh
 issue_tracker: https://github.com/felangel/fresh/issues
 homepage: https://github.com/felangel/fresh
+funding: [https://github.com/sponsors/felangel]
 
 version: 0.4.1
 
