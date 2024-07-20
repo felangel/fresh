@@ -46,7 +46,7 @@ jobs:
             fresh_graphql:
               - ./.github/workflows/main.yaml
               - ./.github/actions/dart_package/action.yaml
-              - packages/fresh_dio/**
+              - packages/fresh_graphql/**
 
       - uses: dorny/paths-filter@v3
         name: Flutter Package Detection
