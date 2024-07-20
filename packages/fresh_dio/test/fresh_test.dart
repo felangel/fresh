@@ -130,13 +130,8 @@ void main() {
           httpClient.interceptors.add(fresh);
 
           expect(
-            fresh.onRequest(
-              RequestOptions(),
-              RequestInterceptorHandler(),
-            ),
-            throwsA(
-              isA<AssertionError>(),
-            ),
+            fresh.onRequest(RequestOptions(), RequestInterceptorHandler()),
+            throwsA(isA<AssertionError>()),
           );
         },
       );
