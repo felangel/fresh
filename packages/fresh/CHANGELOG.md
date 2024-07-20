@@ -1,3 +1,10 @@
+# 0.4.3
+
+- fix: wait for initial storage read before returning token
+- chore: update copyright year
+- chore: add funding to `pubspec.yaml`
+- ci: revamp ci setup
+
 # 0.4.2
 
 - chore: adjust dart sdk constraint to `">=2.12.0 <4.0.0"`
