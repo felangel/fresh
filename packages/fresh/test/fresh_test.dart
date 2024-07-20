@@ -67,6 +67,17 @@ void main() {
         final token = await freshController.token;
         expect(token, mockToken);
       });
+
+      test('waits for storage read to complete', () async {
+        final mockToken = MockToken();
+        when(() => tokenStorage.read()).thenAnswer((_) async {
+          await Future<void>.delayed(Duration.zero);
+          return mockToken;
+        });
+        final freshController = FreshController<OAuth2Token>(tokenStorage);
+        final token = await freshController.token;
+        expect(token, mockToken);
+      });
     });
 
     group('revokeToken', () {
