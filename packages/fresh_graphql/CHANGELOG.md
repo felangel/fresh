@@ -1,3 +1,9 @@
+# 0.6.1
+
+- chore: update copyright year
+- chore: add funding to `pubspec.yaml`
+- ci: revamp ci setup
+
 # 0.6.0
 
 - **BREAKING**: deps: remove `package:graphql` dependency
