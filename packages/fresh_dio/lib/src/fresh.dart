@@ -80,6 +80,29 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    assert(
+      _httpClient.interceptors.every((interceptor) => interceptor != this),
+      '''
+Cycle Detected!
+
+The Fresh instance was created using an http client 
+which already contains the Fresh instance as an interceptor.
+
+This will cause an infinite loop on token refresh.
+  
+Example:
+
+  ```
+  final httpClient = Dio();
+  final fresh = Fresh.oAuth2(
+    httpClient: httpClient,
+    ...
+  );
+  httpClient.interceptors.add(fresh); // <-- BAD
+  ```
+''',
+    );
+
     final currentToken = await token;
     final headers = currentToken != null
         ? _tokenHeader(currentToken)

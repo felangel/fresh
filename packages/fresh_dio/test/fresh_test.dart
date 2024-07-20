@@ -112,6 +112,30 @@ void main() {
 
     group('onRequest', () {
       const oAuth2Token = OAuth2Token(accessToken: 'accessToken');
+
+      test(
+        'throws AssertionError when httpClient.interceptors '
+        'contains the Fresh instance as an interceptor',
+        () {
+          when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
+
+          final httpClient = Dio();
+
+          final fresh = Fresh.oAuth2(
+            tokenStorage: tokenStorage,
+            refreshToken: emptyRefreshToken,
+            httpClient: httpClient,
+          );
+
+          httpClient.interceptors.add(fresh);
+
+          expect(
+            fresh.onRequest(RequestOptions(), RequestInterceptorHandler()),
+            throwsA(isA<AssertionError>()),
+          );
+        },
+      );
+
       test(
           'appends token header when token is OAuth2Token '
           'and tokenHeader is not provided', () async {
