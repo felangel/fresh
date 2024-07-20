@@ -68,7 +68,7 @@ void main() {
         expect(token, mockToken);
       });
 
-      test('token waits for storage read to complete.', () async {
+      test('waits for storage read to complete', () async {
         final mockToken = MockToken();
         when(() => tokenStorage.read()).thenAnswer((_) async {
           await Future<void>.delayed(Duration.zero);
