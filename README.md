@@ -1,6 +1,6 @@
 # Fresh 🍋
 
-[![ci](https://github.com/felangel/fresh/actions/workflows/ci.yaml/badge.svg)](https://github.com/felangel/fresh/actions/workflows/ci.yaml)
+[![build](https://github.com/felangel/fresh/actions/workflows/main.yaml/badge.svg)](https://github.com/felangel/fresh/actions/workflows/main.yaml)
 [![coverage](./packages/fresh/coverage_badge.svg)](https://github.com/felangel/fresh/actions/workflows/ci.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-purple.svg)](https://opensource.org/licenses/MIT)
 
