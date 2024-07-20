@@ -60,7 +60,7 @@ class Login extends StatelessWidget {
                     : const Text('Login'),
               );
             },
-          )
+          ),
         ],
       ),
     );

@@ -3,8 +3,9 @@ description: An token refresh library for dart. This package exposes the core co
 repository: https://github.com/felangel/fresh
 issue_tracker: https://github.com/felangel/fresh/issues
 homepage: https://github.com/felangel/fresh
+funding: [https://github.com/sponsors/felangel]
 
-version: 0.4.2
+version: 0.4.3
 
 environment:
   sdk: ">=2.12.0 <4.0.0"

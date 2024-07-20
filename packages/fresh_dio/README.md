@@ -1,7 +1,7 @@
 # fresh_dio 🍋
 
 [![Pub](https://img.shields.io/pub/v/fresh_dio.svg)](https://pub.dev/packages/fresh_dio)
-[![fresh_dio](https://github.com/felangel/fresh/actions/workflows/fresh_dio.yaml/badge.svg)](https://github.com/felangel/fresh/actions/workflows/fresh_dio.yaml)
+[![build](https://github.com/felangel/fresh/actions/workflows/main.yaml/badge.svg)](https://github.com/felangel/fresh/actions/workflows/main.yaml)
 [![coverage](https://raw.githubusercontent.com/felangel/fresh/master/packages/fresh_dio/coverage_badge.svg)](https://github.com/felangel/fresh/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-purple.svg)](https://opensource.org/licenses/MIT)
 
