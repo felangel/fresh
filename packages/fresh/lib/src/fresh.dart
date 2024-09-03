@@ -2,7 +2,11 @@ import 'dart:async';
 
 /// An Exception that should be thrown when overriding `refreshToken` if the
 /// refresh fails and should result in a force-logout.
-class RevokeTokenException implements Exception {}
+class RevokeTokenException implements Exception {
+  @override
+  String toString() =>
+      'RevokeTokenException: refresh fails and should result in a force-logout';
+}
 
 /// {@template oauth2_token}
 /// Standard OAuth2Token as defined by
