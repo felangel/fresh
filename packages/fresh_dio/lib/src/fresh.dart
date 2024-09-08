@@ -49,14 +49,14 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   ///   ),
   /// );
   /// ```
-  static Fresh<OAuth2Token> oAuth2({
-    required TokenStorage<OAuth2Token> tokenStorage,
-    required RefreshToken<OAuth2Token> refreshToken,
+  static Fresh<T> oAuth2<T extends OAuth2Token>({
+    required TokenStorage<T> tokenStorage,
+    required RefreshToken<T> refreshToken,
     ShouldRefresh? shouldRefresh,
     Dio? httpClient,
-    TokenHeaderBuilder<OAuth2Token>? tokenHeader,
+    TokenHeaderBuilder<T>? tokenHeader,
   }) {
-    return Fresh<OAuth2Token>(
+    return Fresh<T>(
       refreshToken: refreshToken,
       tokenStorage: tokenStorage,
       shouldRefresh: shouldRefresh,
