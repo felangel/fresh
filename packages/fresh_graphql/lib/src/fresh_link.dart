@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 typedef ShouldRefresh = bool Function(Response);
 
 /// Signature for proactive token validation before a request.
-typedef ShouldRefreshBeforeRequest<T> = bool Function(T? token);
+typedef ShouldRefreshBeforeRequest<T> = Future<bool> Function(T? token);
 
 /// Signature for `refreshToken` on [FreshLink].
 typedef RefreshToken<T> = Future<T> Function(T, http.Client);
@@ -97,7 +97,7 @@ class FreshLink<T> extends Link with FreshMixin<T> {
 
     if (_shouldRefreshBeforeRequest != null &&
         currentToken != null &&
-        _shouldRefreshBeforeRequest!(currentToken)) {
+        await _shouldRefreshBeforeRequest!(currentToken)) {
       try {
         final refreshedToken = await _refreshToken(currentToken, http.Client());
         await setToken(refreshedToken);

@@ -7,7 +7,7 @@ import 'package:fresh_dio/fresh_dio.dart';
 typedef ShouldRefresh = bool Function(Response<dynamic>? response);
 
 /// Signature for proactive token validation before a request.
-typedef ShouldRefreshBeforeRequest<T> = bool Function(T? token);
+typedef ShouldRefreshBeforeRequest<T> = Future<bool> Function(T? token);
 
 /// Signature for `refreshToken` on [Fresh].
 typedef RefreshToken<T> = Future<T> Function(T? token, Dio httpClient);
@@ -115,7 +115,7 @@ Example:
 
     if (_shouldRefreshBeforeRequest != null &&
         currentToken != null &&
-        _shouldRefreshBeforeRequest!(currentToken)) {
+        await _shouldRefreshBeforeRequest!(currentToken)) {
       try {
         final refreshedToken = await _refreshToken(currentToken, _httpClient);
         await setToken(refreshedToken);
