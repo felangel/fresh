@@ -8,14 +8,17 @@ import 'package:http/http.dart' as http;
 /// Signature for `shouldRefresh` on [FreshLink].
 typedef ShouldRefresh = bool Function(Response);
 
+/// Signature for proactive token validation before a request.
+typedef ShouldRefreshBeforeRequest<T> = bool Function(T? token);
+
 /// Signature for `refreshToken` on [FreshLink].
 typedef RefreshToken<T> = Future<T> Function(T, http.Client);
 
 /// {@template fresh_link}
-/// A GraphQL Link which handles manages an authentication token automatically.
+/// A GraphQL Link which manages an authentication token automatically.
 ///
 /// A constructor that returns a Fresh interceptor that uses the
-/// [OAuth2Token] token, the standard token class and define the`
+/// [OAuth2Token] token, the standard token class and defines the
 /// tokenHeader as 'authorization': '${token.tokenType} ${token.accessToken}'
 ///
 /// ```dart
@@ -37,15 +40,17 @@ class FreshLink<T> extends Link with FreshMixin<T> {
     required TokenStorage<T> tokenStorage,
     required RefreshToken<T?> refreshToken,
     required ShouldRefresh shouldRefresh,
+    ShouldRefreshBeforeRequest<T>? shouldRefreshBeforeRequest,
     TokenHeaderBuilder<T?>? tokenHeader,
   })  : _refreshToken = refreshToken,
         _tokenHeader = (tokenHeader ?? (_) => <String, String>{}),
-        _shouldRefresh = shouldRefresh {
+        _shouldRefresh = shouldRefresh,
+        _shouldRefreshBeforeRequest = shouldRefreshBeforeRequest {
     this.tokenStorage = tokenStorage;
   }
 
   ///{@template fresh_link}
-  ///A GraphQL Link which handles manages an authentication token automatically.
+  ///A GraphQL Link which manages an authentication token automatically.
   ///
   /// ```dart
   /// final freshLink = FreshLink.oAuth2(
@@ -64,12 +69,14 @@ class FreshLink<T> extends Link with FreshMixin<T> {
     required TokenStorage<OAuth2Token> tokenStorage,
     required RefreshToken<OAuth2Token?> refreshToken,
     required ShouldRefresh shouldRefresh,
+    ShouldRefreshBeforeRequest<OAuth2Token>? shouldRefreshBeforeRequest,
     TokenHeaderBuilder<OAuth2Token?>? tokenHeader,
   }) {
     return FreshLink<OAuth2Token>(
       refreshToken: refreshToken,
       tokenStorage: tokenStorage,
       shouldRefresh: shouldRefresh,
+      shouldRefreshBeforeRequest: shouldRefreshBeforeRequest,
       tokenHeader: tokenHeader ??
           (token) {
             return {
@@ -82,10 +89,24 @@ class FreshLink<T> extends Link with FreshMixin<T> {
   final RefreshToken<T?> _refreshToken;
   final TokenHeaderBuilder<T?> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
+  final ShouldRefreshBeforeRequest<T>? _shouldRefreshBeforeRequest;
 
   @override
   Stream<Response> request(Request request, [NextLink? forward]) async* {
-    final currentToken = await token;
+    var currentToken = await token;
+
+    if (_shouldRefreshBeforeRequest != null &&
+        currentToken != null &&
+        _shouldRefreshBeforeRequest!(currentToken)) {
+      try {
+        final refreshedToken = await _refreshToken(currentToken, http.Client());
+        await setToken(refreshedToken);
+        currentToken = await token;
+      } on RevokeTokenException catch (_) {
+        unawaited(revokeToken());
+      }
+    }
+
     final tokenHeaders = currentToken != null
         ? _tokenHeader(currentToken)
         : const <String, String>{};
