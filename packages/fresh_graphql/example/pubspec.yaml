@@ -10,3 +10,7 @@ dependencies:
   fresh_graphql:
     path: ../
   graphql: ^5.1.3
+
+dependency_overrides:
+  fresh:
+    path: ../fresh

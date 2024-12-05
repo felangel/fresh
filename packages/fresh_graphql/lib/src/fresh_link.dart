@@ -60,13 +60,13 @@ class FreshLink<T> extends Link with FreshMixin<T> {
   /// );
   /// ```
   /// {@endtemplate}
-  static FreshLink<OAuth2Token> oAuth2({
-    required TokenStorage<OAuth2Token> tokenStorage,
-    required RefreshToken<OAuth2Token?> refreshToken,
+  static FreshLink<T> oAuth2<T extends OAuth2Token>({
+    required TokenStorage<T> tokenStorage,
+    required RefreshToken<T?> refreshToken,
     required ShouldRefresh shouldRefresh,
-    TokenHeaderBuilder<OAuth2Token?>? tokenHeader,
+    TokenHeaderBuilder<T?>? tokenHeader,
   }) {
-    return FreshLink<OAuth2Token>(
+    return FreshLink<T>(
       refreshToken: refreshToken,
       tokenStorage: tokenStorage,
       shouldRefresh: shouldRefresh,
@@ -85,7 +85,17 @@ class FreshLink<T> extends Link with FreshMixin<T> {
 
   @override
   Stream<Response> request(Request request, [NextLink? forward]) async* {
-    final currentToken = await token;
+    var currentToken = await token;
+    final isExpired = currentToken != null && await isTokenExpired();
+    if (isExpired) {
+      try {
+        currentToken = await _refreshToken(currentToken, http.Client());
+        await setToken(currentToken);
+      } on RevokeTokenException catch (_) {
+        await clearToken();
+      }
+    }
+
     final tokenHeaders = currentToken != null
         ? _tokenHeader(currentToken)
         : const <String, String>{};

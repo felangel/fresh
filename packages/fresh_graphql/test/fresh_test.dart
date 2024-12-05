@@ -50,7 +50,7 @@ void main() {
           'request context headers', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => token);
         final request = MockRequest();
-        final freshLink = FreshLink.oAuth2(
+        final freshLink = FreshLink.oAuth2<OAuth2Token>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async => null,
           shouldRefresh: (_) => false,
@@ -80,7 +80,7 @@ void main() {
           'operation context headers', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => token);
         final request = MockRequest();
-        final freshLink = FreshLink.oAuth2(
+        final freshLink = FreshLink.oAuth2<OAuth2Token>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async => null,
           shouldRefresh: (_) => false,
@@ -104,7 +104,7 @@ void main() {
           'operation context headers when token is null', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         final request = MockRequest();
-        final freshLink = FreshLink.oAuth2(
+        final freshLink = FreshLink.oAuth2<OAuth2Token>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async => null,
           shouldRefresh: (_) => false,
@@ -175,7 +175,7 @@ void main() {
         final response = MockResponse();
         when(() => response.errors)
             .thenReturn([const GraphQLError(message: 'oops')]);
-        final freshLink = FreshLink.oAuth2(
+        final freshLink = FreshLink.oAuth2<OAuth2Token>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
             refreshTokenCallCount++;
@@ -256,7 +256,7 @@ void main() {
           when(() => tokenStorage.read()).thenAnswer((_) async => null);
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           final token = MockOAuth2Token();
-          final freshLink = FreshLink.oAuth2(
+          final freshLink = FreshLink.oAuth2<OAuth2Token>(
             tokenStorage: tokenStorage,
             refreshToken: emptyRefreshToken,
             shouldRefresh: (_) => false,
@@ -270,7 +270,7 @@ void main() {
               .thenAnswer((_) async => MockOAuth2Token());
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           when(() => tokenStorage.delete()).thenAnswer((_) async {});
-          final freshLink = FreshLink.oAuth2(
+          final freshLink = FreshLink.oAuth2<OAuth2Token>(
             tokenStorage: tokenStorage,
             refreshToken: emptyRefreshToken,
             shouldRefresh: (_) => false,
@@ -286,7 +286,7 @@ void main() {
               .thenAnswer((_) async => MockOAuth2Token());
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           when(() => tokenStorage.delete()).thenAnswer((_) async {});
-          final freshLink = FreshLink.oAuth2(
+          final freshLink = FreshLink.oAuth2<OAuth2Token>(
             tokenStorage: tokenStorage,
             refreshToken: emptyRefreshToken,
             shouldRefresh: (_) => false,
@@ -301,7 +301,7 @@ void main() {
       test('should close streams', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
-        final fresh = FreshLink.oAuth2(
+        final fresh = FreshLink.oAuth2<OAuth2Token>(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
           shouldRefresh: (_) => false,

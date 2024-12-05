@@ -19,6 +19,12 @@ dependencies:
   user_repository:
     path: packages/user_repository
 
+dependency_overrides:
+  fresh:
+    path: ../../fresh
+  fresh_dio:
+    path: ../
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
