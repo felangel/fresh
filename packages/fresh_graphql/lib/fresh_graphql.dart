@@ -1,6 +1,7 @@
 export 'package:fresh/fresh.dart'
     show
         AuthenticationStatus,
+        InMemoryOAuth2TokenStorage,
         InMemoryTokenStorage,
         OAuth2Token,
         RevokeTokenException,

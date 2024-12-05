@@ -16,8 +16,8 @@ class JsonplaceholderClient {
           );
 
   static var _refreshCount = 0;
-  static final _fresh = Fresh.oAuth2(
-    tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+  static final _fresh = Fresh.oAuth2<OAuth2Token>(
+    tokenStorage: InMemoryOAuth2TokenStorage<OAuth2Token>(),
     refreshToken: (token, client) async {
       print('refreshing token...');
       await Future<void>.delayed(const Duration(seconds: 1));
@@ -30,6 +30,7 @@ class JsonplaceholderClient {
       return OAuth2Token(
         accessToken: 'access_token_$_refreshCount',
         refreshToken: 'refresh_token_$_refreshCount',
+        expiresIn: 30,
       );
     },
     shouldRefresh: (_) => Random().nextInt(3) == 0,
@@ -49,6 +50,7 @@ class JsonplaceholderClient {
       const OAuth2Token(
         accessToken: 'initial_access_token',
         refreshToken: 'initial_refresh_token',
+        expiresIn: 30, // expires every 30 seconds
       ),
     );
   }

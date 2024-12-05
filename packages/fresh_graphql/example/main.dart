@@ -16,7 +16,7 @@ const getJobsQuery = '''
 
 void main() async {
   final freshLink = FreshLink.oAuth2(
-    tokenStorage: InMemoryTokenStorage(),
+    tokenStorage: InMemoryOAuth2TokenStorage(),
     refreshToken: (token, client) async {
       // Perform refresh and return new token
       print('refreshing token!');

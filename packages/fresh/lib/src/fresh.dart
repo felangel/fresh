@@ -48,7 +48,7 @@ enum AuthenticationStatus {
 }
 
 /// An interface which must be implemented to
-/// read, write, and delete the `Token`.
+/// manage the underlying `Token`.
 abstract class TokenStorage<T> {
   /// Returns the stored token asynchronously.
   Future<T?> read();
@@ -58,6 +58,9 @@ abstract class TokenStorage<T> {
 
   /// Deletes the stored token asynchronously.
   Future<void> delete();
+
+  /// Whether the stored token is expired.
+  Future<bool> isExpired() async => false;
 }
 
 /// Function responsible for building the token header(s) give a [token].
@@ -66,7 +69,7 @@ typedef TokenHeaderBuilder<T> = Map<String, String> Function(
 );
 
 /// A [TokenStorage] implementation that keeps the token in memory.
-class InMemoryTokenStorage<T> implements TokenStorage<T> {
+class InMemoryTokenStorage<T> extends TokenStorage<T> {
   T? _token;
 
   @override
@@ -82,6 +85,41 @@ class InMemoryTokenStorage<T> implements TokenStorage<T> {
   @override
   Future<void> write(T token) async {
     _token = token;
+  }
+}
+
+/// A [TokenStorage] implementation that keeps the [OAuth2Token] in memory.
+class InMemoryOAuth2TokenStorage<T extends OAuth2Token>
+    extends TokenStorage<T> {
+  T? _token;
+  DateTime? _expiresAt;
+
+  @override
+  Future<bool> isExpired() async {
+    if (_expiresAt == null) return false;
+    return DateTime.now()
+        .toUtc()
+        .isAfter(_expiresAt!.subtract(const Duration(seconds: 10)));
+  }
+
+  @override
+  Future<void> delete() async {
+    _token = null;
+    _expiresAt = null;
+  }
+
+  @override
+  Future<T?> read() async {
+    return _token;
+  }
+
+  @override
+  Future<void> write(T token) async {
+    _token = token;
+    if (token.expiresIn != null) {
+      _expiresAt =
+          DateTime.now().toUtc().add(Duration(seconds: token.expiresIn!));
+    }
   }
 }
 
@@ -103,6 +141,9 @@ mixin FreshMixin<T> {
   set tokenStorage(TokenStorage<T> tokenStorage) {
     _tokenStorage = tokenStorage..read().then(_updateStatus);
   }
+
+  /// Returns whether the current token is expired.
+  Future<bool> isTokenExpired() => _tokenStorage.isExpired();
 
   /// Returns the current token.
   Future<T?> get token async {
