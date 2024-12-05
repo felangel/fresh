@@ -33,6 +33,15 @@ class JsonplaceholderClient {
       );
     },
     shouldRefresh: (_) => Random().nextInt(3) == 0,
+    shouldRefreshBeforeRequest: (token) async {
+      print('Checking token validity before request...');
+      final now = currentUnixTime();
+      final issuedAt = await fetchIssuedAt();
+      if (token?.expiresIn != null && issuedAt != null) {
+        return (issuedAt + token!.expiresIn!) < now;
+      }
+      return false;
+    },
   );
 
   final Dio _httpClient;
@@ -45,10 +54,13 @@ class JsonplaceholderClient {
     required String password,
   }) async {
     await Future<void>.delayed(const Duration(seconds: 1));
+    final issuedAt = currentUnixTime();
+    await storeIssuedAt(issuedAt);
     await _fresh.setToken(
       const OAuth2Token(
         accessToken: 'initial_access_token',
         refreshToken: 'initial_refresh_token',
+        expiresIn: 60,
       ),
     );
   }
@@ -68,5 +80,24 @@ class JsonplaceholderClient {
     return (response.data as List)
         .map((dynamic item) => Photo.fromJson(item as Map<String, dynamic>))
         .toList();
+  }
+
+  /// Returns the current Unix time in seconds (since January 1, 1970, UTC).
+  static int currentUnixTime() {
+    return DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  }
+
+  /// Simulate storing issuedAt when a token is set or refreshed.
+  static int? _storedIssuedAt;
+
+  static Future<void> storeIssuedAt(int issuedTime) async {
+    print('Storing issuedAt: $issuedTime');
+    _storedIssuedAt = issuedTime;
+  }
+
+  /// Simulate fetching issuedAt from storage.
+  static Future<int?> fetchIssuedAt() async {
+    print('Fetching issuedAt...');
+    return _storedIssuedAt;
   }
 }
