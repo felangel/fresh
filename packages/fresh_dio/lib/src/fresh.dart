@@ -162,10 +162,11 @@ Example:
 
     await setToken(refreshedToken);
     _httpClient.options.baseUrl = response.requestOptions.baseUrl;
+    final data = response.requestOptions.data;
     return _httpClient.request<dynamic>(
       response.requestOptions.path,
       cancelToken: response.requestOptions.cancelToken,
-      data: response.requestOptions.data,
+      data: data is FormData ? data.clone() : data,
       onReceiveProgress: response.requestOptions.onReceiveProgress,
       onSendProgress: response.requestOptions.onSendProgress,
       queryParameters: response.requestOptions.queryParameters,
