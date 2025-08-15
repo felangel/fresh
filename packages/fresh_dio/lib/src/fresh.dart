@@ -49,14 +49,14 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   ///   ),
   /// );
   /// ```
-  static Fresh<OAuth2Token> oAuth2({
-    required TokenStorage<OAuth2Token> tokenStorage,
-    required RefreshToken<OAuth2Token> refreshToken,
+  static Fresh<T> oAuth2<T extends OAuth2Token>({
+    required TokenStorage<T> tokenStorage,
+    required RefreshToken<T> refreshToken,
     ShouldRefresh? shouldRefresh,
     Dio? httpClient,
-    TokenHeaderBuilder<OAuth2Token>? tokenHeader,
+    TokenHeaderBuilder<T>? tokenHeader,
   }) {
-    return Fresh<OAuth2Token>(
+    return Fresh<T>(
       refreshToken: refreshToken,
       tokenStorage: tokenStorage,
       shouldRefresh: shouldRefresh,
@@ -162,10 +162,11 @@ Example:
 
     await setToken(refreshedToken);
     _httpClient.options.baseUrl = response.requestOptions.baseUrl;
+    final data = response.requestOptions.data;
     return _httpClient.request<dynamic>(
       response.requestOptions.path,
       cancelToken: response.requestOptions.cancelToken,
-      data: response.requestOptions.data,
+      data: data is FormData ? data.clone() : data,
       onReceiveProgress: response.requestOptions.onReceiveProgress,
       onSendProgress: response.requestOptions.onSendProgress,
       queryParameters: response.requestOptions.queryParameters,

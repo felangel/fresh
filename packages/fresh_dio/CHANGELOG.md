@@ -1,3 +1,9 @@
+# 0.4.3
+
+- fix: clone `FormData` on retry
+- feat: support subclasses of `OAuth2Token` in `Fresh.oAuth2`
+- chore: upgrade to `mocktail ^1.0.0`
+
 # 0.4.2
 
 - feat: add `assert` to prevent infinite refresh loop

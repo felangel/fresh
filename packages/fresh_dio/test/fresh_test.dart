@@ -26,6 +26,8 @@ class MockErrorInterceptorHandler extends Mock
 
 class MockHttpClient extends Mock implements Dio {}
 
+class MockFormData extends Mock implements FormData {}
+
 class FakeRequestOptions extends Fake implements RequestOptions {}
 
 class FakeResponse<T> extends Fake implements Response<T> {}
@@ -558,6 +560,187 @@ void main() {
           () => httpClient.request<dynamic>(
             '/mock/path',
             queryParameters: <String, String>{},
+            options: any(named: 'options'),
+          ),
+        ).called(1);
+        verify(() => tokenStorage.write(token)).called(1);
+      });
+
+      test(
+          'clones request data when retrying requests '
+          'when data is FormData', () async {
+        var refreshCallCount = 0;
+
+        final token = MockToken();
+        final tokenStorage = MockTokenStorage<MockToken>();
+        when(tokenStorage.read).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        final formData = MockFormData();
+        final clonedFormData = MockFormData();
+        when(formData.clone).thenReturn(clonedFormData);
+
+        final request = MockRequestOptions();
+        when(() => request.path).thenReturn('/mock/path');
+        when(() => request.baseUrl).thenReturn('https://test.com');
+        when(() => request.headers).thenReturn(<String, String>{});
+        when(() => request.queryParameters).thenReturn(<String, String>{});
+        when(() => request.method).thenReturn('POST');
+        when(() => request.sendTimeout).thenReturn(Duration.zero);
+        when(() => request.receiveTimeout).thenReturn(Duration.zero);
+        when(() => request.extra).thenReturn(<String, String>{});
+        when(() => request.responseType).thenReturn(ResponseType.json);
+        when(() => request.validateStatus).thenReturn((_) => false);
+        when(() => request.receiveDataWhenStatusError).thenReturn(false);
+        when(() => request.followRedirects).thenReturn(false);
+        when(() => request.maxRedirects).thenReturn(0);
+        when(() => request.listFormat).thenReturn(ListFormat.multi);
+        when(() => request.contentType).thenReturn('multipart/form-data');
+        when(() => request.data).thenReturn(formData);
+
+        final error = MockDioException();
+        final response = MockResponse<dynamic>();
+        when(() => response.statusCode).thenReturn(401);
+        when(() => error.response).thenReturn(response);
+        when(() => response.requestOptions).thenReturn(request);
+
+        final options = MockOptions();
+        final httpClient = MockHttpClient();
+        when(() => httpClient.options).thenReturn(options);
+        when(
+          () => httpClient.request<dynamic>(
+            any(),
+            cancelToken: any(named: 'cancelToken'),
+            data: any<dynamic>(named: 'data'),
+            onReceiveProgress: any(named: 'onReceiveProgress'),
+            onSendProgress: any(named: 'onSendProgress'),
+            queryParameters: any(named: 'queryParameters'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        final fresh = Fresh<MockToken>(
+          tokenStorage: tokenStorage,
+          refreshToken: (_, __) async {
+            refreshCallCount++;
+            return token;
+          },
+          tokenHeader: (_) => {
+            'custom-name': 'custom-value',
+          },
+          httpClient: httpClient,
+        );
+
+        await expectLater(
+          fresh.authenticationStatus,
+          emitsInOrder(
+            const <AuthenticationStatus>[
+              AuthenticationStatus.authenticated,
+            ],
+          ),
+        );
+        await fresh.onError(error, errorHandler);
+
+        final result = verify(() => errorHandler.resolve(captureAny()))
+          ..called(1);
+        final actual = result.captured.first as MockResponse;
+        expect(refreshCallCount, 1);
+        expect(actual, response);
+        verify(() => options.baseUrl = 'https://test.com').called(1);
+        verify(formData.clone).called(1);
+        verify(
+          () => httpClient.request<dynamic>(
+            '/mock/path',
+            queryParameters: <String, String>{},
+            data: clonedFormData,
+            options: any(named: 'options'),
+          ),
+        ).called(1);
+        verify(() => tokenStorage.write(token)).called(1);
+      });
+
+      test(
+          'does not modify request data during request retries '
+          'when data is not FormData', () async {
+        var refreshCallCount = 0;
+
+        final token = MockToken();
+        final tokenStorage = MockTokenStorage<MockToken>();
+        when(tokenStorage.read).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        final data = Object();
+        final request = MockRequestOptions();
+        when(() => request.path).thenReturn('/mock/path');
+        when(() => request.baseUrl).thenReturn('https://test.com');
+        when(() => request.headers).thenReturn(<String, String>{});
+        when(() => request.queryParameters).thenReturn(<String, String>{});
+        when(() => request.method).thenReturn('POST');
+        when(() => request.sendTimeout).thenReturn(Duration.zero);
+        when(() => request.receiveTimeout).thenReturn(Duration.zero);
+        when(() => request.extra).thenReturn(<String, String>{});
+        when(() => request.responseType).thenReturn(ResponseType.json);
+        when(() => request.validateStatus).thenReturn((_) => false);
+        when(() => request.receiveDataWhenStatusError).thenReturn(false);
+        when(() => request.followRedirects).thenReturn(false);
+        when(() => request.maxRedirects).thenReturn(0);
+        when(() => request.listFormat).thenReturn(ListFormat.csv);
+        when(() => request.data).thenReturn(data);
+
+        final error = MockDioException();
+        final response = MockResponse<dynamic>();
+        when(() => response.statusCode).thenReturn(401);
+        when(() => error.response).thenReturn(response);
+        when(() => response.requestOptions).thenReturn(request);
+
+        final options = MockOptions();
+        final httpClient = MockHttpClient();
+        when(() => httpClient.options).thenReturn(options);
+        when(
+          () => httpClient.request<dynamic>(
+            any(),
+            cancelToken: any(named: 'cancelToken'),
+            data: any<dynamic>(named: 'data'),
+            onReceiveProgress: any(named: 'onReceiveProgress'),
+            onSendProgress: any(named: 'onSendProgress'),
+            queryParameters: any(named: 'queryParameters'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        final fresh = Fresh<MockToken>(
+          tokenStorage: tokenStorage,
+          refreshToken: (_, __) async {
+            refreshCallCount++;
+            return token;
+          },
+          tokenHeader: (_) => {
+            'custom-name': 'custom-value',
+          },
+          httpClient: httpClient,
+        );
+
+        await expectLater(
+          fresh.authenticationStatus,
+          emitsInOrder(
+            const <AuthenticationStatus>[
+              AuthenticationStatus.authenticated,
+            ],
+          ),
+        );
+        await fresh.onError(error, errorHandler);
+
+        final result = verify(() => errorHandler.resolve(captureAny()))
+          ..called(1);
+        final actual = result.captured.first as MockResponse;
+        expect(refreshCallCount, 1);
+        expect(actual, response);
+        verify(() => options.baseUrl = 'https://test.com').called(1);
+        verify(
+          () => httpClient.request<dynamic>(
+            '/mock/path',
+            queryParameters: <String, String>{},
+            data: data,
             options: any(named: 'options'),
           ),
         ).called(1);
