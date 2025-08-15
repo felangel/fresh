@@ -7,7 +7,10 @@ import 'package:fresh_dio/fresh_dio.dart';
 typedef ShouldRefresh = bool Function(Response<dynamic>? response);
 
 /// Signature for `shouldRefreshBeforeRequest` on [Fresh].
-typedef ShouldRefreshBeforeRequest<T> = bool Function(T? token);
+typedef ShouldRefreshBeforeRequest<T> = bool Function(
+  RequestOptions requestOptions,
+  T? token,
+);
 
 /// Signature for `refreshToken` on [Fresh].
 typedef RefreshToken<T> = Future<T> Function(T? token, Dio httpClient);
@@ -112,7 +115,11 @@ Example:
 
     var currentToken = await token;
 
-    final shouldRefresh = _shouldRefreshBeforeRequest(currentToken);
+    final shouldRefresh = _shouldRefreshBeforeRequest(
+      options,
+      currentToken,
+    );
+
     if (shouldRefresh) {
       try {
         final refreshedToken = await _refreshToken(currentToken, _httpClient);
@@ -215,13 +222,12 @@ Example:
     return response?.statusCode == 401;
   }
 
-  static bool _defaultShouldRefreshBeforeRequest<T>(T? token) {
-    if (token is AuthToken) {
+  static bool _defaultShouldRefreshBeforeRequest<T>(
+    RequestOptions requestOptions,
+    T? token,
+  ) {
+    if (token case AuthToken(expireDate: final DateTime expireDate)) {
       final now = DateTime.now();
-      final expireDate = token.expireDate;
-      if (expireDate == null) {
-        return false;
-      }
       return expireDate.isBefore(now);
     }
 

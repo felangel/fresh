@@ -206,7 +206,7 @@ void main() {
           refreshToken: emptyRefreshToken,
           tokenHeader: (token) =>
               {'authorization': '${token.tokenType} ${token.accessToken}'},
-          shouldRefreshBeforeRequest: (token) {
+          shouldRefreshBeforeRequest: (requestOptions, token) {
             customCallCount++;
             return false;
           },
@@ -240,6 +240,63 @@ void main() {
         await fresh.onRequest(options, requestHandler);
 
         verify(() => tokenStorage.delete()).called(1);
+      });
+
+      test('passes RequestOptions to shouldRefreshBeforeRequest', () async {
+        const token = OAuth2Token(accessToken: 'accessToken');
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        RequestOptions? capturedOptions;
+        final fresh = Fresh<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+          tokenHeader: (token) =>
+              {'authorization': '${token.tokenType} ${token.accessToken}'},
+          shouldRefreshBeforeRequest: (requestOptions, token) {
+            capturedOptions = requestOptions;
+            return false;
+          },
+        );
+
+        final options = RequestOptions(path: '/api/test', method: 'GET');
+        await fresh.onRequest(options, requestHandler);
+
+        expect(capturedOptions, isNotNull);
+        expect(capturedOptions!.path, '/api/test');
+        expect(capturedOptions!.method, 'GET');
+      });
+
+      test('can refresh based on request path', () async {
+        const token = OAuth2Token(accessToken: 'accessToken');
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        var refreshCallCount = 0;
+        final fresh = Fresh<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (token, client) async {
+            refreshCallCount++;
+            return const OAuth2Token(accessToken: 'refreshedToken');
+          },
+          tokenHeader: (token) =>
+              {'authorization': '${token.tokenType} ${token.accessToken}'},
+          shouldRefreshBeforeRequest: (requestOptions, token) {
+            // Only refresh for sensitive paths
+            return requestOptions.path.contains('/sensitive');
+          },
+        );
+
+        // Non-sensitive path should not trigger refresh
+        var options = RequestOptions(path: '/api/public');
+        await fresh.onRequest(options, requestHandler);
+        expect(refreshCallCount, 0);
+
+        // Sensitive path should trigger refresh
+        options = RequestOptions(path: '/api/sensitive');
+        await fresh.onRequest(options, requestHandler);
+        expect(refreshCallCount, 1);
+        verify(() => tokenStorage.write(any())).called(1);
       });
     });
 

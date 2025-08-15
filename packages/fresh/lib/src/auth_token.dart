@@ -1,3 +1,5 @@
+import 'package:fresh/src/fresh.dart';
+
 /// {@template auth_token}
 /// Base class for all authentication tokens.
 /// {@endtemplate}
@@ -23,6 +25,7 @@ abstract class AuthToken {
   final String? tokenType;
 
   /// The date the token was issued.
+  /// If not provided, set to the current date in [FreshMixin.setToken].
   final DateTime? issuedAt;
 
   /// Creates a copy of the token with the given properties updated.
@@ -38,6 +41,8 @@ abstract class AuthToken {
 /// Standard OAuth2Token as defined by
 /// https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
 /// with added support for the issue date.
+///
+/// Interface class to ensure that copyWith is correctly implemented.
 /// {@endtemplate}
 interface class OAuth2Token extends AuthToken {
   /// {macro oauth2_token}

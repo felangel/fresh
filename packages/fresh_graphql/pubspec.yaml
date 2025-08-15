@@ -8,7 +8,7 @@ funding: [https://github.com/sponsors/felangel]
 version: 0.6.1
 
 environment:
-  sdk: ">=2.15.0 <4.0.0"
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   # TODO: replace path with pub.dev version before publishing

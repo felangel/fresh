@@ -9,7 +9,10 @@ import 'package:http/http.dart' as http;
 typedef ShouldRefresh = bool Function(Response);
 
 /// Signature for `shouldRefreshBeforeRequest` on [FreshLink].
-typedef ShouldRefreshBeforeRequest<T> = bool Function(T? token);
+typedef ShouldRefreshBeforeRequest<T> = bool Function(
+  Request request,
+  T? token,
+);
 
 /// Signature for `refreshToken` on [FreshLink].
 typedef RefreshToken<T> = Future<T> Function(T, http.Client);
@@ -98,8 +101,11 @@ class FreshLink<T> extends Link with FreshMixin<T> {
 
     var currentToken = await token;
 
-    final shouldRefresh =
-        _shouldRefreshBeforeRequest?.call(currentToken) ?? false;
+    final shouldRefresh = _shouldRefreshBeforeRequest.call(
+      request,
+      currentToken,
+    );
+
     if (shouldRefresh) {
       try {
         final refreshedToken = await _refreshToken(currentToken, httpClient);
@@ -155,13 +161,9 @@ class FreshLink<T> extends Link with FreshMixin<T> {
     }
   }
 
-  static bool _defaultShouldRefreshBeforeRequest<T>(T? token) {
-    if (token is AuthToken) {
+  static bool _defaultShouldRefreshBeforeRequest<T>(Request request, T? token) {
+    if (token case AuthToken(expireDate: final DateTime expireDate)) {
       final now = DateTime.now();
-      final expireDate = token.expireDate;
-      if (expireDate == null) {
-        return false;
-      }
       return expireDate.isBefore(now);
     }
 

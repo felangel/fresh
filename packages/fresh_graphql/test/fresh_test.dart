@@ -133,7 +133,7 @@ void main() {
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async => token,
           shouldRefresh: (_) => false,
-          shouldRefreshBeforeRequest: (token) {
+          shouldRefreshBeforeRequest: (request, token) {
             customCallCount++;
             return false;
           },
@@ -174,6 +174,72 @@ void main() {
         );
 
         verify(() => tokenStorage.delete()).called(1);
+      });
+
+      test('passes Request to shouldRefreshBeforeRequest', () async {
+        const token = OAuth2Token(accessToken: 'accessToken');
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+
+        Request? capturedRequest;
+        final freshLink = FreshLink.oAuth2<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (_, __) async => token,
+          shouldRefresh: (_) => false,
+          shouldRefreshBeforeRequest: (request, token) {
+            capturedRequest = request;
+            return false;
+          },
+        );
+
+        final request = MockRequest();
+        await expectLater(
+          freshLink.request(request, (operation) async* {}),
+          emitsDone,
+        );
+
+        expect(capturedRequest, isNotNull);
+        expect(capturedRequest, equals(request));
+      });
+
+      test('can refresh based on request data', () async {
+        const token = OAuth2Token(accessToken: 'accessToken');
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        var refreshCallCount = 0;
+        final freshLink = FreshLink.oAuth2<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (_, __) async {
+            refreshCallCount++;
+            return const OAuth2Token(accessToken: 'refreshedToken');
+          },
+          shouldRefresh: (_) => false,
+          shouldRefreshBeforeRequest: (request, token) {
+            // Check if request is a mock with headers
+            if (request is MockRequest) {
+              return request.headers.isNotEmpty;
+            }
+            return false;
+          },
+        );
+
+        // Request without headers should not trigger refresh
+        var request = MockRequest();
+        await expectLater(
+          freshLink.request(request, (operation) async* {}),
+          emitsDone,
+        );
+        expect(refreshCallCount, 0);
+
+        // Request with headers should trigger refresh
+        request = MockRequest();
+        request.headers['operation'] = 'sensitiveOperation';
+        await expectLater(
+          freshLink.request(request, (operation) async* {}),
+          emitsDone,
+        );
+        expect(refreshCallCount, 1);
+        verify(() => tokenStorage.write(any())).called(1);
       });
     });
 
