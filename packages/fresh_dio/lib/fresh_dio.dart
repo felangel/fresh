@@ -1,7 +1,7 @@
 export 'package:dio/dio.dart' show Dio, Response;
 export 'package:fresh/fresh.dart'
     show
-        AuthToken,
+        Token,
         AuthenticationStatus,
         FreshMixin,
         InMemoryTokenStorage,

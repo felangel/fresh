@@ -1,13 +1,10 @@
 # 0.5.0
 
-- **BREAKING**: `OAuth2Token` is now final and cannot be extended
-  - Extend `AuthToken` instead of `OAuth2Token` for custom token types
-- feat: add `issuedAt` field to `AuthToken` base class
-- feat: `setToken` now automatically sets `issuedAt` if not provided
-- feat: add `AuthToken.expireDate` getter for token expiration validation
-- fix: address race condition in `setToken`/`clearToken` operations
-  - Token getter now waits for storage operations to complete
-  - Authentication status is set to `undetermined` during token updates
+- feat: add `Token` base class for token extensibility
+- feat: add `OAuth2Token.issuedAt` field for token issue date tracking  
+- feat: add `Token.expiresAt` getter for token expiration validation
+- feat: enhanced token architecture with cleaner inheritance
+- chore: adjust dart sdk constraint to `">=3.0.0 <4.0.0"`
 
 # 0.4.3
 

@@ -21,7 +21,7 @@ typedef RefreshToken<T> = Future<T> Function(T, http.Client);
 /// A GraphQL Link which handles manages an authentication token automatically.
 ///
 /// A constructor that returns a Fresh interceptor that uses the
-/// [AuthToken] token, the standard token class and define the`
+/// [Token] token, the standard token class and define the`
 /// tokenHeader as 'authorization': '${token.tokenType} ${token.accessToken}'
 ///
 /// ```dart
@@ -69,7 +69,7 @@ class FreshLink<T> extends Link with FreshMixin<T> {
   /// );
   /// ```
   /// {@endtemplate}
-  static FreshLink<T> oAuth2<T extends AuthToken>({
+  static FreshLink<T> oAuth2<T extends Token>({
     required TokenStorage<T> tokenStorage,
     required RefreshToken<T?> refreshToken,
     required ShouldRefresh shouldRefresh,
@@ -162,9 +162,9 @@ class FreshLink<T> extends Link with FreshMixin<T> {
   }
 
   static bool _defaultShouldRefreshBeforeRequest<T>(Request request, T? token) {
-    if (token case AuthToken(expireDate: final DateTime expireDate)) {
+    if (token case Token(:final DateTime expiresAt)) {
       final now = DateTime.now();
-      return expireDate.isBefore(now);
+      return expiresAt.isBefore(now);
     }
 
     return false;

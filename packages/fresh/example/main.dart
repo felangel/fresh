@@ -1,6 +1,6 @@
 import 'package:fresh/fresh.dart';
 
-class InMemoryTokenStorage<T extends AuthToken> implements TokenStorage<T> {
+class InMemoryTokenStorage<T extends Token> implements TokenStorage<T> {
   T? _token;
 
   @override

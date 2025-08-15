@@ -48,7 +48,7 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   }
 
   /// A constructor that returns a [Fresh] interceptor that uses an
-  /// [AuthToken] token.
+  /// [Token] token.
   ///
   /// ```dart
   /// dio.interceptors.add(
@@ -58,7 +58,7 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   ///   ),
   /// );
   /// ```
-  static Fresh<T> oAuth2<T extends AuthToken>({
+  static Fresh<T> oAuth2<T extends Token>({
     required TokenStorage<T> tokenStorage,
     required RefreshToken<T> refreshToken,
     ShouldRefresh? shouldRefresh,
@@ -226,9 +226,9 @@ Example:
     RequestOptions requestOptions,
     T? token,
   ) {
-    if (token case AuthToken(expireDate: final DateTime expireDate)) {
+    if (token case Token(:final DateTime expiresAt)) {
       final now = DateTime.now();
-      return expireDate.isBefore(now);
+      return expiresAt.isBefore(now);
     }
 
     return false;

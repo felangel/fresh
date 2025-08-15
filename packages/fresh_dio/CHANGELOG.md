@@ -1,8 +1,9 @@
 # 0.5.0
 
 - feat: `ShouldRefreshBeforeRequest` allows conditional token refresh based on request details (path, headers, etc.) and token expiration
-- feat: automatic token refresh based on expiration before requests
-- feat: enhanced token validation with `AuthToken.expireDate`
+- feat: automatic token refresh based on expiration before requests  
+- feat: enhanced token validation with `Token.expiresAt` getter
+- feat: support for custom token validation logic with RequestOptions context
 - chore: adjust dart sdk constraint to `">=3.0.0 <4.0.0"`
 
 # 0.4.3

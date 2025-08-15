@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:fresh/src/auth_token.dart';
-
 /// An Exception that should be thrown when overriding `refreshToken` if the
 /// refresh fails and should result in a force-logout.
 class RevokeTokenException implements Exception {}
@@ -100,10 +98,8 @@ mixin FreshMixin<T> {
   Future<void> setToken(T? token) async {
     if (token == null) return clearToken();
 
-    final tokenWithIssueDate = _addIssueDateToToken(token);
-
-    await _tokenStorage.write(tokenWithIssueDate);
-    _updateStatus(tokenWithIssueDate);
+    await _tokenStorage.write(token);
+    _updateStatus(token);
   }
 
   /// Delete the storaged [token]. and emit the
@@ -144,13 +140,5 @@ mixin FreshMixin<T> {
         : AuthenticationStatus.unauthenticated;
     _token = token;
     _controller.add(_authenticationStatus);
-  }
-
-  /// Adds the issue date to the token if it is not present.
-  T _addIssueDateToToken(T token) {
-    if (token is AuthToken && token.issuedAt == null) {
-      return token.copyWith(issuedAt: DateTime.now()) as T;
-    }
-    return token;
   }
 }

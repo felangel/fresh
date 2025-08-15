@@ -457,11 +457,6 @@ void main() {
           when(() => tokenStorage.read()).thenAnswer((_) async => null);
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           final token = MockOAuth2Token();
-          when(
-            () => token.copyWith(
-              issuedAt: any(named: 'issuedAt'),
-            ),
-          ).thenAnswer((_) => token);
 
           final freshLink = FreshLink.oAuth2<OAuth2Token>(
             tokenStorage: tokenStorage,
@@ -493,11 +488,6 @@ void main() {
           when(() => tokenStorage.read()).thenAnswer((_) async => token);
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           when(() => tokenStorage.delete()).thenAnswer((_) async {});
-          when(
-            () => token.copyWith(
-              issuedAt: any(named: 'issuedAt'),
-            ),
-          ).thenAnswer((_) => token);
 
           final freshLink = FreshLink.oAuth2<OAuth2Token>(
             tokenStorage: tokenStorage,
@@ -515,11 +505,6 @@ void main() {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final token = MockOAuth2Token();
-        when(
-          () => token.copyWith(
-            issuedAt: any(named: 'issuedAt'),
-          ),
-        ).thenAnswer((_) => token);
 
         final fresh = FreshLink.oAuth2<OAuth2Token>(
           tokenStorage: tokenStorage,

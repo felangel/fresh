@@ -70,11 +70,6 @@ void main() {
 
           when(() => tokenStorage.read()).thenAnswer((_) async => token);
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
-          when(
-            () => token.copyWith(
-              issuedAt: any(named: 'issuedAt'),
-            ),
-          ).thenAnswer((_) => token);
 
           final fresh = Fresh.oAuth2(
             tokenStorage: tokenStorage,
@@ -442,11 +437,6 @@ void main() {
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final response = MockResponse<dynamic>();
         when(() => response.statusCode).thenReturn(200);
-        when(
-          () => token.copyWith(
-            issuedAt: any(named: 'issuedAt'),
-          ),
-        ).thenAnswer((_) => token);
 
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
@@ -502,11 +492,6 @@ void main() {
             options: any(named: 'options'),
           ),
         ).thenAnswer((_) async => response);
-        when(
-          () => token.copyWith(
-            issuedAt: any(named: 'issuedAt'),
-          ),
-        ).thenAnswer((_) => token);
 
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
@@ -665,11 +650,6 @@ void main() {
         final revokeTokenException = RevokeTokenException();
         final error = MockDioException();
         when<dynamic>(() => error.error).thenReturn(revokeTokenException);
-        when(
-          () => token.copyWith(
-            issuedAt: any(named: 'issuedAt'),
-          ),
-        ).thenAnswer((_) => token);
 
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
@@ -738,11 +718,6 @@ void main() {
             options: any(named: 'options'),
           ),
         ).thenAnswer((_) async => response);
-        when(
-          () => token.copyWith(
-            issuedAt: any(named: 'issuedAt'),
-          ),
-        ).thenAnswer((_) => token);
 
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
@@ -832,11 +807,6 @@ void main() {
             options: any(named: 'options'),
           ),
         ).thenAnswer((_) async => response);
-        when(
-          () => token.copyWith(
-            issuedAt: any(named: 'issuedAt'),
-          ),
-        ).thenAnswer((_) => token);
 
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
@@ -926,11 +896,6 @@ void main() {
             options: any(named: 'options'),
           ),
         ).thenAnswer((_) async => response);
-        when(
-          () => token.copyWith(
-            issuedAt: any(named: 'issuedAt'),
-          ),
-        ).thenAnswer((_) => token);
 
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
@@ -977,11 +942,6 @@ void main() {
         final token = MockToken();
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
-        when(
-          () => token.copyWith(
-            issuedAt: any(named: 'issuedAt'),
-          ),
-        ).thenAnswer((_) => token);
 
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,

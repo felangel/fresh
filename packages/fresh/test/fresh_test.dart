@@ -136,11 +136,6 @@ void main() {
           when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           final token = MockToken();
-          when(
-            () => token.copyWith(
-              issuedAt: any(named: 'issuedAt'),
-            ),
-          ).thenAnswer((_) => token);
 
           final freshController = FreshController<OAuth2Token>(tokenStorage);
           await freshController.setToken(token);
@@ -168,12 +163,6 @@ void main() {
           final freshController = FreshController<OAuth2Token>(tokenStorage);
 
           final token = MockToken();
-          when(
-            () => token.copyWith(
-              issuedAt: any(named: 'issuedAt'),
-            ),
-          ).thenAnswer((_) => token);
-
           await freshController.setToken(token);
 
           await expectLater(
@@ -182,51 +171,6 @@ void main() {
               const <AuthenticationStatus>[AuthenticationStatus.authenticated],
             ),
           );
-        });
-
-        test('automatically sets issuedAt when token does not have it',
-            () async {
-          when(() => tokenStorage.read()).thenAnswer((_) async => null);
-          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
-          final freshController = FreshController<OAuth2Token>(tokenStorage);
-
-          final token = MockToken();
-          final tokenWithIssueDate = MockToken();
-
-          when(
-            () => token.copyWith(
-              issuedAt: any(named: 'issuedAt'),
-            ),
-          ).thenAnswer((_) => tokenWithIssueDate);
-
-          await freshController.setToken(token);
-
-          // Verify that copyWith was called with issuedAt
-          verify(
-            () => token.copyWith(
-              issuedAt: any(named: 'issuedAt'),
-            ),
-          ).called(1);
-
-          // Verify that the token with issue date was written to storage
-          verify(() => tokenStorage.write(tokenWithIssueDate)).called(1);
-        });
-
-        test('does not modify token when issuedAt is already set', () async {
-          when(() => tokenStorage.read()).thenAnswer((_) async => null);
-          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
-          final freshController = FreshController<OAuth2Token>(tokenStorage);
-
-          // Create a real OAuth2Token with issuedAt already set
-          final tokenWithIssueDate = OAuth2Token(
-            accessToken: 'accessToken',
-            issuedAt: DateTime.now(),
-          );
-
-          await freshController.setToken(tokenWithIssueDate);
-
-          // Verify that the original token was written to storage
-          verify(() => tokenStorage.write(tokenWithIssueDate)).called(1);
         });
       });
 
@@ -252,11 +196,6 @@ void main() {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final token = MockToken();
-        when(
-          () => token.copyWith(
-            issuedAt: any(named: 'issuedAt'),
-          ),
-        ).thenAnswer((_) => token);
 
         final freshController = FreshController<OAuth2Token>(tokenStorage);
 
