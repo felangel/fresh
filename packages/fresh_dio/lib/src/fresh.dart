@@ -6,6 +6,9 @@ import 'package:fresh_dio/fresh_dio.dart';
 /// Signature for `shouldRefresh` on [Fresh].
 typedef ShouldRefresh = bool Function(Response<dynamic>? response);
 
+/// Signature for `shouldRefreshBeforeRequest` on [Fresh].
+typedef ShouldRefreshBeforeRequest<T> = bool Function(T? token);
+
 /// Signature for `refreshToken` on [Fresh].
 typedef RefreshToken<T> = Future<T> Function(T? token, Dio httpClient);
 
@@ -30,10 +33,13 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
     required TokenStorage<T> tokenStorage,
     required RefreshToken<T> refreshToken,
     ShouldRefresh? shouldRefresh,
+    ShouldRefreshBeforeRequest<T>? shouldRefreshBeforeRequest,
     Dio? httpClient,
   })  : _refreshToken = refreshToken,
         _tokenHeader = tokenHeader,
         _shouldRefresh = shouldRefresh ?? _defaultShouldRefresh,
+        _shouldRefreshBeforeRequest =
+            shouldRefreshBeforeRequest ?? _defaultShouldRefreshBeforeRequest,
         _httpClient = httpClient ?? Dio() {
     this.tokenStorage = tokenStorage;
   }
@@ -73,6 +79,7 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   final Dio _httpClient;
   final TokenHeaderBuilder<T> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
+  final ShouldRefreshBeforeRequest<T> _shouldRefreshBeforeRequest;
   final RefreshToken<T> _refreshToken;
 
   @override
@@ -103,7 +110,20 @@ Example:
 ''',
     );
 
-    final currentToken = await token;
+    var currentToken = await token;
+
+    final shouldRefresh = _shouldRefreshBeforeRequest(currentToken);
+    if (shouldRefresh) {
+      try {
+        final refreshedToken = await _refreshToken(currentToken, _httpClient);
+        await setToken(refreshedToken);
+      } on RevokeTokenException catch (_) {
+        await revokeToken();
+      }
+
+      currentToken = await token;
+    }
+
     final headers = currentToken != null
         ? _tokenHeader(currentToken)
         : const <String, String>{};
@@ -193,5 +213,18 @@ Example:
 
   static bool _defaultShouldRefresh(Response<dynamic>? response) {
     return response?.statusCode == 401;
+  }
+
+  static bool _defaultShouldRefreshBeforeRequest<T>(T? token) {
+    if (token is AuthToken) {
+      final now = DateTime.now();
+      final expireDate = token.expireDate;
+      if (expireDate == null) {
+        return false;
+      }
+      return expireDate.isBefore(now);
+    }
+
+    return false;
   }
 }

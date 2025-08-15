@@ -136,15 +136,23 @@ void main() {
           when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           final token = MockToken();
+          when(
+            () => token.copyWith(
+              issuedAt: any(named: 'issuedAt'),
+            ),
+          ).thenAnswer((_) => token);
+
           final freshController = FreshController<OAuth2Token>(tokenStorage);
           await freshController.setToken(token);
           verify(() => tokenStorage.write(token)).called(1);
         });
 
         test('adds unauthenticated status when call setToken(null)', () async {
-          when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+          final token = MockToken();
+          when(() => tokenStorage.read()).thenAnswer((_) async => token);
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           when(() => tokenStorage.delete()).thenAnswer((_) async {});
+
           final freshController = FreshController<OAuth2Token>(tokenStorage);
           await freshController.setToken(null);
           await expectLater(
@@ -159,7 +167,14 @@ void main() {
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           final freshController = FreshController<OAuth2Token>(tokenStorage);
 
-          await freshController.setToken(MockToken());
+          final token = MockToken();
+          when(
+            () => token.copyWith(
+              issuedAt: any(named: 'issuedAt'),
+            ),
+          ).thenAnswer((_) => token);
+
+          await freshController.setToken(token);
 
           await expectLater(
             freshController.authenticationStatus,
@@ -191,10 +206,16 @@ void main() {
       test('shoud close streams', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+        final token = MockToken();
+        when(
+          () => token.copyWith(
+            issuedAt: any(named: 'issuedAt'),
+          ),
+        ).thenAnswer((_) => token);
+
         final freshController = FreshController<OAuth2Token>(tokenStorage);
 
-        final mockToken = MockToken();
-        await freshController.setToken(mockToken);
+        await freshController.setToken(token);
         await freshController.close();
 
         await expectLater(

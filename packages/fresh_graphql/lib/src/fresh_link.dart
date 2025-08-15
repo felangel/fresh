@@ -8,6 +8,9 @@ import 'package:http/http.dart' as http;
 /// Signature for `shouldRefresh` on [FreshLink].
 typedef ShouldRefresh = bool Function(Response);
 
+/// Signature for `shouldRefreshBeforeRequest` on [FreshLink].
+typedef ShouldRefreshBeforeRequest<T> = bool Function(T? token);
+
 /// Signature for `refreshToken` on [FreshLink].
 typedef RefreshToken<T> = Future<T> Function(T, http.Client);
 
@@ -37,10 +40,13 @@ class FreshLink<T> extends Link with FreshMixin<T> {
     required TokenStorage<T> tokenStorage,
     required RefreshToken<T?> refreshToken,
     required ShouldRefresh shouldRefresh,
+    ShouldRefreshBeforeRequest<T?>? shouldRefreshBeforeRequest,
     TokenHeaderBuilder<T?>? tokenHeader,
   })  : _refreshToken = refreshToken,
         _tokenHeader = (tokenHeader ?? (_) => <String, String>{}),
-        _shouldRefresh = shouldRefresh {
+        _shouldRefresh = shouldRefresh,
+        _shouldRefreshBeforeRequest =
+            shouldRefreshBeforeRequest ?? _defaultShouldRefreshBeforeRequest {
     this.tokenStorage = tokenStorage;
   }
 
@@ -64,12 +70,14 @@ class FreshLink<T> extends Link with FreshMixin<T> {
     required TokenStorage<T> tokenStorage,
     required RefreshToken<T?> refreshToken,
     required ShouldRefresh shouldRefresh,
+    ShouldRefreshBeforeRequest<T>? shouldRefreshBeforeRequest,
     TokenHeaderBuilder<T?>? tokenHeader,
   }) {
     return FreshLink<T>(
       refreshToken: refreshToken,
       tokenStorage: tokenStorage,
       shouldRefresh: shouldRefresh,
+      shouldRefreshBeforeRequest: shouldRefreshBeforeRequest,
       tokenHeader: tokenHeader ??
           (token) {
             return {
@@ -82,10 +90,27 @@ class FreshLink<T> extends Link with FreshMixin<T> {
   final RefreshToken<T?> _refreshToken;
   final TokenHeaderBuilder<T?> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
+  final ShouldRefreshBeforeRequest<T?> _shouldRefreshBeforeRequest;
 
   @override
   Stream<Response> request(Request request, [NextLink? forward]) async* {
-    final currentToken = await token;
+    final httpClient = http.Client();
+
+    var currentToken = await token;
+
+    final shouldRefresh =
+        _shouldRefreshBeforeRequest?.call(currentToken) ?? false;
+    if (shouldRefresh) {
+      try {
+        final refreshedToken = await _refreshToken(currentToken, httpClient);
+        await setToken(refreshedToken);
+      } on RevokeTokenException catch (_) {
+        await revokeToken();
+      }
+
+      currentToken = await token;
+    }
+
     final tokenHeaders = currentToken != null
         ? _tokenHeader(currentToken)
         : const <String, String>{};
@@ -105,7 +130,7 @@ class FreshLink<T> extends Link with FreshMixin<T> {
           try {
             final refreshedToken = await _refreshToken(
               nextToken,
-              http.Client(),
+              httpClient,
             );
             await setToken(refreshedToken);
             final tokenHeaders = _tokenHeader(refreshedToken);
@@ -119,7 +144,8 @@ class FreshLink<T> extends Link with FreshMixin<T> {
               ),
             );
           } on RevokeTokenException catch (_) {
-            unawaited(revokeToken());
+            // ignore: unawaited_futures
+            revokeToken();
             yield result;
           }
         } else {
@@ -127,5 +153,18 @@ class FreshLink<T> extends Link with FreshMixin<T> {
         }
       }
     }
+  }
+
+  static bool _defaultShouldRefreshBeforeRequest<T>(T? token) {
+    if (token is AuthToken) {
+      final now = DateTime.now();
+      final expireDate = token.expireDate;
+      if (expireDate == null) {
+        return false;
+      }
+      return expireDate.isBefore(now);
+    }
+
+    return false;
   }
 }

@@ -256,6 +256,12 @@ void main() {
           when(() => tokenStorage.read()).thenAnswer((_) async => null);
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           final token = MockOAuth2Token();
+          when(
+            () => token.copyWith(
+              issuedAt: any(named: 'issuedAt'),
+            ),
+          ).thenAnswer((_) => token);
+
           final freshLink = FreshLink.oAuth2<OAuth2Token>(
             tokenStorage: tokenStorage,
             refreshToken: emptyRefreshToken,
@@ -282,10 +288,16 @@ void main() {
 
       group('clearToken', () {
         test('invokes tokenStorage.delete', () async {
-          when(() => tokenStorage.read())
-              .thenAnswer((_) async => MockOAuth2Token());
+          final token = MockOAuth2Token();
+          when(() => tokenStorage.read()).thenAnswer((_) async => token);
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           when(() => tokenStorage.delete()).thenAnswer((_) async {});
+          when(
+            () => token.copyWith(
+              issuedAt: any(named: 'issuedAt'),
+            ),
+          ).thenAnswer((_) => token);
+
           final freshLink = FreshLink.oAuth2<OAuth2Token>(
             tokenStorage: tokenStorage,
             refreshToken: emptyRefreshToken,
@@ -301,14 +313,20 @@ void main() {
       test('should close streams', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+        final token = MockOAuth2Token();
+        when(
+          () => token.copyWith(
+            issuedAt: any(named: 'issuedAt'),
+          ),
+        ).thenAnswer((_) => token);
+
         final fresh = FreshLink.oAuth2<OAuth2Token>(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
           shouldRefresh: (_) => false,
         );
 
-        final mockToken = MockToken();
-        await fresh.setToken(mockToken);
+        await fresh.setToken(token);
         await fresh.close();
 
         await expectLater(

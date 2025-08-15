@@ -5,7 +5,10 @@ import 'package:test/test.dart';
 
 class MockTokenStorage<T> extends Mock implements TokenStorage<T> {}
 
-class MockToken extends Mock implements OAuth2Token {}
+class MockToken extends Mock implements OAuth2Token {
+  @override
+  String get accessToken => 'accessToken';
+}
 
 class MockRequestOptions extends Mock implements RequestOptions {}
 
@@ -63,13 +66,21 @@ void main() {
     group('configure token', () {
       group('setToken', () {
         test('invokes tokenStorage.write', () async {
-          when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
-          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           final token = MockToken();
+
+          when(() => tokenStorage.read()).thenAnswer((_) async => token);
+          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+          when(
+            () => token.copyWith(
+              issuedAt: any(named: 'issuedAt'),
+            ),
+          ).thenAnswer((_) => token);
+
           final fresh = Fresh.oAuth2(
             tokenStorage: tokenStorage,
             refreshToken: emptyRefreshToken,
           );
+
           await fresh.setToken(token);
           verify(() => tokenStorage.write(token)).called(1);
         });
@@ -249,10 +260,17 @@ void main() {
       test(
           'returns untouched response when '
           'shouldRefresh (custom) is false', () async {
-        when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+        final token = MockToken();
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final response = MockResponse<dynamic>();
         when(() => response.statusCode).thenReturn(200);
+        when(
+          () => token.copyWith(
+            issuedAt: any(named: 'issuedAt'),
+          ),
+        ).thenAnswer((_) => token);
+
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -307,6 +325,12 @@ void main() {
             options: any(named: 'options'),
           ),
         ).thenAnswer((_) async => response);
+        when(
+          () => token.copyWith(
+            issuedAt: any(named: 'issuedAt'),
+          ),
+        ).thenAnswer((_) => token);
+
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
@@ -458,11 +482,18 @@ void main() {
       });
 
       test('returns error when error is RevokeTokenException', () async {
-        when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+        final token = MockToken();
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final revokeTokenException = RevokeTokenException();
         final error = MockDioException();
         when<dynamic>(() => error.error).thenReturn(revokeTokenException);
+        when(
+          () => token.copyWith(
+            issuedAt: any(named: 'issuedAt'),
+          ),
+        ).thenAnswer((_) => token);
+
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -530,6 +561,12 @@ void main() {
             options: any(named: 'options'),
           ),
         ).thenAnswer((_) async => response);
+        when(
+          () => token.copyWith(
+            issuedAt: any(named: 'issuedAt'),
+          ),
+        ).thenAnswer((_) => token);
+
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
@@ -618,6 +655,11 @@ void main() {
             options: any(named: 'options'),
           ),
         ).thenAnswer((_) async => response);
+        when(
+          () => token.copyWith(
+            issuedAt: any(named: 'issuedAt'),
+          ),
+        ).thenAnswer((_) => token);
 
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
@@ -707,6 +749,11 @@ void main() {
             options: any(named: 'options'),
           ),
         ).thenAnswer((_) async => response);
+        when(
+          () => token.copyWith(
+            issuedAt: any(named: 'issuedAt'),
+          ),
+        ).thenAnswer((_) => token);
 
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
@@ -750,15 +797,21 @@ void main() {
 
     group('close', () {
       test('should close streams', () async {
+        final token = MockToken();
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+        when(
+          () => token.copyWith(
+            issuedAt: any(named: 'issuedAt'),
+          ),
+        ).thenAnswer((_) => token);
+
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
 
-        final mockToken = MockToken();
-        await fresh.setToken(mockToken);
+        await fresh.setToken(token);
         await fresh.close();
 
         await expectLater(
