@@ -123,6 +123,126 @@ void main() {
       });
     });
 
+    group('shouldRefreshBeforeRequest', () {
+      test('does not refresh when token has no expireDate', () async {
+        const token = OAuth2Token(accessToken: 'accessToken');
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        var refreshCallCount = 0;
+        final fresh = Fresh.oAuth2<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (token, client) async {
+            refreshCallCount++;
+            return token ?? MockToken();
+          },
+        );
+
+        final options = RequestOptions();
+        await fresh.onRequest(options, requestHandler);
+
+        expect(refreshCallCount, 0);
+      });
+
+      test('does not refresh when token is not expired', () async {
+        final token = OAuth2Token(
+          accessToken: 'accessToken',
+          issuedAt: DateTime.now(),
+          expiresIn: 3600, // 1 hour
+        );
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        var refreshCallCount = 0;
+        final fresh = Fresh.oAuth2<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (token, client) async {
+            refreshCallCount++;
+            return token ?? MockToken();
+          },
+        );
+
+        final options = RequestOptions();
+        await fresh.onRequest(options, requestHandler);
+
+        expect(refreshCallCount, 0);
+      });
+
+      test('refreshes token when expired', () async {
+        final expiredToken = OAuth2Token(
+          accessToken: 'expiredToken',
+          issuedAt: DateTime.now().subtract(const Duration(hours: 2)),
+          expiresIn: 3600, // 1 hour
+        );
+        const newToken = OAuth2Token(accessToken: 'newToken');
+
+        when(() => tokenStorage.read()).thenAnswer((_) async => expiredToken);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        var refreshCallCount = 0;
+        final fresh = Fresh.oAuth2<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (token, client) async {
+            refreshCallCount++;
+            return newToken;
+          },
+        );
+
+        final options = RequestOptions();
+        await fresh.onRequest(options, requestHandler);
+
+        expect(refreshCallCount, 1);
+        verify(() => tokenStorage.write(any())).called(1);
+      });
+
+      test('uses custom shouldRefreshBeforeRequest when provided', () async {
+        var customCallCount = 0;
+        const token = OAuth2Token(accessToken: 'accessToken');
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        final fresh = Fresh<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+          tokenHeader: (token) =>
+              {'authorization': '${token.tokenType} ${token.accessToken}'},
+          shouldRefreshBeforeRequest: (token) {
+            customCallCount++;
+            return false;
+          },
+        );
+
+        final options = RequestOptions();
+        await fresh.onRequest(options, requestHandler);
+
+        expect(customCallCount, 1);
+      });
+
+      test('calls revokeToken when refresh throws RevokeTokenException',
+          () async {
+        final expiredToken = OAuth2Token(
+          accessToken: 'expiredToken',
+          issuedAt: DateTime.now().subtract(const Duration(hours: 2)),
+          expiresIn: 3600,
+        );
+
+        when(() => tokenStorage.read()).thenAnswer((_) async => expiredToken);
+        when(() => tokenStorage.delete()).thenAnswer((_) async {});
+
+        final fresh = Fresh.oAuth2(
+          tokenStorage: tokenStorage,
+          refreshToken: (token, client) async {
+            throw RevokeTokenException();
+          },
+        );
+
+        final options = RequestOptions();
+        await fresh.onRequest(options, requestHandler);
+
+        verify(() => tokenStorage.delete()).called(1);
+      });
+    });
+
     group('onRequest', () {
       const oAuth2Token = OAuth2Token(accessToken: 'accessToken');
 
