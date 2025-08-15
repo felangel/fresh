@@ -15,7 +15,7 @@ typedef RefreshToken<T> = Future<T> Function(T, http.Client);
 /// A GraphQL Link which handles manages an authentication token automatically.
 ///
 /// A constructor that returns a Fresh interceptor that uses the
-/// [OAuth2Token] token, the standard token class and define the`
+/// [AuthToken] token, the standard token class and define the`
 /// tokenHeader as 'authorization': '${token.tokenType} ${token.accessToken}'
 ///
 /// ```dart
@@ -49,7 +49,7 @@ class FreshLink<T> extends Link with FreshMixin<T> {
   ///
   /// ```dart
   /// final freshLink = FreshLink.oAuth2(
-  ///   tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+  ///   tokenStorage: InMemoryTokenStorage<AuthToken>(),
   ///   refreshToken: (token, client) {
   ///     // Perform refresh and return new token
   ///   },
@@ -60,13 +60,13 @@ class FreshLink<T> extends Link with FreshMixin<T> {
   /// );
   /// ```
   /// {@endtemplate}
-  static FreshLink<OAuth2Token> oAuth2({
-    required TokenStorage<OAuth2Token> tokenStorage,
-    required RefreshToken<OAuth2Token?> refreshToken,
+  static FreshLink<T> oAuth2<T extends AuthToken>({
+    required TokenStorage<T> tokenStorage,
+    required RefreshToken<T?> refreshToken,
     required ShouldRefresh shouldRefresh,
-    TokenHeaderBuilder<OAuth2Token?>? tokenHeader,
+    TokenHeaderBuilder<T?>? tokenHeader,
   }) {
-    return FreshLink<OAuth2Token>(
+    return FreshLink<T>(
       refreshToken: refreshToken,
       tokenStorage: tokenStorage,
       shouldRefresh: shouldRefresh,

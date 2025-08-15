@@ -16,7 +16,7 @@ typedef RefreshToken<T> = Future<T> Function(T? token, Dio httpClient);
 ///
 /// ```dart
 /// dio.interceptors.add(
-///   Fresh<OAuth2Token>(
+///   Fresh<AuthToken>(
 ///     tokenStorage: InMemoryTokenStorage(),
 ///     refreshToken: (token, client) async {...},
 ///   ),
@@ -39,17 +39,17 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   }
 
   /// A constructor that returns a [Fresh] interceptor that uses an
-  /// [OAuth2Token] token.
+  /// [AuthToken] token.
   ///
   /// ```dart
   /// dio.interceptors.add(
   ///   Fresh.oAuth2(
-  ///     tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+  ///     tokenStorage: InMemoryTokenStorage<AuthToken>(),
   ///     refreshToken: (token, client) async {...},
   ///   ),
   /// );
   /// ```
-  static Fresh<T> oAuth2<T extends OAuth2Token>({
+  static Fresh<T> oAuth2<T extends AuthToken>({
     required TokenStorage<T> tokenStorage,
     required RefreshToken<T> refreshToken,
     ShouldRefresh? shouldRefresh,

@@ -8,7 +8,7 @@ funding: [https://github.com/sponsors/felangel]
 version: 0.4.3
 
 environment:
-  sdk: ">=2.12.0 <4.0.0"
+  sdk: ">=2.17.0 <4.0.0"
 
 dev_dependencies:
   mocktail: ^1.0.0
