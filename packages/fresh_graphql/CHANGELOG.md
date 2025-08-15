@@ -1,3 +1,10 @@
+# 0.7.0
+
+- feat: `ShouldRefreshBeforeRequest` allows conditional token refresh based on GraphQL request details and token expiration
+- feat: automatic token refresh based on expiration before requests
+- feat: enhanced token validation with `AuthToken.expireDate`
+- chore: adjust dart sdk constraint to `">=3.0.0 <4.0.0"`
+
 # 0.6.1
 
 - chore: update copyright year
