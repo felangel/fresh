@@ -51,5 +51,11 @@ class OAuth2Token extends Token {
 
   /// The date the token will expire.
   @override
-  DateTime? get expiresAt => issuedAt?.add(Duration(seconds: expiresIn ?? 0));
+  DateTime? get expiresAt {
+    final expiresIn = this.expiresIn;
+    final issuedAt = this.issuedAt;
+    if (expiresIn == null || issuedAt == null) return null;
+
+    return issuedAt.add(Duration(seconds: expiresIn));
+  }
 }

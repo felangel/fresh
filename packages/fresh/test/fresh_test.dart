@@ -20,6 +20,43 @@ void main() {
     test('tokenType defaults to bearer', () {
       expect(const OAuth2Token(accessToken: 'accessToken').tokenType, 'bearer');
     });
+
+    group('expiresAt', () {
+      test('returns null when issuedAt is null', () {
+        const token = OAuth2Token(
+          accessToken: 'accessToken',
+          expiresIn: 3600,
+        );
+        expect(token.expiresAt, isNull);
+      });
+
+      test('returns null when expiresIn is null', () {
+        final issuedAt = DateTime(2023, 1, 1, 12);
+        final token = OAuth2Token(
+          accessToken: 'accessToken',
+          issuedAt: issuedAt,
+        );
+        expect(token.expiresAt, isNull);
+      });
+
+      test('returns null when both issuedAt and expiresIn are null', () {
+        const token = OAuth2Token(
+          accessToken: 'accessToken',
+        );
+        expect(token.expiresAt, isNull);
+      });
+
+      test('returns correct expiration', () {
+        final issuedAt = DateTime(2023, 1, 1, 12);
+        final token = OAuth2Token(
+          accessToken: 'accessToken',
+          expiresIn: 3600,
+          issuedAt: issuedAt,
+        );
+        final expectedExpiration = issuedAt.add(const Duration(seconds: 3600));
+        expect(token.expiresAt, equals(expectedExpiration));
+      });
+    });
   });
 
   group('InMemoryStorage', () {
