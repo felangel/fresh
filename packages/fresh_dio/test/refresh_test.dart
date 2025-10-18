@@ -41,6 +41,15 @@ void main() {
 
     final response = await dio.get<Object?>('http://example.com');
     expect(response.statusCode, 401);
+    expect(
+      response.extra['fresh:refresh_error'],
+      isA<Exception>().having(
+        (e) => e.toString(),
+        'exception message',
+        contains('any error'),
+      ),
+    );
+    expect(response.extra['fresh:refresh_error_stack'], isA<StackTrace>());
   });
 
   test('does not hang when refreshToken throws (onResponse)', () async {
@@ -82,6 +91,15 @@ void main() {
 
     final response = await dio.get<Object?>('http://example.com');
     expect(response.statusCode, 401);
+    expect(
+      response.extra['fresh:refresh_error'],
+      isA<Exception>().having(
+        (e) => e.toString(),
+        'exception message',
+        contains('any error'),
+      ),
+    );
+    expect(response.extra['fresh:refresh_error_stack'], isA<StackTrace>());
   });
 }
 

@@ -124,6 +124,10 @@ Example:
       handler.resolve(refreshResponse);
     } on DioException catch (error) {
       handler.reject(error);
+    } catch (e, stack) {
+      response.extra['fresh:refresh_error'] = e;
+      response.extra['fresh:refresh_error_stack'] = stack;
+      handler.resolve(response);
     }
   }
 
@@ -144,6 +148,10 @@ Example:
       handler.resolve(refreshResponse);
     } on DioException catch (error) {
       handler.next(error);
+    } catch (e, stack) {
+      response.extra['fresh:refresh_error'] = e;
+      response.extra['fresh:refresh_error_stack'] = stack;
+      handler.resolve(response);
     }
   }
 
