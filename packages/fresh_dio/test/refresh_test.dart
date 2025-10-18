@@ -3,7 +3,7 @@ import 'package:fresh_dio/fresh_dio.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('does not hang when refreshToken throws', () async {
+  test('does not hang when refreshToken throws (onError)', () async {
     final fresh = Fresh.oAuth2(
       tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
       refreshToken: (_, __) async {
@@ -25,6 +25,47 @@ void main() {
 
     final dio = Dio();
     dio.interceptors.add(fresh);
+
+    // Create a mock HTTP client adapter that returns 401
+    dio.httpClientAdapter = _MockAdapter(
+      (options) {
+        return ResponseBody.fromString(
+          '{"error": "Unauthorized"}',
+          401,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      },
+    );
+
+    final response = await dio.get<Object?>('http://example.com');
+    expect(response.statusCode, 401);
+  });
+
+  test('does not hang when refreshToken throws (onResponse)', () async {
+    final fresh = Fresh.oAuth2(
+      tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+      refreshToken: (_, __) async {
+        throw Exception('any error');
+      },
+      shouldRefresh: (resp) {
+        return true;
+      },
+      tokenHeader: (_) => {
+        'custom-name': 'custom-value',
+      },
+    );
+    await fresh.setToken(
+      const OAuth2Token(
+        accessToken: 'access.token.jwt',
+        refreshToken: 'refreshToken',
+      ),
+    );
+
+    final dio = Dio();
+    dio.interceptors.add(fresh);
+    dio.options.validateStatus = (_) => true;
 
     // Create a mock HTTP client adapter that returns 401
     dio.httpClientAdapter = _MockAdapter(
