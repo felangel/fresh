@@ -58,4 +58,43 @@ class OAuth2Token extends Token {
 
     return issuedAt.add(Duration(seconds: expiresIn));
   }
+
+  @override
+  String toString() {
+    final fields = <String>[];
+
+    // ignore: cascade_invocations
+    fields.add('accessToken: ${_maskToken(accessToken)}');
+
+    if (refreshToken != null) {
+      fields.add('refreshToken: ${_maskToken(refreshToken!)}');
+    }
+
+    if (tokenType != null) {
+      fields.add('tokenType: $tokenType');
+    }
+
+    if (expiresIn != null) {
+      fields.add('expiresIn: $expiresIn');
+    }
+
+    if (scope != null) {
+      fields.add('scope: $scope');
+    }
+
+    if (issuedAt != null) {
+      fields.add('issuedAt: $issuedAt');
+    }
+
+    if (expiresAt != null) {
+      fields.add('expiresAt: $expiresAt');
+    }
+
+    return 'OAuth2Token{${fields.join(', ')}}';
+  }
+
+  String _maskToken(String token) {
+    if (token.length <= 8) return '***';
+    return '${token.substring(0, 4)}...${token.substring(token.length - 4)}';
+  }
 }

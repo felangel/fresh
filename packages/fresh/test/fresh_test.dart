@@ -57,6 +57,42 @@ void main() {
         expect(token.expiresAt, equals(expectedExpiration));
       });
     });
+
+    group('toString', () {
+      test('includes only non-null fields for minimal token', () {
+        const token = OAuth2Token(accessToken: 'myAccessToken123');
+        final result = token.toString();
+
+        expect(result, contains('OAuth2Token'));
+        expect(result, contains('accessToken: myAc...n123'));
+        expect(result, isNot(contains('refreshToken')));
+        expect(result, isNot(contains('expiresIn')));
+        expect(result, isNot(contains('scope')));
+        expect(result, isNot(contains('issuedAt')));
+      });
+
+      test('includes all fields when all are provided', () {
+        final issuedAt = DateTime(2023, 1, 1, 12);
+        final token = OAuth2Token(
+          accessToken: 'myAccessToken123',
+          refreshToken: 'myRefreshToken456',
+          tokenType: 'bearer',
+          expiresIn: 3600,
+          scope: 'read write',
+          issuedAt: issuedAt,
+        );
+        final result = token.toString();
+
+        expect(result, contains('OAuth2Token'));
+        expect(result, contains('accessToken: myAc...n123'));
+        expect(result, contains('refreshToken: myRe...n456'));
+        expect(result, contains('tokenType: bearer'));
+        expect(result, contains('expiresIn: 3600'));
+        expect(result, contains('scope: read write'));
+        expect(result, contains('issuedAt: 2023-01-01 12:00:00.000'));
+        expect(result, contains('expiresAt: 2023-01-01 13:00:00.000'));
+      });
+    });
   });
 
   group('InMemoryStorage', () {
