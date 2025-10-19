@@ -20,6 +20,43 @@ void main() {
     test('tokenType defaults to bearer', () {
       expect(const OAuth2Token(accessToken: 'accessToken').tokenType, 'bearer');
     });
+
+    group('expiresAt', () {
+      test('returns null when issuedAt is null', () {
+        const token = OAuth2Token(
+          accessToken: 'accessToken',
+          expiresIn: 3600,
+        );
+        expect(token.expiresAt, isNull);
+      });
+
+      test('returns null when expiresIn is null', () {
+        final issuedAt = DateTime(2023, 1, 1, 12);
+        final token = OAuth2Token(
+          accessToken: 'accessToken',
+          issuedAt: issuedAt,
+        );
+        expect(token.expiresAt, isNull);
+      });
+
+      test('returns null when both issuedAt and expiresIn are null', () {
+        const token = OAuth2Token(
+          accessToken: 'accessToken',
+        );
+        expect(token.expiresAt, isNull);
+      });
+
+      test('returns correct expiration', () {
+        final issuedAt = DateTime(2023, 1, 1, 12);
+        final token = OAuth2Token(
+          accessToken: 'accessToken',
+          expiresIn: 3600,
+          issuedAt: issuedAt,
+        );
+        final expectedExpiration = issuedAt.add(const Duration(seconds: 3600));
+        expect(token.expiresAt, equals(expectedExpiration));
+      });
+    });
   });
 
   group('InMemoryStorage', () {
@@ -136,15 +173,18 @@ void main() {
           when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           final token = MockToken();
+
           final freshController = FreshController<OAuth2Token>(tokenStorage);
           await freshController.setToken(token);
           verify(() => tokenStorage.write(token)).called(1);
         });
 
         test('adds unauthenticated status when call setToken(null)', () async {
-          when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+          final token = MockToken();
+          when(() => tokenStorage.read()).thenAnswer((_) async => token);
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           when(() => tokenStorage.delete()).thenAnswer((_) async {});
+
           final freshController = FreshController<OAuth2Token>(tokenStorage);
           await freshController.setToken(null);
           await expectLater(
@@ -159,7 +199,8 @@ void main() {
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           final freshController = FreshController<OAuth2Token>(tokenStorage);
 
-          await freshController.setToken(MockToken());
+          final token = MockToken();
+          await freshController.setToken(token);
 
           await expectLater(
             freshController.authenticationStatus,
@@ -191,10 +232,11 @@ void main() {
       test('shoud close streams', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+        final token = MockToken();
+
         final freshController = FreshController<OAuth2Token>(tokenStorage);
 
-        final mockToken = MockToken();
-        await freshController.setToken(mockToken);
+        await freshController.setToken(token);
         await freshController.close();
 
         await expectLater(
