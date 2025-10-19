@@ -11,9 +11,7 @@ environment:
   sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
-  # TODO: replace path with pub.dev version before publishing
-  fresh:
-    path: ../fresh
+  fresh: ^0.7.0
 
   gql_exec: ^1.0.0
   gql_link: ^1.0.0

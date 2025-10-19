@@ -12,10 +12,7 @@ environment:
 
 dependencies:
   dio: ^5.5.0+1
-
-  # TODO: replace path with pub.dev version before publishing
-  fresh:
-    path: ../fresh
+  fresh: ^0.7.0
 
 dev_dependencies:
   mocktail: ^1.0.0
