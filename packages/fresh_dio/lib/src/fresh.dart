@@ -124,6 +124,15 @@ Example:
       handler.resolve(refreshResponse);
     } on DioException catch (error) {
       handler.reject(error);
+    } catch (error, stackTrace) {
+      response.extra.addAll({
+        'fresh': {
+          'message': 'refresh failure',
+          'error': error,
+          'stack_trace': stackTrace,
+        },
+      });
+      handler.resolve(response);
     }
   }
 
@@ -144,6 +153,15 @@ Example:
       handler.resolve(refreshResponse);
     } on DioException catch (error) {
       handler.next(error);
+    } catch (error, stackTrace) {
+      response.extra.addAll({
+        'fresh': {
+          'message': 'refresh failure',
+          'error': error,
+          'stack_trace': stackTrace,
+        },
+      });
+      handler.resolve(response);
     }
   }
 
