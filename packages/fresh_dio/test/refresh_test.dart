@@ -9,6 +9,7 @@ void main() {
       tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
       refreshToken: (_, __) async => throw exception,
     );
+
     await fresh.setToken(
       const OAuth2Token(
         accessToken: 'access.token.jwt',
@@ -18,8 +19,6 @@ void main() {
 
     final dio = Dio();
     dio.interceptors.add(fresh);
-
-    // Create a mock HTTP client adapter that returns 401
     dio.httpClientAdapter = _MockAdapter(
       (options) {
         return ResponseBody.fromString(
@@ -34,10 +33,12 @@ void main() {
 
     final response = await dio.get<Object?>('http://example.com');
     expect(response.statusCode, equals(401));
-    expect(response.extra['fresh:refresh_error'], equals(exception));
     expect(
-      response.extra['fresh:refresh_error_stack_trace'],
-      isA<StackTrace>(),
+      response.extra['fresh'],
+      isA<Map<String, dynamic>>()
+          .having((m) => m['message'], 'message', equals('refresh failure'))
+          .having((m) => m['error'], 'error', equals(exception))
+          .having((m) => m['stack_trace'], 'stack trace', isA<StackTrace>()),
     );
   });
 
@@ -47,6 +48,7 @@ void main() {
       tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
       refreshToken: (_, __) async => throw exception,
     );
+
     await fresh.setToken(
       const OAuth2Token(
         accessToken: 'access.token.jwt',
@@ -57,8 +59,6 @@ void main() {
     final dio = Dio();
     dio.interceptors.add(fresh);
     dio.options.validateStatus = (_) => true;
-
-    // Create a mock HTTP client adapter that returns 401
     dio.httpClientAdapter = _MockAdapter(
       (options) {
         return ResponseBody.fromString(
@@ -73,10 +73,12 @@ void main() {
 
     final response = await dio.get<Object?>('http://example.com');
     expect(response.statusCode, equals(401));
-    expect(response.extra['fresh:refresh_error'], equals(exception));
     expect(
-      response.extra['fresh:refresh_error_stack_trace'],
-      isA<StackTrace>(),
+      response.extra['fresh'],
+      isA<Map<String, dynamic>>()
+          .having((m) => m['message'], 'message', equals('refresh failure'))
+          .having((m) => m['error'], 'error', equals(exception))
+          .having((m) => m['stack_trace'], 'stack trace', isA<StackTrace>()),
     );
   });
 }

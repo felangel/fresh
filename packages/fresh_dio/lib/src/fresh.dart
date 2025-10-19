@@ -126,8 +126,11 @@ Example:
       handler.reject(error);
     } catch (error, stackTrace) {
       response.extra.addAll({
-        'fresh:refresh_error': error,
-        'fresh:refresh_error_stack_trace': stackTrace,
+        'fresh': {
+          'message': 'refresh failure',
+          'error': error,
+          'stack_trace': stackTrace,
+        },
       });
       handler.resolve(response);
     }
@@ -152,8 +155,11 @@ Example:
       handler.next(error);
     } catch (error, stackTrace) {
       response.extra.addAll({
-        'fresh:refresh_error': error,
-        'fresh:refresh_error_stack_trace': stackTrace,
+        'fresh': {
+          'message': 'refresh failure',
+          'error': error,
+          'stack_trace': stackTrace,
+        },
       });
       handler.resolve(response);
     }
