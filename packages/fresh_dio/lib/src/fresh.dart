@@ -32,9 +32,9 @@ typedef RefreshToken<T> = Future<T> Function(T? token, Dio httpClient);
 class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   /// {@macro fresh}
   Fresh({
-    required TokenHeaderBuilder<T> tokenHeader,
     required TokenStorage<T> tokenStorage,
     required RefreshToken<T> refreshToken,
+    required TokenHeaderBuilder<T> tokenHeader,
     ShouldRefresh? shouldRefresh,
     ShouldRefreshBeforeRequest<T>? shouldRefreshBeforeRequest,
     Dio? httpClient,
@@ -61,21 +61,23 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   static Fresh<T> oAuth2<T extends Token>({
     required TokenStorage<T> tokenStorage,
     required RefreshToken<T> refreshToken,
-    ShouldRefresh? shouldRefresh,
-    Dio? httpClient,
     TokenHeaderBuilder<T>? tokenHeader,
+    ShouldRefresh? shouldRefresh,
+    ShouldRefreshBeforeRequest<T>? shouldRefreshBeforeRequest,
+    Dio? httpClient,
   }) {
     return Fresh<T>(
-      refreshToken: refreshToken,
       tokenStorage: tokenStorage,
-      shouldRefresh: shouldRefresh,
-      httpClient: httpClient,
+      refreshToken: refreshToken,
       tokenHeader: tokenHeader ??
           (token) {
             return {
               'authorization': '${token.tokenType} ${token.accessToken}',
             };
           },
+      shouldRefresh: shouldRefresh,
+      shouldRefreshBeforeRequest: shouldRefreshBeforeRequest,
+      httpClient: httpClient,
     );
   }
 
