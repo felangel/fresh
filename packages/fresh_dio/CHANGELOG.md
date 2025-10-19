@@ -1,3 +1,7 @@
+# 0.4.4
+
+- fix: hang on uncaught refresh token exception ([#120](https://github.com/felangel/fresh/pull/120))
+
 # 0.4.3
 
 - fix: clone `FormData` on retry
