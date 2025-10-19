@@ -129,11 +129,10 @@ Example:
     );
 
     // Check if token is required for this request
-    if (_isTokenRequired != null) {
-      final shouldAddToken = _isTokenRequired!(options);
-      if (!shouldAddToken) {
-        return handler.next(options);
-      }
+    if (_isTokenRequired != null && !_isTokenRequired!(options)) {
+      // Mark request as not requiring auth to skip refresh attempts
+      options.extra['_fresh_token_not_required'] = true;
+      return handler.next(options);
     }
 
     final currentToken = await token;
@@ -149,6 +148,12 @@ Example:
     Response<dynamic> response,
     ResponseInterceptorHandler handler,
   ) async {
+    // Skip refresh if token was not required for this request
+    final extra = response.requestOptions.extra;
+    if (extra['_fresh_token_not_required'] == true) {
+      return handler.next(response);
+    }
+
     if (await token == null || !_shouldRefresh(response)) {
       return handler.next(response);
     }
@@ -175,6 +180,12 @@ Example:
     ErrorInterceptorHandler handler,
   ) async {
     final response = err.response;
+
+    // Skip refresh if token was not required for this request
+    if (response?.requestOptions.extra['_fresh_token_not_required'] == true) {
+      return handler.next(err);
+    }
+
     if (response == null ||
         await token == null ||
         err.error is RevokeTokenException ||
