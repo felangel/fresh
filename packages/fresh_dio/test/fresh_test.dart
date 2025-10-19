@@ -208,6 +208,71 @@ void main() {
           },
         );
       });
+
+      test('does not append token header when isTokenRequired returns false',
+          () async {
+        final options = RequestOptions();
+        when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+        final fresh = Fresh.oAuth2(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+          isTokenRequired: (options) => false,
+        );
+
+        await fresh.onRequest(options, requestHandler);
+        final result = verify(() => requestHandler.next(captureAny()))
+          ..called(1);
+
+        expect(
+          (result.captured.first as RequestOptions).headers,
+          isEmpty,
+        );
+      });
+
+      test('appends token header when isTokenRequired returns true', () async {
+        final options = RequestOptions();
+        when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+        final fresh = Fresh.oAuth2(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+          isTokenRequired: (options) => true,
+        );
+
+        await fresh.onRequest(options, requestHandler);
+        final result = verify(() => requestHandler.next(captureAny()))
+          ..called(1);
+
+        expect(
+          (result.captured.first as RequestOptions).headers,
+          {
+            'authorization': 'bearer accessToken',
+          },
+        );
+      });
+
+      test('appends token header when isTokenRequired is not provided',
+          () async {
+        final options = RequestOptions();
+        when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+        final fresh = Fresh.oAuth2(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+        );
+
+        await fresh.onRequest(options, requestHandler);
+        final result = verify(() => requestHandler.next(captureAny()))
+          ..called(1);
+
+        expect(
+          (result.captured.first as RequestOptions).headers,
+          {
+            'authorization': 'bearer accessToken',
+          },
+        );
+      });
     });
 
     group('onResponse', () {
