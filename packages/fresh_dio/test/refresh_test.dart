@@ -4,17 +4,10 @@ import 'package:test/test.dart';
 
 void main() {
   test('does not hang when refreshToken throws (onError)', () async {
+    final exception = Exception('any error');
     final fresh = Fresh.oAuth2(
       tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
-      refreshToken: (_, __) async {
-        throw Exception('any error');
-      },
-      shouldRefresh: (resp) {
-        return true;
-      },
-      tokenHeader: (_) => {
-        'custom-name': 'custom-value',
-      },
+      refreshToken: (_, __) async => throw exception,
     );
     await fresh.setToken(
       const OAuth2Token(
@@ -40,30 +33,19 @@ void main() {
     );
 
     final response = await dio.get<Object?>('http://example.com');
-    expect(response.statusCode, 401);
+    expect(response.statusCode, equals(401));
+    expect(response.extra['fresh:refresh_error'], equals(exception));
     expect(
-      response.extra['fresh:refresh_error'],
-      isA<Exception>().having(
-        (e) => e.toString(),
-        'exception message',
-        contains('any error'),
-      ),
+      response.extra['fresh:refresh_error_stack_trace'],
+      isA<StackTrace>(),
     );
-    expect(response.extra['fresh:refresh_error_stack'], isA<StackTrace>());
   });
 
   test('does not hang when refreshToken throws (onResponse)', () async {
+    final exception = Exception('any error');
     final fresh = Fresh.oAuth2(
       tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
-      refreshToken: (_, __) async {
-        throw Exception('any error');
-      },
-      shouldRefresh: (resp) {
-        return true;
-      },
-      tokenHeader: (_) => {
-        'custom-name': 'custom-value',
-      },
+      refreshToken: (_, __) async => throw exception,
     );
     await fresh.setToken(
       const OAuth2Token(
@@ -90,16 +72,12 @@ void main() {
     );
 
     final response = await dio.get<Object?>('http://example.com');
-    expect(response.statusCode, 401);
+    expect(response.statusCode, equals(401));
+    expect(response.extra['fresh:refresh_error'], equals(exception));
     expect(
-      response.extra['fresh:refresh_error'],
-      isA<Exception>().having(
-        (e) => e.toString(),
-        'exception message',
-        contains('any error'),
-      ),
+      response.extra['fresh:refresh_error_stack_trace'],
+      isA<StackTrace>(),
     );
-    expect(response.extra['fresh:refresh_error_stack'], isA<StackTrace>());
   });
 }
 
