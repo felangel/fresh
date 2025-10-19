@@ -1,3 +1,10 @@
+# 0.7.0
+
+- feat: add `Token` base class for token extensibility
+- feat: add `OAuth2Token.issuedAt` field for token issue date tracking  
+- feat: add `Token.expiresAt` getter for token expiration validation
+- chore: adjust dart sdk constraint to `">=3.0.0 <4.0.0"`
+
 # 0.4.3
 
 - fix: wait for initial storage read before returning token

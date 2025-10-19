@@ -6,6 +6,7 @@ export 'package:fresh/fresh.dart'
         InMemoryTokenStorage,
         OAuth2Token,
         RevokeTokenException,
+        Token,
         TokenHeaderBuilder,
         TokenStorage;
 export 'src/fresh.dart';
