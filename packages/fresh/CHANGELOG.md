@@ -1,3 +1,8 @@
+# 0.4.4
+
+- refactor: minor adjustment to generics in test
+- chore(deps): upgrade to mocktail ^1.0.0
+
 # 0.4.3
 
 - fix: wait for initial storage read before returning token
