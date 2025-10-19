@@ -6,8 +6,8 @@ class MockToken extends Mock implements OAuth2Token {}
 
 class FakeOAuth2Token extends Fake implements OAuth2Token {}
 
-class MockTokenStorage<OAuth2Token> extends Mock
-    implements TokenStorage<OAuth2Token> {}
+class MockTokenStorage<T extends OAuth2Token> extends Mock
+    implements TokenStorage<T> {}
 
 class FreshController<T> with FreshMixin<T> {
   FreshController(TokenStorage<T> tokenStorage) {
