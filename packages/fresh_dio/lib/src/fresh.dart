@@ -9,10 +9,17 @@ typedef ShouldRefresh = bool Function(Response<dynamic>? response);
 /// Signature for `refreshToken` on [Fresh].
 typedef RefreshToken<T> = Future<T> Function(T? token, Dio httpClient);
 
+/// Signature for `isTokenRequired` on [Fresh].
+typedef IsTokenRequired = bool Function(RequestOptions options);
+
 /// {@template fresh}
 /// A Dio Interceptor for automatic token refresh.
 /// Requires a concrete implementation of [TokenStorage] and [RefreshToken].
 /// Handles transparently refreshing/caching tokens.
+///
+/// By default, authentication headers are added to all requests.
+/// Use the `isTokenRequired` parameter to conditionally skip authentication
+/// for specific requests (e.g., login, registration, public endpoints).
 ///
 /// ```dart
 /// dio.interceptors.add(
@@ -30,10 +37,12 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
     required TokenStorage<T> tokenStorage,
     required RefreshToken<T> refreshToken,
     ShouldRefresh? shouldRefresh,
+    IsTokenRequired? isTokenRequired,
     Dio? httpClient,
   })  : _refreshToken = refreshToken,
         _tokenHeader = tokenHeader,
         _shouldRefresh = shouldRefresh ?? _defaultShouldRefresh,
+        _isTokenRequired = isTokenRequired,
         _httpClient = httpClient ?? Dio() {
     this.tokenStorage = tokenStorage;
   }
@@ -41,11 +50,24 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   /// A constructor that returns a [Fresh] interceptor that uses an
   /// [OAuth2Token] token.
   ///
+  /// By default, authentication headers are added to all requests.
+  /// Use the `isTokenRequired` parameter to conditionally skip authentication:
+  ///
   /// ```dart
   /// dio.interceptors.add(
   ///   Fresh.oAuth2(
   ///     tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
   ///     refreshToken: (token, client) async {...},
+  ///     // Optional: control which requests require authentication
+  ///     isTokenRequired: (options) {
+  ///       // Skip auth if explicitly disabled
+  ///       if (options.extra['skipAuth'] == true) return false;
+  ///
+  ///       // Skip auth for login/register endpoints
+  ///       if (options.path.contains('/auth/')) return false;
+  ///
+  ///       return true; // Add auth header to all other requests
+  ///     },
   ///   ),
   /// );
   /// ```
@@ -53,6 +75,7 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
     required TokenStorage<T> tokenStorage,
     required RefreshToken<T> refreshToken,
     ShouldRefresh? shouldRefresh,
+    IsTokenRequired? isTokenRequired,
     Dio? httpClient,
     TokenHeaderBuilder<T>? tokenHeader,
   }) {
@@ -60,6 +83,7 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
       refreshToken: refreshToken,
       tokenStorage: tokenStorage,
       shouldRefresh: shouldRefresh,
+      isTokenRequired: isTokenRequired,
       httpClient: httpClient,
       tokenHeader: tokenHeader ??
           (token) {
@@ -73,6 +97,7 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   final Dio _httpClient;
   final TokenHeaderBuilder<T> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
+  final IsTokenRequired? _isTokenRequired;
   final RefreshToken<T> _refreshToken;
 
   @override
@@ -103,6 +128,13 @@ Example:
 ''',
     );
 
+    // Check if token is required for this request
+    if (_isTokenRequired != null && !_isTokenRequired!(options)) {
+      // Mark request as not requiring auth to skip refresh attempts
+      options.extra['_fresh_token_not_required'] = true;
+      return handler.next(options);
+    }
+
     final currentToken = await token;
     final headers = currentToken != null
         ? _tokenHeader(currentToken)
@@ -116,6 +148,12 @@ Example:
     Response<dynamic> response,
     ResponseInterceptorHandler handler,
   ) async {
+    // Skip refresh if token was not required for this request
+    final extra = response.requestOptions.extra;
+    if (extra['_fresh_token_not_required'] == true) {
+      return handler.next(response);
+    }
+
     if (await token == null || !_shouldRefresh(response)) {
       return handler.next(response);
     }
@@ -142,6 +180,12 @@ Example:
     ErrorInterceptorHandler handler,
   ) async {
     final response = err.response;
+
+    // Skip refresh if token was not required for this request
+    if (response?.requestOptions.extra['_fresh_token_not_required'] == true) {
+      return handler.next(err);
+    }
+
     if (response == null ||
         await token == null ||
         err.error is RevokeTokenException ||
