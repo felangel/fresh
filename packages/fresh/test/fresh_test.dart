@@ -59,14 +59,16 @@ void main() {
     });
 
     group('token', () {
-      test('returns token once it has successfully loaded from storage',
-          () async {
-        final mockToken = MockToken();
-        when(() => tokenStorage.read()).thenAnswer((_) async => mockToken);
-        final freshController = FreshController<OAuth2Token>(tokenStorage);
-        final token = await freshController.token;
-        expect(token, mockToken);
-      });
+      test(
+        'returns token once it has successfully loaded from storage',
+        () async {
+          final mockToken = MockToken();
+          when(() => tokenStorage.read()).thenAnswer((_) async => mockToken);
+          final freshController = FreshController<OAuth2Token>(tokenStorage);
+          final token = await freshController.token;
+          expect(token, mockToken);
+        },
+      );
 
       test('waits for storage read to complete', () async {
         final mockToken = MockToken();
@@ -77,6 +79,48 @@ void main() {
         final freshController = FreshController<OAuth2Token>(tokenStorage);
         final token = await freshController.token;
         expect(token, mockToken);
+      });
+
+      test('waits for setToken to complete before returning token', () async {
+        final initialToken = MockToken();
+        final newToken = MockToken();
+        when(() => tokenStorage.read()).thenAnswer((_) async => initialToken);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {
+          // Simulate slow storage write
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        });
+
+        final freshController = FreshController<OAuth2Token>(tokenStorage);
+
+        await freshController.token;
+
+        final setTokenFuture = freshController.setToken(newToken);
+
+        final tokenDuringSet = await freshController.token;
+
+        await setTokenFuture;
+
+        expect(tokenDuringSet, newToken);
+      });
+
+      test('waits for clearToken to complete before returning token', () async {
+        final initialToken = MockToken();
+        when(() => tokenStorage.read()).thenAnswer((_) async => initialToken);
+        when(() => tokenStorage.delete()).thenAnswer((_) async {
+          // Simulate slow storage delete
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        });
+
+        final freshController = FreshController<OAuth2Token>(tokenStorage);
+        await freshController.token;
+
+        final clearTokenFuture = freshController.clearToken();
+
+        final tokenDuringClear = await freshController.token;
+
+        await clearTokenFuture;
+
+        expect(tokenDuringClear, isNull);
       });
     });
 
@@ -163,9 +207,9 @@ void main() {
 
           await expectLater(
             freshController.authenticationStatus,
-            emitsInOrder(
-              const <AuthenticationStatus>[AuthenticationStatus.authenticated],
-            ),
+            emitsInOrder(const <AuthenticationStatus>[
+              AuthenticationStatus.authenticated,
+            ]),
           );
         });
       });
@@ -199,9 +243,10 @@ void main() {
 
         await expectLater(
           freshController.authenticationStatus,
-          emitsInOrder(
-            <Matcher>[equals(AuthenticationStatus.authenticated), emitsDone],
-          ),
+          emitsInOrder(<Matcher>[
+            equals(AuthenticationStatus.authenticated),
+            emitsDone,
+          ]),
         );
       });
     });
