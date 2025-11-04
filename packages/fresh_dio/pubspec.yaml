@@ -13,6 +13,7 @@ environment:
 dependencies:
   dio: ^5.5.0+1
   fresh: ^0.4.0
+  synchronized: ^3.4.0
 
 dev_dependencies:
   mocktail: ^1.0.0

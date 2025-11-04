@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:fresh_dio/fresh_dio.dart';
+import 'package:synchronized/synchronized.dart';
 
 /// Signature for `shouldRefresh` on [Fresh].
 typedef ShouldRefresh = bool Function(Response<dynamic>? response);
@@ -74,6 +75,9 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   final TokenHeaderBuilder<T> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
   final RefreshToken<T> _refreshToken;
+
+  final Lock _refreshLock = Lock();
+  T? _latestRefreshedToken;
 
   @override
   Future<dynamic> onRequest(
@@ -166,9 +170,31 @@ Example:
   }
 
   Future<Response<dynamic>> _tryRefresh(Response<dynamic> response) async {
-    late final T refreshedToken;
+    return _refreshLock.synchronized(() async {
+      final currentToken = await token;
+
+      if (currentToken == null) {
+        throw DioException(
+          requestOptions: response.requestOptions,
+          error: RevokeTokenException(),
+          response: response,
+        );
+      }
+
+      if (identical(currentToken, _latestRefreshedToken)) {
+        return _retryRequest(response, currentToken);
+      }
+
+      final refreshedToken = await _performRefresh(response, currentToken);
+      await setToken(refreshedToken);
+      _latestRefreshedToken = refreshedToken;
+      return _retryRequest(response, refreshedToken);
+    });
+  }
+
+  Future<T> _performRefresh(Response<dynamic> response, T? currentToken) async {
     try {
-      refreshedToken = await _refreshToken(await token, _httpClient);
+      return await _refreshToken(currentToken, _httpClient);
     } on RevokeTokenException catch (error) {
       await clearToken();
       throw DioException(
@@ -177,8 +203,12 @@ Example:
         response: response,
       );
     }
+  }
 
-    await setToken(refreshedToken);
+  Future<Response<dynamic>> _retryRequest(
+    Response<dynamic> response,
+    T refreshedToken,
+  ) async {
     _httpClient.options.baseUrl = response.requestOptions.baseUrl;
     final data = response.requestOptions.data;
     return _httpClient.request<dynamic>(
