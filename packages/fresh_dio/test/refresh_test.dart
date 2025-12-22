@@ -165,6 +165,111 @@ void main() {
           'queued requests',
     );
   });
+
+  test('uses refreshed token for all queued requests after refresh', () async {
+    final capturedTokens = <String>[];
+
+    final mockRefreshClient = Dio()
+      ..httpClientAdapter = _MockAdapter(
+        (options) {
+          if (options.headers.containsKey('authorization')) {
+            final auth = options.headers['authorization'] as String;
+            capturedTokens.add(auth);
+          }
+          return ResponseBody.fromString(
+            '{"success": true}',
+            200,
+            headers: {
+              Headers.contentTypeHeader: [Headers.jsonContentType],
+            },
+          );
+        },
+      );
+
+    final fresh = Fresh.oAuth2(
+      tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+      httpClient: mockRefreshClient,
+      refreshToken: (token, _) async {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        return const OAuth2Token(
+          accessToken: 'new.access.token',
+          refreshToken: 'new.refresh.token',
+        );
+      },
+    );
+
+    await fresh.setToken(
+      const OAuth2Token(
+        accessToken: 'invalid.token',
+        refreshToken: 'refresh.token',
+      ),
+    );
+
+    final dio = Dio();
+    dio.interceptors.add(fresh);
+    dio.options.baseUrl = 'http://example.com';
+    dio.httpClientAdapter = _MockAdapter(
+      (options) {
+        if (options.headers.containsKey('authorization')) {
+          final auth = options.headers['authorization'] as String;
+          capturedTokens.add(auth);
+          if (auth.contains('invalid.token')) {
+            return ResponseBody.fromString(
+              '{"error": "Unauthorized"}',
+              401,
+              headers: {
+                Headers.contentTypeHeader: [Headers.jsonContentType],
+              },
+            );
+          }
+        }
+        return ResponseBody.fromString(
+          '{"success": true}',
+          200,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      },
+    );
+
+    final futures = <Future<Response<Object?>>>[
+      dio.get<Object?>('/1'),
+      dio.get<Object?>('/2'),
+      dio.get<Object?>('/3'),
+    ];
+
+    final responses = await Future.wait(futures);
+
+    for (final response in responses) {
+      expect(response.statusCode, equals(200));
+    }
+
+    expect(
+      capturedTokens.length,
+      equals(6),
+      reason: 'should capture tokens from initial attempts (3) and retries (3)',
+    );
+
+    final initialTokens = capturedTokens.sublist(0, 3);
+    final retryTokens = capturedTokens.sublist(3);
+
+    for (final token in initialTokens) {
+      expect(
+        token,
+        contains('invalid.token'),
+        reason: 'initial requests should use the invalid token',
+      );
+    }
+
+    for (final token in retryTokens) {
+      expect(
+        token,
+        contains('new.access.token'),
+        reason: 'retry requests should use the refreshed token',
+      );
+    }
+  });
 }
 
 class _MockAdapter implements HttpClientAdapter {
