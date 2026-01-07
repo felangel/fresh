@@ -4,7 +4,6 @@
 - feat: automatic token refresh based on expiration before requests
 - feat: enhanced token validation with `Token.expiresAt` getter  
 - feat: support for custom token validation logic with GraphQL Request context
-- chore: adjust dart sdk constraint to `">=3.0.0 <4.0.0"`
 
 # 0.6.1
 
