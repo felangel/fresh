@@ -5,6 +5,11 @@
 - feat: add `Token.expiresAt` getter for token expiration validation
 - chore: adjust dart sdk constraint to `">=3.0.0 <4.0.0"`
 
+# 0.4.4
+
+- refactor: minor adjustment to generics in test
+- chore(deps): upgrade to mocktail ^1.0.0
+
 # 0.4.3
 
 - fix: wait for initial storage read before returning token
