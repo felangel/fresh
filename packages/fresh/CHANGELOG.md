@@ -1,4 +1,4 @@
-# 0.7.0
+# 0.5.0
 
 - feat: add `Token` base class for token extensibility
 - feat: add `OAuth2Token.issuedAt` field for token issue date tracking  

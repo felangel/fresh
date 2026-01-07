@@ -246,9 +246,12 @@ Example:
     RequestOptions requestOptions,
     T? token,
   ) {
-    if (token case Token(:final DateTime expiresAt)) {
-      final now = DateTime.now();
-      return expiresAt.isBefore(now);
+    if (token is Token) {
+      final expiresAt = token.expiresAt;
+      if (expiresAt != null) {
+        final now = DateTime.now();
+        return expiresAt.isBefore(now);
+      }
     }
 
     return false;

@@ -30,13 +30,17 @@ abstract class Token {
 class OAuth2Token extends Token {
   /// {macro oauth2_token}
   const OAuth2Token({
-    required super.accessToken,
-    super.refreshToken,
-    super.tokenType,
+    required String accessToken,
+    String? refreshToken,
+    String? tokenType,
     this.expiresIn,
     this.scope,
     this.issuedAt,
-  });
+  }) : super(
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          tokenType: tokenType ?? 'bearer',
+        );
 
   /// If the access token expires, the server should reply
   /// with the duration of time the access token is granted for.
