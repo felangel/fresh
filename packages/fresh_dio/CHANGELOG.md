@@ -1,3 +1,7 @@
+# 0.4.5
+
+- feat: add `isTokenRequired` to prevent adding auth headers ([#125](https://github.com/felangel/fresh/pull/125))
+
 # 0.4.4
 
 - fix: hang on uncaught refresh token exception ([#120](https://github.com/felangel/fresh/pull/120))
