@@ -121,8 +121,11 @@ void main() {
     final response = await dio.get<Object?>('http://example.com');
     expect(response.statusCode, equals(401));
     expect(refreshCallCount, equals(0), reason: 'Should not attempt refresh');
-    expect(response.extra['fresh'], isNull,
-        reason: 'Should not have refresh failure info');
+    expect(
+      response.extra['fresh'],
+      isNull,
+      reason: 'Should not have refresh failure info',
+    );
   });
 }
 
