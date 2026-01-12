@@ -391,6 +391,71 @@ void main() {
           },
         );
       });
+
+      test('does not append token header when isTokenRequired returns false',
+          () async {
+        final options = RequestOptions();
+        when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+        final fresh = Fresh.oAuth2(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+          isTokenRequired: (options) => false,
+        );
+
+        await fresh.onRequest(options, requestHandler);
+        final result = verify(() => requestHandler.next(captureAny()))
+          ..called(1);
+
+        expect(
+          (result.captured.first as RequestOptions).headers,
+          isEmpty,
+        );
+      });
+
+      test('appends token header when isTokenRequired returns true', () async {
+        final options = RequestOptions();
+        when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+        final fresh = Fresh.oAuth2(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+          isTokenRequired: (options) => true,
+        );
+
+        await fresh.onRequest(options, requestHandler);
+        final result = verify(() => requestHandler.next(captureAny()))
+          ..called(1);
+
+        expect(
+          (result.captured.first as RequestOptions).headers,
+          {
+            'authorization': 'bearer accessToken',
+          },
+        );
+      });
+
+      test('appends token header when isTokenRequired is not provided',
+          () async {
+        final options = RequestOptions();
+        when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+        final fresh = Fresh.oAuth2(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+        );
+
+        await fresh.onRequest(options, requestHandler);
+        final result = verify(() => requestHandler.next(captureAny()))
+          ..called(1);
+
+        expect(
+          (result.captured.first as RequestOptions).headers,
+          {
+            'authorization': 'bearer accessToken',
+          },
+        );
+      });
     });
 
     group('onResponse', () {
@@ -398,6 +463,9 @@ void main() {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final response = MockResponse<dynamic>();
+        final requestOptions = MockRequestOptions();
+        when(() => requestOptions.extra).thenReturn(<String, dynamic>{});
+        when(() => response.requestOptions).thenReturn(requestOptions);
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -416,6 +484,9 @@ void main() {
         when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final response = MockResponse<dynamic>();
+        final requestOptions = MockRequestOptions();
+        when(() => requestOptions.extra).thenReturn(<String, dynamic>{});
+        when(() => response.requestOptions).thenReturn(requestOptions);
         when(() => response.statusCode).thenReturn(200);
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
@@ -436,6 +507,9 @@ void main() {
         when(() => tokenStorage.read()).thenAnswer((_) async => token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final response = MockResponse<dynamic>();
+        final requestOptions = MockRequestOptions();
+        when(() => requestOptions.extra).thenReturn(<String, dynamic>{});
+        when(() => response.requestOptions).thenReturn(requestOptions);
         when(() => response.statusCode).thenReturn(200);
 
         final fresh = Fresh.oAuth2(
@@ -537,6 +611,7 @@ void main() {
         when(tokenStorage.delete).thenAnswer((_) async {});
         final response = MockResponse<dynamic>();
         final request = MockRequestOptions();
+        when(() => request.extra).thenReturn(<String, dynamic>{});
         when(() => response.requestOptions).thenReturn(request);
         when(() => response.statusCode).thenReturn(401);
         final fresh = Fresh<MockToken>(
@@ -588,6 +663,9 @@ void main() {
           ]),
         );
         final response = MockResponse<dynamic>();
+        final requestOptions = MockRequestOptions();
+        when(() => requestOptions.extra).thenReturn(<String, dynamic>{});
+        when(() => response.requestOptions).thenReturn(requestOptions);
         await fresh.onResponse(response, responseHandler);
         final result = verify(() => responseHandler.next(captureAny()))
           ..called(1);
@@ -665,6 +743,9 @@ void main() {
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final error = MockDioException();
         final response = MockResponse<dynamic>();
+        final requestOptions = MockRequestOptions();
+        when(() => requestOptions.extra).thenReturn(<String, dynamic>{});
+        when(() => response.requestOptions).thenReturn(requestOptions);
         when(() => response.statusCode).thenReturn(200);
         when(() => error.response).thenReturn(response);
         final fresh = Fresh.oAuth2(

@@ -81,6 +81,52 @@ void main() {
           .having((m) => m['stack_trace'], 'stack trace', isA<StackTrace>()),
     );
   });
+
+  test('does not attempt refresh when isTokenRequired returns false', () async {
+    var refreshCallCount = 0;
+    final fresh = Fresh.oAuth2(
+      tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+      refreshToken: (_, __) async {
+        refreshCallCount++;
+        throw Exception('should not be called');
+      },
+      isTokenRequired: (options) => false,
+    );
+
+    await fresh.setToken(
+      const OAuth2Token(
+        accessToken: 'access.token.jwt',
+        refreshToken: 'refreshToken',
+      ),
+    );
+
+    final dio = Dio();
+    dio.interceptors.add(fresh);
+    dio.options.validateStatus = (_) => true;
+    dio.httpClientAdapter = _MockAdapter(
+      (options) {
+        // Verify no auth header was added
+        expect(options.headers['authorization'], isNull);
+
+        return ResponseBody.fromString(
+          '{"error": "Unauthorized"}',
+          401,
+          headers: {
+            Headers.contentTypeHeader: [Headers.jsonContentType],
+          },
+        );
+      },
+    );
+
+    final response = await dio.get<Object?>('http://example.com');
+    expect(response.statusCode, equals(401));
+    expect(refreshCallCount, equals(0), reason: 'Should not attempt refresh');
+    expect(
+      response.extra['fresh'],
+      isNull,
+      reason: 'Should not have refresh failure info',
+    );
+  });
 }
 
 class _MockAdapter implements HttpClientAdapter {

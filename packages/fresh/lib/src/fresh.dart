@@ -97,7 +97,6 @@ mixin FreshMixin<T> {
   /// it will be updated to `authenticated`and save to storage.
   Future<void> setToken(T? token) async {
     if (token == null) return clearToken();
-
     await _tokenStorage.write(token);
     _updateStatus(token);
   }
