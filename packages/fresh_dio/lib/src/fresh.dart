@@ -136,6 +136,9 @@ Example:
     }
 
     final currentToken = await token;
+    // Store the token used for this request so we can detect if it was
+    // already refreshed when handling 401 responses
+    options.extra['_fresh_request_token'] = currentToken;
     final headers = currentToken != null
         ? _tokenHeader(currentToken)
         : const <String, String>{};
@@ -211,10 +214,19 @@ Example:
 
   Future<Response<dynamic>> _tryRefresh(Response<dynamic> response) async {
     late final T refreshedToken;
+    // Get the token that was used when this request was made
+    final tokenUsedForRequest =
+        response.requestOptions.extra['_fresh_request_token'] as T?;
     try {
-      refreshedToken = await _refreshToken(await token, _httpClient);
+      // Use single-flight coordination to ensure only one refresh happens
+      // even if multiple requests trigger refresh concurrently.
+      // Pass the token that was used for this request to detect if another
+      // request has already refreshed the token.
+      refreshedToken = await singleFlightRefresh(
+        (currentToken) => _refreshToken(currentToken, _httpClient),
+        tokenBeforeRefresh: tokenUsedForRequest,
+      );
     } on RevokeTokenException catch (error) {
-      await clearToken();
       throw DioException(
         requestOptions: response.requestOptions,
         error: error,
@@ -222,7 +234,6 @@ Example:
       );
     }
 
-    await setToken(refreshedToken);
     _httpClient.options.baseUrl = response.requestOptions.baseUrl;
     final data = response.requestOptions.data;
     return _httpClient.request<dynamic>(

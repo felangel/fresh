@@ -1,3 +1,7 @@
+# 0.4.6
+
+- fix: concurrent 401 responses now trigger exactly one token refresh instead of multiple
+
 # 0.4.5
 
 - feat: add `isTokenRequired` to prevent adding auth headers ([#125](https://github.com/felangel/fresh/pull/125))

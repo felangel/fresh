@@ -12,7 +12,8 @@ environment:
 
 dependencies:
   dio: ^5.5.0+1
-  fresh: ^0.4.0
+  fresh:
+    path: ../fresh
 
 dev_dependencies:
   mocktail: ^1.0.0

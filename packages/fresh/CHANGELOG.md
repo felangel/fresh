@@ -1,3 +1,7 @@
+# 0.4.5
+
+- feat: add `singleFlightRefresh` method to `FreshMixin` for coordinating concurrent token refresh attempts
+
 # 0.4.4
 
 - refactor: minor adjustment to generics in test

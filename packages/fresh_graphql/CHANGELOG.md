@@ -1,3 +1,7 @@
+# 0.6.2
+
+- fix: concurrent UNAUTHENTICATED errors now trigger exactly one token refresh instead of multiple
+
 # 0.6.1
 
 - chore: update copyright year
