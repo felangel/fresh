@@ -5,7 +5,10 @@ import 'package:test/test.dart';
 
 class MockTokenStorage<T> extends Mock implements TokenStorage<T> {}
 
-class MockToken extends Mock implements OAuth2Token {}
+class MockToken extends Mock implements OAuth2Token {
+  @override
+  String get accessToken => 'accessToken';
+}
 
 class MockRequestOptions extends Mock implements RequestOptions {}
 
@@ -63,13 +66,16 @@ void main() {
     group('configure token', () {
       group('setToken', () {
         test('invokes tokenStorage.write', () async {
-          when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
-          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           final token = MockToken();
+
+          when(() => tokenStorage.read()).thenAnswer((_) async => token);
+          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
           final fresh = Fresh.oAuth2(
             tokenStorage: tokenStorage,
             refreshToken: emptyRefreshToken,
           );
+
           await fresh.setToken(token);
           verify(() => tokenStorage.write(token)).called(1);
         });
@@ -109,6 +115,183 @@ void main() {
             ]),
           );
         });
+      });
+    });
+
+    group('shouldRefreshBeforeRequest', () {
+      test('does not refresh when token has no expireDate', () async {
+        const token = OAuth2Token(accessToken: 'accessToken');
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        var refreshCallCount = 0;
+        final fresh = Fresh.oAuth2<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (token, client) async {
+            refreshCallCount++;
+            return token ?? MockToken();
+          },
+        );
+
+        final options = RequestOptions();
+        await fresh.onRequest(options, requestHandler);
+
+        expect(refreshCallCount, 0);
+      });
+
+      test('does not refresh when token is not expired', () async {
+        final token = OAuth2Token(
+          accessToken: 'accessToken',
+          issuedAt: DateTime.now(),
+          expiresIn: 3600, // 1 hour
+        );
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        var refreshCallCount = 0;
+        final fresh = Fresh.oAuth2<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (token, client) async {
+            refreshCallCount++;
+            return token ?? MockToken();
+          },
+        );
+
+        final options = RequestOptions();
+        await fresh.onRequest(options, requestHandler);
+
+        expect(refreshCallCount, 0);
+      });
+
+      test('refreshes token when expired', () async {
+        final expiredToken = OAuth2Token(
+          accessToken: 'expiredToken',
+          issuedAt: DateTime.now().subtract(const Duration(hours: 2)),
+          expiresIn: 3600, // 1 hour
+        );
+        const newToken = OAuth2Token(accessToken: 'newToken');
+
+        when(() => tokenStorage.read()).thenAnswer((_) async => expiredToken);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        var refreshCallCount = 0;
+        final fresh = Fresh.oAuth2<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (token, client) async {
+            refreshCallCount++;
+            return newToken;
+          },
+        );
+
+        final options = RequestOptions();
+        await fresh.onRequest(options, requestHandler);
+
+        expect(refreshCallCount, 1);
+        verify(() => tokenStorage.write(any())).called(1);
+      });
+
+      test('uses custom shouldRefreshBeforeRequest when provided', () async {
+        var customCallCount = 0;
+        const token = OAuth2Token(accessToken: 'accessToken');
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        final fresh = Fresh<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+          tokenHeader: (token) =>
+              {'authorization': '${token.tokenType} ${token.accessToken}'},
+          shouldRefreshBeforeRequest: (requestOptions, token) {
+            customCallCount++;
+            return false;
+          },
+        );
+
+        final options = RequestOptions();
+        await fresh.onRequest(options, requestHandler);
+
+        expect(customCallCount, 1);
+      });
+
+      test('calls revokeToken when refresh throws RevokeTokenException',
+          () async {
+        final expiredToken = OAuth2Token(
+          accessToken: 'expiredToken',
+          issuedAt: DateTime.now().subtract(const Duration(hours: 2)),
+          expiresIn: 3600,
+        );
+
+        when(() => tokenStorage.read()).thenAnswer((_) async => expiredToken);
+        when(() => tokenStorage.delete()).thenAnswer((_) async {});
+
+        final fresh = Fresh.oAuth2(
+          tokenStorage: tokenStorage,
+          refreshToken: (token, client) async {
+            throw RevokeTokenException();
+          },
+        );
+
+        final options = RequestOptions();
+        await fresh.onRequest(options, requestHandler);
+
+        verify(() => tokenStorage.delete()).called(1);
+      });
+
+      test('passes RequestOptions to shouldRefreshBeforeRequest', () async {
+        const token = OAuth2Token(accessToken: 'accessToken');
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        RequestOptions? capturedOptions;
+        final fresh = Fresh<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+          tokenHeader: (token) =>
+              {'authorization': '${token.tokenType} ${token.accessToken}'},
+          shouldRefreshBeforeRequest: (requestOptions, token) {
+            capturedOptions = requestOptions;
+            return false;
+          },
+        );
+
+        final options = RequestOptions(path: '/api/test', method: 'GET');
+        await fresh.onRequest(options, requestHandler);
+
+        expect(capturedOptions, isNotNull);
+        expect(capturedOptions!.path, '/api/test');
+        expect(capturedOptions!.method, 'GET');
+      });
+
+      test('can refresh based on request path', () async {
+        const token = OAuth2Token(accessToken: 'accessToken');
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        var refreshCallCount = 0;
+        final fresh = Fresh<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (token, client) async {
+            refreshCallCount++;
+            return const OAuth2Token(accessToken: 'refreshedToken');
+          },
+          tokenHeader: (token) =>
+              {'authorization': '${token.tokenType} ${token.accessToken}'},
+          shouldRefreshBeforeRequest: (requestOptions, token) {
+            // Only refresh for sensitive paths
+            return requestOptions.path.contains('/sensitive');
+          },
+        );
+
+        // Non-sensitive path should not trigger refresh
+        var options = RequestOptions(path: '/api/public');
+        await fresh.onRequest(options, requestHandler);
+        expect(refreshCallCount, 0);
+
+        // Sensitive path should trigger refresh
+        options = RequestOptions(path: '/api/sensitive');
+        await fresh.onRequest(options, requestHandler);
+        expect(refreshCallCount, 1);
+        verify(() => tokenStorage.write(any())).called(1);
       });
     });
 
@@ -320,13 +503,15 @@ void main() {
       test(
           'returns untouched response when '
           'shouldRefresh (custom) is false', () async {
-        when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+        final token = MockToken();
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final response = MockResponse<dynamic>();
         final requestOptions = MockRequestOptions();
         when(() => requestOptions.extra).thenReturn(<String, dynamic>{});
         when(() => response.requestOptions).thenReturn(requestOptions);
         when(() => response.statusCode).thenReturn(200);
+
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -381,6 +566,7 @@ void main() {
             options: any(named: 'options'),
           ),
         ).thenAnswer((_) async => response);
+
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
@@ -536,11 +722,13 @@ void main() {
       });
 
       test('returns error when error is RevokeTokenException', () async {
-        when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+        final token = MockToken();
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final revokeTokenException = RevokeTokenException();
         final error = MockDioException();
         when<dynamic>(() => error.error).thenReturn(revokeTokenException);
+
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
@@ -611,6 +799,7 @@ void main() {
             options: any(named: 'options'),
           ),
         ).thenAnswer((_) async => response);
+
         final fresh = Fresh<MockToken>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
@@ -831,15 +1020,16 @@ void main() {
 
     group('close', () {
       test('should close streams', () async {
+        final token = MockToken();
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
         final fresh = Fresh.oAuth2(
           tokenStorage: tokenStorage,
           refreshToken: emptyRefreshToken,
         );
 
-        final mockToken = MockToken();
-        await fresh.setToken(mockToken);
+        await fresh.setToken(token);
         await fresh.close();
 
         await expectLater(

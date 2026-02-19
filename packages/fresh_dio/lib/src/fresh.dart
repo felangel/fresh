@@ -6,6 +6,12 @@ import 'package:fresh_dio/fresh_dio.dart';
 /// Signature for `shouldRefresh` on [Fresh].
 typedef ShouldRefresh = bool Function(Response<dynamic>? response);
 
+/// Signature for `shouldRefreshBeforeRequest` on [Fresh].
+typedef ShouldRefreshBeforeRequest<T> = bool Function(
+  RequestOptions requestOptions,
+  T? token,
+);
+
 /// Signature for `refreshToken` on [Fresh].
 typedef RefreshToken<T> = Future<T> Function(T? token, Dio httpClient);
 
@@ -23,7 +29,7 @@ typedef IsTokenRequired = bool Function(RequestOptions options);
 ///
 /// ```dart
 /// dio.interceptors.add(
-///   Fresh<OAuth2Token>(
+///   Fresh<AuthToken>(
 ///     tokenStorage: InMemoryTokenStorage(),
 ///     refreshToken: (token, client) async {...},
 ///   ),
@@ -33,22 +39,25 @@ typedef IsTokenRequired = bool Function(RequestOptions options);
 class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   /// {@macro fresh}
   Fresh({
-    required TokenHeaderBuilder<T> tokenHeader,
     required TokenStorage<T> tokenStorage,
     required RefreshToken<T> refreshToken,
+    required TokenHeaderBuilder<T> tokenHeader,
     ShouldRefresh? shouldRefresh,
+    ShouldRefreshBeforeRequest<T>? shouldRefreshBeforeRequest,
     IsTokenRequired? isTokenRequired,
     Dio? httpClient,
   })  : _refreshToken = refreshToken,
         _tokenHeader = tokenHeader,
         _shouldRefresh = shouldRefresh ?? _defaultShouldRefresh,
+        _shouldRefreshBeforeRequest =
+            shouldRefreshBeforeRequest ?? _defaultShouldRefreshBeforeRequest,
         _isTokenRequired = isTokenRequired,
         _httpClient = httpClient ?? Dio() {
     this.tokenStorage = tokenStorage;
   }
 
   /// A constructor that returns a [Fresh] interceptor that uses an
-  /// [OAuth2Token] token.
+  /// [Token] token.
   ///
   /// By default, authentication headers are added to all requests.
   /// Use the `isTokenRequired` parameter to conditionally skip authentication:
@@ -56,7 +65,7 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   /// ```dart
   /// dio.interceptors.add(
   ///   Fresh.oAuth2(
-  ///     tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+  ///     tokenStorage: InMemoryTokenStorage<AuthToken>(),
   ///     refreshToken: (token, client) async {...},
   ///     // Optional: control which requests require authentication
   ///     isTokenRequired: (options) {
@@ -71,26 +80,28 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   ///   ),
   /// );
   /// ```
-  static Fresh<T> oAuth2<T extends OAuth2Token>({
+  static Fresh<T> oAuth2<T extends Token>({
     required TokenStorage<T> tokenStorage,
     required RefreshToken<T> refreshToken,
-    ShouldRefresh? shouldRefresh,
-    IsTokenRequired? isTokenRequired,
     Dio? httpClient,
     TokenHeaderBuilder<T>? tokenHeader,
+    ShouldRefresh? shouldRefresh,
+    ShouldRefreshBeforeRequest<T>? shouldRefreshBeforeRequest,
+    IsTokenRequired? isTokenRequired,
   }) {
     return Fresh<T>(
-      refreshToken: refreshToken,
       tokenStorage: tokenStorage,
-      shouldRefresh: shouldRefresh,
-      isTokenRequired: isTokenRequired,
       httpClient: httpClient,
+      refreshToken: refreshToken,
       tokenHeader: tokenHeader ??
           (token) {
             return {
               'authorization': '${token.tokenType} ${token.accessToken}',
             };
           },
+      shouldRefresh: shouldRefresh,
+      shouldRefreshBeforeRequest: shouldRefreshBeforeRequest,
+      isTokenRequired: isTokenRequired,
     );
   }
 
@@ -98,6 +109,7 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   final TokenHeaderBuilder<T> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
   final IsTokenRequired? _isTokenRequired;
+  final ShouldRefreshBeforeRequest<T> _shouldRefreshBeforeRequest;
   final RefreshToken<T> _refreshToken;
 
   @override
@@ -135,7 +147,24 @@ Example:
       return handler.next(options);
     }
 
-    final currentToken = await token;
+    var currentToken = await token;
+
+    final shouldRefresh = _shouldRefreshBeforeRequest(
+      options,
+      currentToken,
+    );
+
+    if (shouldRefresh) {
+      try {
+        final refreshedToken = await _refreshToken(currentToken, _httpClient);
+        await setToken(refreshedToken);
+      } on RevokeTokenException catch (_) {
+        await revokeToken();
+      }
+
+      currentToken = await token;
+    }
+
     // Store the token used for this request so we can detect if it was
     // already refreshed when handling 401 responses
     options.extra['_fresh_request_token'] = currentToken;
@@ -266,5 +295,20 @@ Example:
 
   static bool _defaultShouldRefresh(Response<dynamic>? response) {
     return response?.statusCode == 401;
+  }
+
+  static bool _defaultShouldRefreshBeforeRequest<T>(
+    RequestOptions requestOptions,
+    T? token,
+  ) {
+    if (token is Token) {
+      final expiresAt = token.expiresAt;
+      if (expiresAt != null) {
+        final now = DateTime.now();
+        return expiresAt.isBefore(now);
+      }
+    }
+
+    return false;
   }
 }

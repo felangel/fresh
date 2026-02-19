@@ -82,8 +82,10 @@ jobs:
       - name: 🎯 Build ${{ matrix.package }}
         uses: ./.github/actions/dart_package
         with:
-          working_directory: packages/${{ matrix.package }}
+          # TODO: remove when fresh v0.5.0 is published.
+          collect_score: false
           min_coverage: 100
+          working_directory: packages/${{ matrix.package }}
 
   flutter_package_checks:
     needs: changes
@@ -105,8 +107,10 @@ jobs:
       - name: 🎯 Build ${{ matrix.package }}
         uses: ./.github/actions/flutter_package
         with:
-          working_directory: packages/${{ matrix.package }}
+          # TODO: remove when fresh v0.5.0 is published.
+          collect_score: false
           min_coverage: 100
+          working_directory: packages/${{ matrix.package }}
 
   build:
     needs: [semantic_pull_request, dart_package_checks, flutter_package_checks]

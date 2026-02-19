@@ -1,6 +1,13 @@
-# 0.6.2
+# 0.7.1
 
 - fix: concurrent UNAUTHENTICATED errors now trigger exactly one token refresh instead of multiple
+
+# 0.7.0
+
+- feat: `ShouldRefreshBeforeRequest` allows conditional token refresh based on GraphQL request details and token expiration
+- feat: automatic token refresh based on expiration before requests
+- feat: enhanced token validation with `Token.expiresAt` getter  
+- feat: support for custom token validation logic with GraphQL Request context
 
 # 0.6.1
 
