@@ -28,7 +28,7 @@ runs:
 
     - name: 📦 Install dependencies
       shell: ${{ inputs.shell }}
-      run: dart pub get
+      run: dart pub get --no-example
       working-directory: ${{ inputs.working_directory }}
 
     - name: 🌵 Dry Run
