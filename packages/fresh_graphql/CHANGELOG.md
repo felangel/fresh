@@ -1,6 +1,6 @@
 # 0.7.1
 
-- fix: concurrent UNAUTHENTICATED errors now trigger exactly one token refresh instead of multiple
+- fix: concurrent responses requiring refresh now trigger exactly one token refresh instead of multiple
 
 # 0.7.0
 
