@@ -28,7 +28,8 @@ class FreshController<T> with FreshMixin<T> {
     final refreshAction = refreshTokenFn;
     if (refreshAction == null) {
       throw StateError(
-          'refreshTokenFn must be set before calling refreshToken');
+        'refreshTokenFn must be set before calling refreshToken',
+      );
     }
     return refreshAction(token);
   }

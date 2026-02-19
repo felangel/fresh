@@ -164,7 +164,7 @@ Example:
       try {
         await refreshToken(tokenUsedForRequest: currentToken);
       } on RevokeTokenException catch (_) {
-        // Token is already cleared by refresh.
+        // Token is already cleared by refreshToken.
       }
 
       currentToken = await token;

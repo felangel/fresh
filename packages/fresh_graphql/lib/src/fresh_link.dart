@@ -122,7 +122,7 @@ class FreshLink<T> extends Link with FreshMixin<T> {
       try {
         await refreshToken(tokenUsedForRequest: currentToken);
       } on RevokeTokenException catch (_) {
-        // Token is already cleared by refresh.
+        // Token is already cleared by refreshToken.
       }
 
       currentToken = await token;
@@ -162,13 +162,14 @@ class FreshLink<T> extends Link with FreshMixin<T> {
               ),
             );
           } on RevokeTokenException catch (_) {
-            // Token is already cleared by refresh, just yield the
+            // Token is already cleared by refreshToken, just yield the
             // original error response so the stream can complete.
             yield result;
           } catch (_) {
-            // For any other exception during refresh (network errors, etc.),
-            // yield the original error response so the stream can complete.
-            // The state is reset by refresh, allowing retry later.
+            // For any other exception during refreshToken
+            // (network errors, etc.), yield the original error response
+            // so the stream can complete.
+            // The state is reset by refreshToken, allowing retry later.
             yield result;
           }
         } else {

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:meta/meta.dart';
 
-/// An Exception that should be thrown when overriding `refreshToken` if the
-/// refresh fails and should result in a force-logout.
+/// An Exception that should be thrown in [FreshMixin.performTokenRefresh] if
+/// the refresh fails and should result in a force-logout.
 class RevokeTokenException implements Exception {}
 
 /// Enum representing the current authentication status of the application.
