@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+
 /// An Exception that should be thrown when overriding `refreshToken` if the
 /// refresh fails and should result in a force-logout.
 class RevokeTokenException implements Exception {}
@@ -135,7 +137,8 @@ mixin FreshMixin<T> {
   /// Performs the token refresh operation.
   ///
   /// Implementers should provide only the raw token refresh mechanism.
-  /// Refresh coordination and token lifecycle are handled by [refresh].
+  /// Refresh coordination and token lifecycle are handled by [refreshToken].
+  @visibleForOverriding
   Future<T> performTokenRefresh(T? token);
 
   /// Performs a coordinated token refresh.
