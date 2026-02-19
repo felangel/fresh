@@ -27,7 +27,8 @@ class FreshController<T> with FreshMixin<T> {
   Future<T> performTokenRefresh(T? token) {
     final refreshAction = refreshTokenFn;
     if (refreshAction == null) {
-      throw StateError('refreshTokenFn must be set before calling refreshToken');
+      throw StateError(
+          'refreshTokenFn must be set before calling refreshToken');
     }
     return refreshAction(token);
   }
