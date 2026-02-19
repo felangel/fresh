@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fresh/fresh.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
@@ -282,6 +284,215 @@ void main() {
           ),
         );
       });
+    });
+
+    group('singleFlightRefresh', () {
+      setUpAll(() {
+        registerFallbackValue(FakeOAuth2Token());
+      });
+
+      test('calls refreshAction and returns refreshed token', () async {
+        final initialToken = MockToken();
+        final refreshedToken = MockToken();
+        when(() => tokenStorage.read()).thenAnswer((_) async => initialToken);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        final freshController = FreshController<OAuth2Token>(tokenStorage);
+        // Wait for initial token to load
+        await freshController.token;
+
+        final result = await freshController.singleFlightRefresh(
+          (token) async => refreshedToken,
+        );
+
+        expect(result, refreshedToken);
+        verify(() => tokenStorage.write(refreshedToken)).called(1);
+      });
+
+      test(
+        'returns current token without refreshing '
+        'when token already refreshed by another request',
+        () async {
+          final oldToken = MockToken();
+          final currentToken = MockToken();
+          when(() => tokenStorage.read()).thenAnswer((_) async => oldToken);
+          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+          final freshController = FreshController<OAuth2Token>(tokenStorage);
+          // Wait for initial token to load
+          await freshController.token;
+
+          // Simulate another request having already refreshed the token
+          await freshController.setToken(currentToken);
+
+          var refreshActionCalled = false;
+          final result = await freshController.singleFlightRefresh(
+            (token) async {
+              refreshActionCalled = true;
+              return MockToken();
+            },
+            tokenBeforeRefresh: oldToken,
+          );
+
+          expect(result, currentToken);
+          expect(refreshActionCalled, isFalse);
+        },
+      );
+
+      test('concurrent calls share the same refresh future', () async {
+        final initialToken = MockToken();
+        final refreshedToken = MockToken();
+        var refreshCallCount = 0;
+        when(() => tokenStorage.read()).thenAnswer((_) async => initialToken);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        final freshController = FreshController<OAuth2Token>(tokenStorage);
+        await freshController.token;
+
+        final completer = Completer<OAuth2Token>();
+
+        // Start first refresh (will be pending on completer)
+        final future1 = freshController.singleFlightRefresh(
+          (token) {
+            refreshCallCount++;
+            return completer.future;
+          },
+          tokenBeforeRefresh: initialToken,
+        );
+
+        // Start second refresh — should join the in-flight future
+        final future2 = freshController.singleFlightRefresh(
+          (token) async {
+            refreshCallCount++;
+            return MockToken();
+          },
+          tokenBeforeRefresh: initialToken,
+        );
+
+        // Complete the refresh
+        completer.complete(refreshedToken);
+
+        final result1 = await future1;
+        final result2 = await future2;
+
+        expect(result1, refreshedToken);
+        expect(result2, refreshedToken);
+        expect(refreshCallCount, 1);
+      });
+
+      test('clears token and rethrows on RevokeTokenException', () async {
+        final initialToken = MockToken();
+        when(() => tokenStorage.read()).thenAnswer((_) async => initialToken);
+        when(() => tokenStorage.delete()).thenAnswer((_) async {});
+
+        final freshController = FreshController<OAuth2Token>(tokenStorage);
+        await freshController.token;
+
+        await expectLater(
+          () => freshController.singleFlightRefresh(
+            (token) async => throw RevokeTokenException(),
+            tokenBeforeRefresh: initialToken,
+          ),
+          throwsA(isA<RevokeTokenException>()),
+        );
+
+        verify(() => tokenStorage.delete()).called(1);
+        expect(await freshController.token, isNull);
+      });
+
+      test('rethrows generic exception without clearing token', () async {
+        final initialToken = MockToken();
+        when(() => tokenStorage.read()).thenAnswer((_) async => initialToken);
+
+        final freshController = FreshController<OAuth2Token>(tokenStorage);
+        await freshController.token;
+
+        await expectLater(
+          () => freshController.singleFlightRefresh(
+            (token) async => throw Exception('network error'),
+            tokenBeforeRefresh: initialToken,
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        // Token should still be there
+        expect(await freshController.token, initialToken);
+      });
+
+      test('clears in-flight future after exception, allowing retry',
+          () async {
+        final initialToken = MockToken();
+        final refreshedToken = MockToken();
+        when(() => tokenStorage.read()).thenAnswer((_) async => initialToken);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        final freshController = FreshController<OAuth2Token>(tokenStorage);
+        await freshController.token;
+
+        // First call fails
+        await expectLater(
+          () => freshController.singleFlightRefresh(
+            (token) async => throw Exception('network error'),
+            tokenBeforeRefresh: initialToken,
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        // Second call should start a new refresh, not be stuck
+        final result = await freshController.singleFlightRefresh(
+          (token) async => refreshedToken,
+          tokenBeforeRefresh: initialToken,
+        );
+
+        expect(result, refreshedToken);
+      });
+
+      test(
+        'proceeds to refresh when tokenBeforeRefresh is null '
+        'even if token changed',
+        () async {
+          final initialToken = MockToken();
+          final newToken = MockToken();
+          final refreshedToken = MockToken();
+          when(() => tokenStorage.read()).thenAnswer((_) async => initialToken);
+          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+          final freshController = FreshController<OAuth2Token>(tokenStorage);
+          await freshController.token;
+
+          // Change the token
+          await freshController.setToken(newToken);
+
+          // Call without tokenBeforeRefresh — should still refresh
+          final result = await freshController.singleFlightRefresh(
+            (token) async => refreshedToken,
+          );
+
+          expect(result, refreshedToken);
+        },
+      );
+
+      test(
+        'returns current token when tokenBeforeRefresh differs '
+        'and current token is not null',
+        () async {
+          final oldToken = MockToken();
+          final currentToken = MockToken();
+          when(() => tokenStorage.read()).thenAnswer((_) async => oldToken);
+          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+          final freshController = FreshController<OAuth2Token>(tokenStorage);
+          await freshController.token;
+          await freshController.setToken(currentToken);
+
+          final result = await freshController.singleFlightRefresh(
+            (token) async => MockToken(),
+            tokenBeforeRefresh: oldToken,
+          );
+
+          expect(result, currentToken);
+        },
+      );
     });
   });
 }
