@@ -168,7 +168,7 @@ mixin FreshMixin<T> {
   }) async {
     // Check if we already have a different token than what was used for the
     // request. This means another request already refreshed the token.
-    if (tokenUsedForRequest != null && _token != tokenUsedForRequest) {
+    if (_token != tokenUsedForRequest) {
       // Token has already been refreshed, return the current token
       if (_token != null) {
         return _token as T;

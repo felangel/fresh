@@ -4,7 +4,12 @@ import 'package:fresh/fresh.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
-class MockToken extends Mock implements OAuth2Token {}
+class MockToken extends Mock implements OAuth2Token {
+  @override
+  String toString() {
+    return 'MockToken@${identityHashCode(this).toRadixString(16)}';
+  }
+}
 
 class FakeOAuth2Token extends Fake implements OAuth2Token {}
 
@@ -313,7 +318,9 @@ void main() {
         await freshController.token;
 
         freshController.refreshToken = (token) async => refreshedToken;
-        final result = await freshController.refresh();
+        final result = await freshController.refresh(
+          tokenUsedForRequest: initialToken,
+        );
 
         expect(result, refreshedToken);
         verify(() => tokenStorage.write(refreshedToken)).called(1);
@@ -455,31 +462,39 @@ void main() {
       });
 
       test(
-        'proceeds to refresh when tokenBeforeRefresh is null '
-        'even if token changed',
+        'skips refresh when tokenUsedForRequest is null '
+        'but token was already refreshed by another request',
         () async {
-          final initialToken = MockToken();
-          final newToken = MockToken();
-          final refreshedToken = MockToken();
-          when(() => tokenStorage.read()).thenAnswer((_) async => initialToken);
+          // Start with no token
+          when(() => tokenStorage.read()).thenAnswer((_) async => null);
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
 
           final freshController = FreshController<OAuth2Token>(tokenStorage);
           await freshController.token;
 
-          // Change the token
+          // Another request refreshes the token in the meantime
+          final newToken = MockToken();
           await freshController.setToken(newToken);
 
-          // Call without tokenBeforeRefresh — should still refresh
-          freshController.refreshToken = (token) async => refreshedToken;
-          final result = await freshController.refresh();
+          // Our request was made with null token, now tries to refresh
+          var refreshCalled = false;
+          freshController.refreshToken = (token) async {
+            refreshCalled = true;
+            return MockToken();
+          };
 
-          expect(result, refreshedToken);
+          final result = await freshController.refresh(
+            tokenUsedForRequest: null,
+          );
+
+          // Should return the already-refreshed token
+          expect(result, newToken);
+          expect(refreshCalled, isFalse);
         },
       );
 
       test(
-        'returns current token when tokenBeforeRefresh differs '
+        'returns current token when tokenUsedForRequest differs '
         'and current token is not null',
         () async {
           final oldToken = MockToken();

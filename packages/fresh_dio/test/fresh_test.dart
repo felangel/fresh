@@ -541,7 +541,8 @@ void main() {
         when(() => request.method).thenReturn('GET');
         when(() => request.sendTimeout).thenReturn(Duration.zero);
         when(() => request.receiveTimeout).thenReturn(Duration.zero);
-        when(() => request.extra).thenReturn(<String, String>{});
+        when(() => request.extra)
+            .thenReturn(<String, dynamic>{'_fresh_request_token': token});
         when(() => request.responseType).thenReturn(ResponseType.json);
         when(() => request.validateStatus).thenReturn((_) => false);
         when(() => request.receiveDataWhenStatusError).thenReturn(false);
@@ -605,13 +606,15 @@ void main() {
           'invokes wipes tokenStorage and sets authenticationStatus '
           'to unauthenticated when RevokeTokenException is thrown.', () async {
         var refreshCallCount = 0;
+        final token = MockToken();
         final tokenStorage = MockTokenStorage<MockToken>();
-        when(tokenStorage.read).thenAnswer((_) async => MockToken());
+        when(tokenStorage.read).thenAnswer((_) async => token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         when(tokenStorage.delete).thenAnswer((_) async {});
         final response = MockResponse<dynamic>();
         final request = MockRequestOptions();
-        when(() => request.extra).thenReturn(<String, dynamic>{});
+        when(() => request.extra)
+            .thenReturn(<String, dynamic>{'_fresh_request_token': token});
         when(() => response.requestOptions).thenReturn(request);
         when(() => response.statusCode).thenReturn(401);
         final fresh = Fresh<MockToken>(
@@ -803,7 +806,8 @@ void main() {
         when(() => request.method).thenReturn('GET');
         when(() => request.sendTimeout).thenReturn(Duration.zero);
         when(() => request.receiveTimeout).thenReturn(Duration.zero);
-        when(() => request.extra).thenReturn(<String, String>{});
+        when(() => request.extra)
+            .thenReturn(<String, dynamic>{'_fresh_request_token': token});
         when(() => request.responseType).thenReturn(ResponseType.json);
         when(() => request.validateStatus).thenReturn((_) => false);
         when(() => request.receiveDataWhenStatusError).thenReturn(false);
@@ -888,7 +892,8 @@ void main() {
         when(() => request.method).thenReturn('POST');
         when(() => request.sendTimeout).thenReturn(Duration.zero);
         when(() => request.receiveTimeout).thenReturn(Duration.zero);
-        when(() => request.extra).thenReturn(<String, String>{});
+        when(() => request.extra)
+            .thenReturn(<String, dynamic>{'_fresh_request_token': token});
         when(() => request.responseType).thenReturn(ResponseType.json);
         when(() => request.validateStatus).thenReturn((_) => false);
         when(() => request.receiveDataWhenStatusError).thenReturn(false);
@@ -978,7 +983,8 @@ void main() {
         when(() => request.method).thenReturn('POST');
         when(() => request.sendTimeout).thenReturn(Duration.zero);
         when(() => request.receiveTimeout).thenReturn(Duration.zero);
-        when(() => request.extra).thenReturn(<String, String>{});
+        when(() => request.extra)
+            .thenReturn(<String, dynamic>{'_fresh_request_token': token});
         when(() => request.responseType).thenReturn(ResponseType.json);
         when(() => request.validateStatus).thenReturn((_) => false);
         when(() => request.receiveDataWhenStatusError).thenReturn(false);
