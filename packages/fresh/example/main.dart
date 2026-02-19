@@ -1,25 +1,23 @@
+// ignore_for_file: avoid_print
+
 import 'package:fresh/fresh.dart';
 
-class InMemoryTokenStorage implements TokenStorage<OAuth2Token> {
-  OAuth2Token? _token;
+void main() async {
+  final tokenStorage = InMemoryTokenStorage<OAuth2Token>();
+  final token = OAuth2Token(
+    accessToken: 'access_token',
+    refreshToken: 'refresh_token',
+    expiresIn: 3600,
+    issuedAt: DateTime.now(),
+  );
 
-  @override
-  Future<void> delete() async {
-    _token = null;
+  await tokenStorage.write(token);
+  final storedToken = await tokenStorage.read();
+  print('Stored token: $storedToken');
+  if (storedToken != null) {
+    await tokenStorage.delete();
   }
 
-  @override
-  Future<OAuth2Token?> read() async {
-    return _token;
-  }
-
-  @override
-  Future<void> write(OAuth2Token token) async {
-    _token = token;
-  }
-}
-
-void main() {
   // Configure appropriate fresh client using `TokenStorage` implementation.
   // For example using [fresh_dio](https://pub.dev/packages/fresh_dio)...
   /// ```dart

@@ -4,37 +4,6 @@ import 'dart:async';
 /// refresh fails and should result in a force-logout.
 class RevokeTokenException implements Exception {}
 
-/// {@template oauth2_token}
-/// Standard OAuth2Token as defined by
-/// https://www.oauth.com/oauth2-servers/access-tokens/access-token-response/
-/// {@endtemplate}
-class OAuth2Token {
-  /// {macro oauth2_token}
-  const OAuth2Token({
-    required this.accessToken,
-    this.tokenType = 'bearer',
-    this.expiresIn,
-    this.refreshToken,
-    this.scope,
-  });
-
-  /// The access token string as issued by the authorization server.
-  final String accessToken;
-
-  /// The type of token this is, typically just the string “bearer”.
-  final String? tokenType;
-
-  /// If the access token expires, the server should reply
-  /// with the duration of time the access token is granted for.
-  final int? expiresIn;
-
-  /// Token which applications can use to obtain another access token.
-  final String? refreshToken;
-
-  /// Application scope granted as defined in https://oauth.net/2/scope
-  final String? scope;
-}
-
 /// Enum representing the current authentication status of the application.
 enum AuthenticationStatus {
   /// The status before the true [AuthenticationStatus] has been determined.

@@ -1,3 +1,9 @@
+# 0.5.0
+
+- feat: add `Token` base class for token extensibility
+- feat: add `OAuth2Token.issuedAt` field for token issue date tracking  
+- feat: add `Token.expiresAt` getter for token expiration validation
+
 # 0.4.4
 
 - refactor: minor adjustment to generics in test

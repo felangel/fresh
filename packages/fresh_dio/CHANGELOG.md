@@ -1,3 +1,10 @@
+# 0.5.0
+
+- feat: `ShouldRefreshBeforeRequest` allows conditional token refresh based on request details (path, headers, etc.) and token expiration
+- feat: automatic token refresh based on expiration before requests  
+- feat: enhanced token validation with `Token.expiresAt` getter
+- feat: support for custom token validation logic with RequestOptions context
+
 # 0.4.5
 
 - feat: add `isTokenRequired` to prevent adding auth headers ([#125](https://github.com/felangel/fresh/pull/125))
