@@ -94,21 +94,19 @@ class FreshLink<T> extends Link with FreshMixin<T> {
   final TokenHeaderBuilder<T?> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
   final ShouldRefreshBeforeRequest<T?> _shouldRefreshBeforeRequest;
-  final http.Client _httpClient = http.Client();
-
-  @override
-  Future<void> close() async {
-    _httpClient.close();
-    await super.close();
-  }
 
   @override
   Future<T> performTokenRefresh(T? token) async {
-    final refreshedToken = await _refreshToken(token, _httpClient);
-    if (refreshedToken == null) {
-      throw RevokeTokenException();
+    final httpClient = http.Client();
+    try {
+      final refreshedToken = await _refreshToken(token, httpClient);
+      if (refreshedToken == null) {
+        throw RevokeTokenException();
+      }
+      return refreshedToken;
+    } finally {
+      httpClient.close();
     }
-    return refreshedToken;
   }
 
   @override
