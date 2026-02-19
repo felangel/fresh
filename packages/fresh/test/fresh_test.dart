@@ -15,6 +15,17 @@ class FreshController<T> with FreshMixin<T> {
   FreshController(TokenStorage<T> tokenStorage) {
     this.tokenStorage = tokenStorage;
   }
+
+  Future<T> Function(T? token)? refreshToken;
+
+  @override
+  Future<T> performTokenRefresh(T? token) {
+    final refreshAction = refreshToken;
+    if (refreshAction == null) {
+      throw StateError('refreshToken must be set before calling refresh');
+    }
+    return refreshAction(token);
+  }
 }
 
 void main() {
@@ -286,7 +297,7 @@ void main() {
       });
     });
 
-    group('singleFlightRefresh', () {
+    group('refresh', () {
       setUpAll(() {
         registerFallbackValue(FakeOAuth2Token());
       });
@@ -301,9 +312,8 @@ void main() {
         // Wait for initial token to load
         await freshController.token;
 
-        final result = await freshController.singleFlightRefresh(
-          (token) async => refreshedToken,
-        );
+        freshController.refreshToken = (token) async => refreshedToken;
+        final result = await freshController.refresh();
 
         expect(result, refreshedToken);
         verify(() => tokenStorage.write(refreshedToken)).called(1);
@@ -326,12 +336,12 @@ void main() {
           await freshController.setToken(currentToken);
 
           var refreshActionCalled = false;
-          final result = await freshController.singleFlightRefresh(
-            (token) async {
-              refreshActionCalled = true;
-              return MockToken();
-            },
-            tokenBeforeRefresh: oldToken,
+          freshController.refreshToken = (token) async {
+            refreshActionCalled = true;
+            return MockToken();
+          };
+          final result = await freshController.refresh(
+            tokenUsedForRequest: oldToken,
           );
 
           expect(result, currentToken);
@@ -350,23 +360,19 @@ void main() {
         await freshController.token;
 
         final completer = Completer<OAuth2Token>();
+        freshController.refreshToken = (token) {
+          refreshCallCount++;
+          return completer.future;
+        };
 
         // Start first refresh (will be pending on completer)
-        final future1 = freshController.singleFlightRefresh(
-          (token) {
-            refreshCallCount++;
-            return completer.future;
-          },
-          tokenBeforeRefresh: initialToken,
+        final future1 = freshController.refresh(
+          tokenUsedForRequest: initialToken,
         );
 
         // Start second refresh — should join the in-flight future
-        final future2 = freshController.singleFlightRefresh(
-          (token) async {
-            refreshCallCount++;
-            return MockToken();
-          },
-          tokenBeforeRefresh: initialToken,
+        final future2 = freshController.refresh(
+          tokenUsedForRequest: initialToken,
         );
 
         // Complete the refresh
@@ -387,12 +393,11 @@ void main() {
 
         final freshController = FreshController<OAuth2Token>(tokenStorage);
         await freshController.token;
+        freshController.refreshToken =
+            (token) async => throw RevokeTokenException();
 
         await expectLater(
-          () => freshController.singleFlightRefresh(
-            (token) async => throw RevokeTokenException(),
-            tokenBeforeRefresh: initialToken,
-          ),
+          () => freshController.refresh(tokenUsedForRequest: initialToken),
           throwsA(isA<RevokeTokenException>()),
         );
 
@@ -406,12 +411,11 @@ void main() {
 
         final freshController = FreshController<OAuth2Token>(tokenStorage);
         await freshController.token;
+        freshController.refreshToken =
+            (token) async => throw Exception('network error');
 
         await expectLater(
-          () => freshController.singleFlightRefresh(
-            (token) async => throw Exception('network error'),
-            tokenBeforeRefresh: initialToken,
-          ),
+          () => freshController.refresh(tokenUsedForRequest: initialToken),
           throwsA(isA<Exception>()),
         );
 
@@ -429,19 +433,22 @@ void main() {
         final freshController = FreshController<OAuth2Token>(tokenStorage);
         await freshController.token;
 
+        var shouldFail = true;
+        freshController.refreshToken = (token) async {
+          if (shouldFail) throw Exception('network error');
+          return refreshedToken;
+        };
+
         // First call fails
         await expectLater(
-          () => freshController.singleFlightRefresh(
-            (token) async => throw Exception('network error'),
-            tokenBeforeRefresh: initialToken,
-          ),
+          () => freshController.refresh(tokenUsedForRequest: initialToken),
           throwsA(isA<Exception>()),
         );
 
         // Second call should start a new refresh, not be stuck
-        final result = await freshController.singleFlightRefresh(
-          (token) async => refreshedToken,
-          tokenBeforeRefresh: initialToken,
+        shouldFail = false;
+        final result = await freshController.refresh(
+          tokenUsedForRequest: initialToken,
         );
 
         expect(result, refreshedToken);
@@ -464,9 +471,8 @@ void main() {
           await freshController.setToken(newToken);
 
           // Call without tokenBeforeRefresh — should still refresh
-          final result = await freshController.singleFlightRefresh(
-            (token) async => refreshedToken,
-          );
+          freshController.refreshToken = (token) async => refreshedToken;
+          final result = await freshController.refresh();
 
           expect(result, refreshedToken);
         },
@@ -485,9 +491,10 @@ void main() {
           await freshController.token;
           await freshController.setToken(currentToken);
 
-          final result = await freshController.singleFlightRefresh(
-            (token) async => MockToken(),
-            tokenBeforeRefresh: oldToken,
+          freshController.refreshToken = (token) async => MockToken();
+
+          final result = await freshController.refresh(
+            tokenUsedForRequest: oldToken,
           );
 
           expect(result, currentToken);

@@ -109,6 +109,12 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   final TokenHeaderBuilder<T> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
   final IsTokenRequired? _isTokenRequired;
+
+  @override
+  Future<T> performTokenRefresh(T? token) {
+    return _refreshToken(token, _httpClient);
+  }
+
   final ShouldRefreshBeforeRequest<T> _shouldRefreshBeforeRequest;
   final RefreshToken<T> _refreshToken;
 
@@ -156,10 +162,9 @@ Example:
 
     if (shouldRefresh) {
       try {
-        final refreshedToken = await _refreshToken(currentToken, _httpClient);
-        await setToken(refreshedToken);
+        await refresh(tokenUsedForRequest: currentToken);
       } on RevokeTokenException catch (_) {
-        await revokeToken();
+        // Token is already cleared by refresh.
       }
 
       currentToken = await token;
@@ -247,13 +252,8 @@ Example:
     final tokenUsedForRequest =
         response.requestOptions.extra['_fresh_request_token'] as T?;
     try {
-      // Use single-flight coordination to ensure only one refresh happens
-      // even if multiple requests trigger refresh concurrently.
-      // Pass the token that was used for this request to detect if another
-      // request has already refreshed the token.
-      refreshedToken = await singleFlightRefresh(
-        (currentToken) => _refreshToken(currentToken, _httpClient),
-        tokenBeforeRefresh: tokenUsedForRequest,
+      refreshedToken = await refresh(
+        tokenUsedForRequest: tokenUsedForRequest,
       );
     } on RevokeTokenException catch (error) {
       throw DioException(

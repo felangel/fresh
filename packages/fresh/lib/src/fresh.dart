@@ -132,20 +132,23 @@ mixin FreshMixin<T> {
   /// Calling this method more than once is allowed, but does nothing.
   Future<void> close() => _controller.close();
 
-  /// Performs a single-flight token refresh.
+  /// Performs the token refresh operation.
+  ///
+  /// Implementers should provide only the raw token refresh mechanism.
+  /// Refresh coordination and token lifecycle are handled by [refresh].
+  Future<T> performTokenRefresh(T? token);
+
+  /// Performs a coordinated token refresh.
   ///
   /// If a refresh is already in progress, this will return the same future
   /// that the in-flight refresh will complete with. This ensures that
   /// concurrent refresh requests result in only one actual refresh operation.
   ///
   /// Additionally, if the token has already been refreshed by a previous
-  /// request (detected by comparing with [tokenBeforeRefresh]), this will
+  /// request (detected by comparing with [tokenUsedForRequest]), this will
   /// return the current token without triggering a new refresh.
   ///
-  /// The [refreshAction] callback is invoked to perform the actual refresh.
-  /// It receives the current token and should return the new token.
-  ///
-  /// The [tokenBeforeRefresh] parameter should be the token value that was
+  /// The [tokenUsedForRequest] parameter should be the token value that was
   /// used when the request that triggered this refresh was made. This allows
   /// detection of cases where another request has already refreshed the token.
   ///
@@ -160,13 +163,12 @@ mixin FreshMixin<T> {
   ///
   /// In all cases (success or failure), the in-flight refresh state is
   /// cleared in a `finally` block, ensuring no deadlocks.
-  Future<T> singleFlightRefresh(
-    Future<T> Function(T? token) refreshAction, {
-    T? tokenBeforeRefresh,
+  Future<T> refresh({
+    T? tokenUsedForRequest,
   }) async {
     // Check if we already have a different token than what was used for the
     // request. This means another request already refreshed the token.
-    if (tokenBeforeRefresh != null && _token != tokenBeforeRefresh) {
+    if (tokenUsedForRequest != null && _token != tokenUsedForRequest) {
       // Token has already been refreshed, return the current token
       if (_token != null) {
         return _token as T;
@@ -181,14 +183,14 @@ mixin FreshMixin<T> {
 
     // Start a new refresh - create and store the future immediately
     // before any await to prevent race conditions
-    final future = _performRefresh(refreshAction);
+    final future = _doRefresh();
     _refreshFuture = future;
     return future;
   }
 
-  Future<T> _performRefresh(Future<T> Function(T? token) refreshAction) async {
+  Future<T> _doRefresh() async {
     try {
-      final refreshedToken = await refreshAction(_token);
+      final refreshedToken = await performTokenRefresh(_token);
       await setToken(refreshedToken);
       return refreshedToken;
     } on RevokeTokenException {
