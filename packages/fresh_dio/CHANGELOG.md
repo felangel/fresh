@@ -1,7 +1,3 @@
-# 0.5.1
-
-- fix: concurrent responses requiring refresh now trigger exactly one token refresh instead of multiple
-
 # 0.5.0
 
 - feat: `ShouldRefreshBeforeRequest` allows conditional token refresh based on request details (path, headers, etc.) and token expiration

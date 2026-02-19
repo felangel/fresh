@@ -1,7 +1,3 @@
-# 0.5.1
-
-- feat: add `singleFlightRefresh` method to `FreshMixin` for coordinating concurrent token refresh attempts
-
 # 0.5.0
 
 - feat: add `Token` base class for token extensibility

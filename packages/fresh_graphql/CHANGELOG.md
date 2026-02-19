@@ -1,7 +1,3 @@
-# 0.7.1
-
-- fix: concurrent responses requiring refresh now trigger exactly one token refresh instead of multiple
-
 # 0.7.0
 
 - feat: `ShouldRefreshBeforeRequest` allows conditional token refresh based on GraphQL request details and token expiration
