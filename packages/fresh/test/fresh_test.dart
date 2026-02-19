@@ -419,7 +419,7 @@ void main() {
         expect(await freshController.token, initialToken);
       });
 
-      test('clears in-flight future after exception, allowing retry',
+      test('clears in-flight future after exception, allowing new refresh',
           () async {
         final initialToken = MockToken();
         final refreshedToken = MockToken();
