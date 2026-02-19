@@ -99,14 +99,14 @@ mixin FreshMixin<T> {
   ///
   /// If the provided token is null, the [AuthenticationStatus] will be updated
   /// to `unauthenticated` and the token will be removed from storage, otherwise
-  /// it will be updated to `authenticated`and save to storage.
+  /// it will be updated to `authenticated` and save to storage.
   Future<void> setToken(T? token) async {
     if (token == null) return clearToken();
     await _tokenStorage.write(token);
     _updateStatus(token);
   }
 
-  /// Delete the storaged [token]. and emit the
+  /// Delete the stored [token]. and emit the
   /// `AuthenticationStatus.unauthenticated` if authenticationStatus
   /// not is `AuthenticationStatus.unauthenticated`
   /// This method should be called when the token is no longer valid.

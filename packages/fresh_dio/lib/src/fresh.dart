@@ -247,7 +247,7 @@ Example:
   }
 
   Future<Response<dynamic>> _tryRefresh(Response<dynamic> response) async {
-    late final T refreshedToken;
+    final T refreshedToken;
     // Get the token that was used when this request was made
     final tokenUsedForRequest =
         response.requestOptions.extra['_fresh_request_token'] as T?;
