@@ -449,6 +449,32 @@ void main() {
         expect(refreshTokenCallCount, 1);
         verify(() => tokenStorage.delete()).called(1);
       });
+      test(
+          'calls tokenStorage.delete '
+          'when refreshToken returns null', () async {
+        tokenStorage = MockTokenStorage<OAuth2Token>();
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.delete()).thenAnswer((_) async {});
+        var refreshTokenCallCount = 0;
+        final request = MockRequest();
+        final response = MockResponse();
+        final freshLink = FreshLink.oAuth2<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (_, __) async {
+            refreshTokenCallCount++;
+            return null;
+          },
+          shouldRefresh: (_) => true,
+        );
+        await expectLater(
+          freshLink.request(request, (operation) async* {
+            yield response;
+          }),
+          emitsInOrder(<MockResponse>[response]),
+        );
+        expect(refreshTokenCallCount, 1);
+        verify(() => tokenStorage.delete()).called(1);
+      });
     });
 
     group('configure token', () {
