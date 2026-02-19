@@ -674,6 +674,36 @@ void main() {
     });
 
     group('onError', () {
+      test('skips refresh when token was not required for request', () async {
+        final mockToken = MockToken();
+        when(() => tokenStorage.read()).thenAnswer((_) async => mockToken);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+        final requestOptions = RequestOptions()
+          ..extra['_fresh_token_not_required'] = true;
+        final error = DioException(
+          requestOptions: requestOptions,
+          response: Response(
+            requestOptions: requestOptions,
+            statusCode: 401,
+          ),
+        );
+        var refreshTokenCallCount = 0;
+        final fresh = Fresh.oAuth2(
+          tokenStorage: tokenStorage,
+          refreshToken: (_, __) async {
+            refreshTokenCallCount++;
+            return mockToken;
+          },
+          shouldRefresh: (_) => true,
+          isTokenRequired: (options) => false,
+        );
+
+        await fresh.onError(error, errorHandler);
+        final result = verify(() => errorHandler.next(captureAny()))..called(1);
+        expect(result.captured.first, error);
+        expect(refreshTokenCallCount, 0);
+      });
+
       test('returns error when token is null', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
