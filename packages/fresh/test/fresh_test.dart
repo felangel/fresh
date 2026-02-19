@@ -21,13 +21,13 @@ class FreshController<T> with FreshMixin<T> {
     this.tokenStorage = tokenStorage;
   }
 
-  Future<T> Function(T? token)? refreshToken;
+  Future<T> Function(T? token)? refreshTokenFn;
 
   @override
   Future<T> performTokenRefresh(T? token) {
-    final refreshAction = refreshToken;
+    final refreshAction = refreshTokenFn;
     if (refreshAction == null) {
-      throw StateError('refreshToken must be set before calling refresh');
+      throw StateError('refreshTokenFn must be set before calling refreshToken');
     }
     return refreshAction(token);
   }
@@ -302,7 +302,7 @@ void main() {
       });
     });
 
-    group('refresh', () {
+    group('refreshToken', () {
       setUpAll(() {
         registerFallbackValue(FakeOAuth2Token());
       });
@@ -317,8 +317,8 @@ void main() {
         // Wait for initial token to load
         await freshController.token;
 
-        freshController.refreshToken = (token) async => refreshedToken;
-        final result = await freshController.refresh(
+        freshController.refreshTokenFn = (token) async => refreshedToken;
+        final result = await freshController.refreshToken(
           tokenUsedForRequest: initialToken,
         );
 
@@ -343,11 +343,11 @@ void main() {
           await freshController.setToken(currentToken);
 
           var refreshActionCalled = false;
-          freshController.refreshToken = (token) async {
+          freshController.refreshTokenFn = (token) async {
             refreshActionCalled = true;
             return MockToken();
           };
-          final result = await freshController.refresh(
+          final result = await freshController.refreshToken(
             tokenUsedForRequest: oldToken,
           );
 
@@ -367,18 +367,18 @@ void main() {
         await freshController.token;
 
         final completer = Completer<OAuth2Token>();
-        freshController.refreshToken = (token) {
+        freshController.refreshTokenFn = (token) {
           refreshCallCount++;
           return completer.future;
         };
 
         // Start first refresh (will be pending on completer)
-        final future1 = freshController.refresh(
+        final future1 = freshController.refreshToken(
           tokenUsedForRequest: initialToken,
         );
 
         // Start second refresh — should join the in-flight future
-        final future2 = freshController.refresh(
+        final future2 = freshController.refreshToken(
           tokenUsedForRequest: initialToken,
         );
 
@@ -400,11 +400,11 @@ void main() {
 
         final freshController = FreshController<OAuth2Token>(tokenStorage);
         await freshController.token;
-        freshController.refreshToken =
+        freshController.refreshTokenFn =
             (token) async => throw RevokeTokenException();
 
         await expectLater(
-          () => freshController.refresh(tokenUsedForRequest: initialToken),
+          () => freshController.refreshToken(tokenUsedForRequest: initialToken),
           throwsA(isA<RevokeTokenException>()),
         );
 
@@ -418,11 +418,11 @@ void main() {
 
         final freshController = FreshController<OAuth2Token>(tokenStorage);
         await freshController.token;
-        freshController.refreshToken =
+        freshController.refreshTokenFn =
             (token) async => throw Exception('network error');
 
         await expectLater(
-          () => freshController.refresh(tokenUsedForRequest: initialToken),
+          () => freshController.refreshToken(tokenUsedForRequest: initialToken),
           throwsA(isA<Exception>()),
         );
 
@@ -441,20 +441,20 @@ void main() {
         await freshController.token;
 
         var shouldFail = true;
-        freshController.refreshToken = (token) async {
+        freshController.refreshTokenFn = (token) async {
           if (shouldFail) throw Exception('network error');
           return refreshedToken;
         };
 
         // First call fails
         await expectLater(
-          () => freshController.refresh(tokenUsedForRequest: initialToken),
+          () => freshController.refreshToken(tokenUsedForRequest: initialToken),
           throwsA(isA<Exception>()),
         );
 
         // Second call should start a new refresh, not be stuck
         shouldFail = false;
-        final result = await freshController.refresh(
+        final result = await freshController.refreshToken(
           tokenUsedForRequest: initialToken,
         );
 
@@ -478,12 +478,12 @@ void main() {
 
           // Our request was made with null token, now tries to refresh
           var refreshCalled = false;
-          freshController.refreshToken = (token) async {
+          freshController.refreshTokenFn = (token) async {
             refreshCalled = true;
             return MockToken();
           };
 
-          final result = await freshController.refresh(
+          final result = await freshController.refreshToken(
             tokenUsedForRequest: null,
           );
 
@@ -506,9 +506,9 @@ void main() {
           await freshController.token;
           await freshController.setToken(currentToken);
 
-          freshController.refreshToken = (token) async => MockToken();
+          freshController.refreshTokenFn = (token) async => MockToken();
 
-          final result = await freshController.refresh(
+          final result = await freshController.refreshToken(
             tokenUsedForRequest: oldToken,
           );
 

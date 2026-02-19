@@ -166,7 +166,7 @@ mixin FreshMixin<T> {
   ///
   /// In all cases (success or failure), the in-flight refresh state is
   /// cleared in a `finally` block, ensuring no deadlocks.
-  Future<T> refresh({
+  Future<T> refreshToken({
     T? tokenUsedForRequest,
   }) async {
     // Check if we already have a different token than what was used for the

@@ -162,7 +162,7 @@ Example:
 
     if (shouldRefresh) {
       try {
-        await refresh(tokenUsedForRequest: currentToken);
+        await refreshToken(tokenUsedForRequest: currentToken);
       } on RevokeTokenException catch (_) {
         // Token is already cleared by refresh.
       }
@@ -252,7 +252,7 @@ Example:
     final tokenUsedForRequest =
         response.requestOptions.extra['_fresh_request_token'] as T?;
     try {
-      refreshedToken = await refresh(
+      refreshedToken = await refreshToken(
         tokenUsedForRequest: tokenUsedForRequest,
       );
     } on RevokeTokenException catch (error) {

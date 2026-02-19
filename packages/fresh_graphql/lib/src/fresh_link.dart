@@ -120,7 +120,7 @@ class FreshLink<T> extends Link with FreshMixin<T> {
 
     if (shouldRefresh) {
       try {
-        await refresh(tokenUsedForRequest: currentToken);
+        await refreshToken(tokenUsedForRequest: currentToken);
       } on RevokeTokenException catch (_) {
         // Token is already cleared by refresh.
       }
@@ -148,7 +148,7 @@ class FreshLink<T> extends Link with FreshMixin<T> {
         final nextToken = await token;
         if (nextToken != null && _shouldRefresh(result)) {
           try {
-            final refreshedToken = await refresh(
+            final refreshedToken = await refreshToken(
               tokenUsedForRequest: tokenUsedForRequest,
             );
             final tokenHeaders = _tokenHeader(refreshedToken);
