@@ -67,7 +67,7 @@ void main() {
         ];
 
         // Give time for all requests to fail and trigger refresh
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Complete the refresh with a new token
         refreshCompleter.complete(
@@ -144,14 +144,14 @@ void main() {
         final future1 = dio.get<Object?>('http://example.com/1');
 
         // Wait for refresh to be triggered
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
         expect(refreshCallCount, equals(1));
 
         // Start second request while refresh is in-flight
         final future2 = dio.get<Object?>('http://example.com/2');
 
         // Wait a bit
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
 
         // Start third request while refresh is still in-flight
         final future3 = dio.get<Object?>('http://example.com/3');
@@ -230,7 +230,7 @@ void main() {
         ];
 
         // Give time for requests to trigger refresh
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Complete the refresh with RevokeTokenException
         refreshCompleter.completeError(RevokeTokenException());
@@ -319,7 +319,7 @@ void main() {
         final future1 = dio.get<Object?>('http://example.com/1');
 
         // Wait for refresh to be triggered
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
 
         // Complete refresh with generic exception
         firstRefreshCompleter.completeError(Exception('Network error'));
@@ -336,7 +336,7 @@ void main() {
         final future2 = dio.get<Object?>('http://example.com/2');
 
         // Wait for second refresh to be triggered
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
 
         expect(refreshCallCount, equals(2));
 
@@ -422,7 +422,7 @@ void main() {
         expect(refreshCallCount, equals(1));
 
         // Wait a bit between requests
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Second request - gets 401 (simulating token expiry),
         // triggers second refresh

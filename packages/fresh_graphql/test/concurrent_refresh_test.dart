@@ -102,7 +102,7 @@ void main() {
         final future3 = stream3.toList();
 
         // Wait for refresh to be triggered
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Complete the refresh with a new token
         refreshCompleter.complete(
@@ -181,7 +181,7 @@ void main() {
         final future1 = freshLink.request(request1, mockForward).toList();
 
         // Wait for refresh to be triggered
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
         expect(refreshCallCount, equals(1));
 
         // Start second operation while refresh is in-flight
@@ -189,7 +189,7 @@ void main() {
         final future2 = freshLink.request(request2, mockForward).toList();
 
         // Wait a bit
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
 
         // Start third operation while refresh is still in-flight
         final request3 = MockRequest();
@@ -262,7 +262,7 @@ void main() {
         final future3 = freshLink.request(request3, mockForward).toList();
 
         // Wait for refresh to be triggered
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Complete refresh with RevokeTokenException
         refreshCompleter.completeError(RevokeTokenException());
@@ -335,7 +335,7 @@ void main() {
         final future1 = freshLink.request(request1, mockForward).toList();
 
         // Wait for refresh to be triggered
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
 
         // Complete refresh with generic exception
         firstRefreshCompleter.completeError(Exception('Network error'));
@@ -353,7 +353,7 @@ void main() {
         final future2 = freshLink.request(request2, mockForward).toList();
 
         // Wait for second refresh to be triggered
-        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await pumpEventQueue();
 
         expect(refreshCallCount, equals(2));
 
@@ -429,7 +429,7 @@ void main() {
         expect(refreshCallCount, equals(1));
 
         // Wait a bit between operations
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await pumpEventQueue();
 
         // Second operation - gets auth error, triggers second refresh
         final request2 = MockRequest();
