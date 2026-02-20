@@ -541,7 +541,8 @@ void main() {
         when(() => request.method).thenReturn('GET');
         when(() => request.sendTimeout).thenReturn(Duration.zero);
         when(() => request.receiveTimeout).thenReturn(Duration.zero);
-        when(() => request.extra).thenReturn(<String, String>{});
+        when(() => request.extra)
+            .thenReturn(<String, dynamic>{'_fresh_request_token': token});
         when(() => request.responseType).thenReturn(ResponseType.json);
         when(() => request.validateStatus).thenReturn((_) => false);
         when(() => request.receiveDataWhenStatusError).thenReturn(false);
@@ -605,13 +606,15 @@ void main() {
           'invokes wipes tokenStorage and sets authenticationStatus '
           'to unauthenticated when RevokeTokenException is thrown.', () async {
         var refreshCallCount = 0;
+        final token = MockToken();
         final tokenStorage = MockTokenStorage<MockToken>();
-        when(tokenStorage.read).thenAnswer((_) async => MockToken());
+        when(tokenStorage.read).thenAnswer((_) async => token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         when(tokenStorage.delete).thenAnswer((_) async {});
         final response = MockResponse<dynamic>();
         final request = MockRequestOptions();
-        when(() => request.extra).thenReturn(<String, dynamic>{});
+        when(() => request.extra)
+            .thenReturn(<String, dynamic>{'_fresh_request_token': token});
         when(() => response.requestOptions).thenReturn(request);
         when(() => response.statusCode).thenReturn(401);
         final fresh = Fresh<MockToken>(
@@ -674,6 +677,36 @@ void main() {
     });
 
     group('onError', () {
+      test('skips refresh when token was not required for request', () async {
+        final mockToken = MockToken();
+        when(() => tokenStorage.read()).thenAnswer((_) async => mockToken);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+        final requestOptions = RequestOptions()
+          ..extra['_fresh_token_not_required'] = true;
+        final error = DioException(
+          requestOptions: requestOptions,
+          response: Response(
+            requestOptions: requestOptions,
+            statusCode: 401,
+          ),
+        );
+        var refreshTokenCallCount = 0;
+        final fresh = Fresh.oAuth2(
+          tokenStorage: tokenStorage,
+          refreshToken: (_, __) async {
+            refreshTokenCallCount++;
+            return mockToken;
+          },
+          shouldRefresh: (_) => true,
+          isTokenRequired: (options) => false,
+        );
+
+        await fresh.onError(error, errorHandler);
+        final result = verify(() => errorHandler.next(captureAny()))..called(1);
+        expect(result.captured.first, error);
+        expect(refreshTokenCallCount, 0);
+      });
+
       test('returns error when token is null', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
@@ -773,7 +806,8 @@ void main() {
         when(() => request.method).thenReturn('GET');
         when(() => request.sendTimeout).thenReturn(Duration.zero);
         when(() => request.receiveTimeout).thenReturn(Duration.zero);
-        when(() => request.extra).thenReturn(<String, String>{});
+        when(() => request.extra)
+            .thenReturn(<String, dynamic>{'_fresh_request_token': token});
         when(() => request.responseType).thenReturn(ResponseType.json);
         when(() => request.validateStatus).thenReturn((_) => false);
         when(() => request.receiveDataWhenStatusError).thenReturn(false);
@@ -858,7 +892,8 @@ void main() {
         when(() => request.method).thenReturn('POST');
         when(() => request.sendTimeout).thenReturn(Duration.zero);
         when(() => request.receiveTimeout).thenReturn(Duration.zero);
-        when(() => request.extra).thenReturn(<String, String>{});
+        when(() => request.extra)
+            .thenReturn(<String, dynamic>{'_fresh_request_token': token});
         when(() => request.responseType).thenReturn(ResponseType.json);
         when(() => request.validateStatus).thenReturn((_) => false);
         when(() => request.receiveDataWhenStatusError).thenReturn(false);
@@ -948,7 +983,8 @@ void main() {
         when(() => request.method).thenReturn('POST');
         when(() => request.sendTimeout).thenReturn(Duration.zero);
         when(() => request.receiveTimeout).thenReturn(Duration.zero);
-        when(() => request.extra).thenReturn(<String, String>{});
+        when(() => request.extra)
+            .thenReturn(<String, dynamic>{'_fresh_request_token': token});
         when(() => request.responseType).thenReturn(ResponseType.json);
         when(() => request.validateStatus).thenReturn((_) => false);
         when(() => request.receiveDataWhenStatusError).thenReturn(false);

@@ -96,9 +96,21 @@ class FreshLink<T> extends Link with FreshMixin<T> {
   final ShouldRefreshBeforeRequest<T?> _shouldRefreshBeforeRequest;
 
   @override
-  Stream<Response> request(Request request, [NextLink? forward]) async* {
+  Future<T> performTokenRefresh(T? token) async {
     final httpClient = http.Client();
+    try {
+      final refreshedToken = await _refreshToken(token, httpClient);
+      if (refreshedToken == null) {
+        throw RevokeTokenException();
+      }
+      return refreshedToken;
+    } finally {
+      httpClient.close();
+    }
+  }
 
+  @override
+  Stream<Response> request(Request request, [NextLink? forward]) async* {
     var currentToken = await token;
 
     final shouldRefresh = _shouldRefreshBeforeRequest.call(
@@ -108,17 +120,19 @@ class FreshLink<T> extends Link with FreshMixin<T> {
 
     if (shouldRefresh) {
       try {
-        final refreshedToken = await _refreshToken(currentToken, httpClient);
-        await setToken(refreshedToken);
+        await refreshToken(tokenUsedForRequest: currentToken);
       } on RevokeTokenException catch (_) {
-        await revokeToken();
+        // Token is already cleared by refreshToken.
       }
 
       currentToken = await token;
     }
 
-    final tokenHeaders = currentToken != null
-        ? _tokenHeader(currentToken)
+    // Capture the token at the time the request is initiated.
+    // This allows detection of token refresh by other concurrent requests.
+    final tokenUsedForRequest = currentToken;
+    final tokenHeaders = tokenUsedForRequest != null
+        ? _tokenHeader(tokenUsedForRequest)
         : const <String, String>{};
 
     final updatedRequest = request.updateContextEntry<HttpLinkHeaders>(
@@ -134,11 +148,9 @@ class FreshLink<T> extends Link with FreshMixin<T> {
         final nextToken = await token;
         if (nextToken != null && _shouldRefresh(result)) {
           try {
-            final refreshedToken = await _refreshToken(
-              nextToken,
-              httpClient,
+            final refreshedToken = await refreshToken(
+              tokenUsedForRequest: tokenUsedForRequest,
             );
-            await setToken(refreshedToken);
             final tokenHeaders = _tokenHeader(refreshedToken);
             yield* forward(
               request.updateContextEntry<HttpLinkHeaders>(
@@ -150,8 +162,14 @@ class FreshLink<T> extends Link with FreshMixin<T> {
               ),
             );
           } on RevokeTokenException catch (_) {
-            // ignore: unawaited_futures
-            revokeToken();
+            // Token is already cleared by refreshToken, just yield the
+            // original error response so the stream can complete.
+            yield result;
+          } catch (_) {
+            // For any other exception during refreshToken
+            // (network errors, etc.), yield the original error response
+            // so the stream can complete.
+            // The state is reset by refreshToken, allowing retry later.
             yield result;
           }
         } else {

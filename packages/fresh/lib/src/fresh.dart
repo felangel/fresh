@@ -1,7 +1,9 @@
 import 'dart:async';
 
-/// An Exception that should be thrown when overriding `refreshToken` if the
-/// refresh fails and should result in a force-logout.
+import 'package:meta/meta.dart';
+
+/// An Exception that should be thrown in [FreshMixin.performTokenRefresh] if
+/// the refresh fails and should result in a force-logout.
 class RevokeTokenException implements Exception {}
 
 /// Enum representing the current authentication status of the application.
@@ -64,6 +66,11 @@ mixin FreshMixin<T> {
 
   T? _token;
 
+  /// In-flight refresh future for single-flight coordination.
+  /// When a refresh is in progress, this holds the future that all
+  /// concurrent refresh requests will await.
+  Future<T>? _refreshFuture;
+
   final StreamController<AuthenticationStatus> _controller =
       StreamController<AuthenticationStatus>.broadcast()
         ..add(AuthenticationStatus.initial);
@@ -94,14 +101,14 @@ mixin FreshMixin<T> {
   ///
   /// If the provided token is null, the [AuthenticationStatus] will be updated
   /// to `unauthenticated` and the token will be removed from storage, otherwise
-  /// it will be updated to `authenticated`and save to storage.
+  /// it will be updated to `authenticated` and save to storage.
   Future<void> setToken(T? token) async {
     if (token == null) return clearToken();
     await _tokenStorage.write(token);
     _updateStatus(token);
   }
 
-  /// Delete the storaged [token]. and emit the
+  /// Delete the stored [token]. and emit the
   /// `AuthenticationStatus.unauthenticated` if authenticationStatus
   /// not is `AuthenticationStatus.unauthenticated`
   /// This method should be called when the token is no longer valid.
@@ -126,6 +133,76 @@ mixin FreshMixin<T> {
   ///
   /// Calling this method more than once is allowed, but does nothing.
   Future<void> close() => _controller.close();
+
+  /// Performs the token refresh operation.
+  ///
+  /// Implementers should provide only the raw token refresh mechanism.
+  /// Refresh coordination and token lifecycle are handled by [refreshToken].
+  @visibleForOverriding
+  Future<T> performTokenRefresh(T? token);
+
+  /// Performs a coordinated token refresh.
+  ///
+  /// If a refresh is already in progress, this will return the same future
+  /// that the in-flight refresh will complete with. This ensures that
+  /// concurrent refresh requests result in only one actual refresh operation.
+  ///
+  /// Additionally, if the token has already been refreshed by a previous
+  /// request (detected by comparing with [tokenUsedForRequest]), this will
+  /// return the current token without triggering a new refresh.
+  ///
+  /// The [tokenUsedForRequest] parameter should be the token value that was
+  /// used when the request that triggered this refresh was made. This allows
+  /// detection of cases where another request has already refreshed the token.
+  ///
+  /// If the refresh succeeds, the new token is automatically saved via
+  /// [setToken] and returned.
+  ///
+  /// If the refresh fails:
+  /// - If a [RevokeTokenException] is thrown, [clearToken] is called
+  ///   and the exception is rethrown.
+  /// - For any other exception, the exception is rethrown without
+  ///   clearing the token.
+  ///
+  /// In all cases (success or failure), the in-flight refresh state is
+  /// cleared in a `finally` block, ensuring no deadlocks.
+  Future<T> refreshToken({
+    T? tokenUsedForRequest,
+  }) async {
+    // Check if we already have a different token than what was used for the
+    // request. This means another request already refreshed the token.
+    if (_token != tokenUsedForRequest) {
+      // Token has already been refreshed, return the current token
+      if (_token != null) {
+        return _token as T;
+      }
+    }
+
+    // If a refresh is already in progress, await it
+    final existingFuture = _refreshFuture;
+    if (existingFuture != null) {
+      return existingFuture;
+    }
+
+    // Start a new refresh - create and store the future immediately
+    // before any await to prevent race conditions
+    final future = _doRefresh();
+    _refreshFuture = future;
+    return future;
+  }
+
+  Future<T> _doRefresh() async {
+    try {
+      final refreshedToken = await performTokenRefresh(_token);
+      await setToken(refreshedToken);
+      return refreshedToken;
+    } on RevokeTokenException {
+      await clearToken();
+      rethrow;
+    } finally {
+      _refreshFuture = null;
+    }
+  }
 
   /// Update the internal [token] and updates the
   /// [AuthenticationStatus] accordingly.

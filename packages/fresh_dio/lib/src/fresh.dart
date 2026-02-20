@@ -109,6 +109,12 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   final TokenHeaderBuilder<T> _tokenHeader;
   final ShouldRefresh _shouldRefresh;
   final IsTokenRequired? _isTokenRequired;
+
+  @override
+  Future<T> performTokenRefresh(T? token) {
+    return _refreshToken(token, _httpClient);
+  }
+
   final ShouldRefreshBeforeRequest<T> _shouldRefreshBeforeRequest;
   final RefreshToken<T> _refreshToken;
 
@@ -156,15 +162,17 @@ Example:
 
     if (shouldRefresh) {
       try {
-        final refreshedToken = await _refreshToken(currentToken, _httpClient);
-        await setToken(refreshedToken);
+        await refreshToken(tokenUsedForRequest: currentToken);
       } on RevokeTokenException catch (_) {
-        await revokeToken();
+        // Token is already cleared by refreshToken.
       }
 
       currentToken = await token;
     }
 
+    // Store the token used for this request so we can detect if it was
+    // already refreshed when handling 401 responses
+    options.extra['_fresh_request_token'] = currentToken;
     final headers = currentToken != null
         ? _tokenHeader(currentToken)
         : const <String, String>{};
@@ -239,11 +247,15 @@ Example:
   }
 
   Future<Response<dynamic>> _tryRefresh(Response<dynamic> response) async {
-    late final T refreshedToken;
+    final T refreshedToken;
+    // Get the token that was used when this request was made
+    final tokenUsedForRequest =
+        response.requestOptions.extra['_fresh_request_token'] as T?;
     try {
-      refreshedToken = await _refreshToken(await token, _httpClient);
+      refreshedToken = await refreshToken(
+        tokenUsedForRequest: tokenUsedForRequest,
+      );
     } on RevokeTokenException catch (error) {
-      await clearToken();
       throw DioException(
         requestOptions: response.requestOptions,
         error: error,
@@ -251,7 +263,6 @@ Example:
       );
     }
 
-    await setToken(refreshedToken);
     _httpClient.options.baseUrl = response.requestOptions.baseUrl;
     final data = response.requestOptions.data;
     return _httpClient.request<dynamic>(
