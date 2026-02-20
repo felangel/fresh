@@ -1,3 +1,7 @@
+# 0.5.1
+
+- feat: single-flight token refresh - concurrent 401 responses trigger only one `refreshToken` call ([#126](https://github.com/felangel/fresh/issues/126), [#130](https://github.com/felangel/fresh/pull/130))
+
 # 0.5.0
 
 - feat: `ShouldRefreshBeforeRequest` allows conditional token refresh based on request details (path, headers, etc.) and token expiration
