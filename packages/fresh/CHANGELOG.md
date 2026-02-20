@@ -1,3 +1,11 @@
+# 0.6.0
+
+- **BREAKING**: `FreshMixin` now requires implementing `performTokenRefresh(T? token)` for raw refresh logic ([#130](https://github.com/felangel/fresh/pull/130))
+- feat: add `FreshMixin.refreshToken()` for single-flight token refresh coordination - concurrent refresh attempts share one in-flight operation ([#126](https://github.com/felangel/fresh/issues/126), [#130](https://github.com/felangel/fresh/pull/130))
+- fix: race condition in `setToken()`/`clearToken()`/`revokeToken()` where concurrent `token` getter reads returned stale values during storage write ([#115](https://github.com/felangel/fresh/issues/115), [#136](https://github.com/felangel/fresh/pull/136))
+- fix: `token` getter avoids unnecessary microtask gap via `Future.sync()` ([#136](https://github.com/felangel/fresh/pull/136))
+- fix: `tokenStorage` setter skips initial storage read when `setToken`/`clearToken`/`revokeToken` was already called ([#136](https://github.com/felangel/fresh/pull/136))
+
 # 0.5.0
 
 - feat: add `Token` base class for token extensibility

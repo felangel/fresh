@@ -1,3 +1,8 @@
+# 0.7.1
+
+- feat: single-flight token refresh - concurrent UNAUTHENTICATED errors trigger only one `refreshToken` call ([#126](https://github.com/felangel/fresh/issues/126), [#130](https://github.com/felangel/fresh/pull/130))
+- fix: non-`RevokeTokenException` errors during token refresh no longer kill the response stream - the original error response is yielded instead ([#130](https://github.com/felangel/fresh/pull/130))
+
 # 0.7.0
 
 - feat: `ShouldRefreshBeforeRequest` allows conditional token refresh based on GraphQL request details and token expiration
