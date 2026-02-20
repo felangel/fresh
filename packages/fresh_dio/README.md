@@ -28,4 +28,4 @@ dio.interceptors.add(
 
 ## Example
 
-See [the example](https://github.com/felangel/fresh/tree/master/packages/fresh_dio/example) for a complete sample application using `fresh_dio` which integrates with [jsonplaceholder](https://jsonplaceholder.typicode.com).
+See [the example](https://github.com/felangel/fresh/tree/master/packages/fresh_dio/example) for a complete sample application using `fresh_dio`.

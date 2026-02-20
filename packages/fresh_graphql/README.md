@@ -30,4 +30,4 @@ final graphQLClient = GraphQLClient(
 
 ## Example
 
-See [the example](https://github.com/felangel/fresh/tree/master/packages/fresh_graphql/example) for a complete sample application using `fresh_graphql` which integrates with [api.graphql.jobs](https://api.graphql.jobs).
+See [the example](https://github.com/felangel/fresh/tree/master/packages/fresh_graphql/example) for a complete sample application using `fresh_graphql`.
