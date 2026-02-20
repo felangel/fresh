@@ -518,5 +518,89 @@ void main() {
         },
       );
     });
+
+    // https://github.com/felangel/fresh/issues/115
+    group('race condition: token getter during setToken', () {
+      setUpAll(() {
+        registerFallbackValue(FakeOAuth2Token());
+      });
+
+      test(
+        'token getter returns new token while setToken is writing to storage',
+        () async {
+          final oldToken = MockToken();
+          final newToken = MockToken();
+
+          // Storage with a delayed write to simulate async persistence
+          final writeCompleter = Completer<void>();
+          when(() => tokenStorage.read()).thenAnswer((_) async => oldToken);
+          when(() => tokenStorage.write(any())).thenAnswer((_) async {
+            await writeCompleter.future;
+          });
+
+          final freshController = FreshController<OAuth2Token>(tokenStorage);
+          // Wait for initial token load
+          await freshController.token;
+
+          // Start setToken but don't await it
+          final setTokenFuture = freshController.setToken(newToken);
+
+          // While storage write is in progress, read the token
+          final tokenDuringWrite = await freshController.token;
+
+          // Complete the storage write
+          writeCompleter.complete();
+          await setTokenFuture;
+
+          final tokenAfterWrite = await freshController.token;
+
+          // The token getter should return the new token even during write
+          expect(
+            tokenDuringWrite,
+            newToken,
+            reason: 'token getter should return newToken during setToken, '
+                'not the stale oldToken',
+          );
+          expect(tokenAfterWrite, newToken);
+        },
+      );
+
+      test(
+        'token getter returns null while clearToken is deleting from storage',
+        () async {
+          final oldToken = MockToken();
+
+          final deleteCompleter = Completer<void>();
+          when(() => tokenStorage.read()).thenAnswer((_) async => oldToken);
+          when(() => tokenStorage.delete()).thenAnswer((_) async {
+            await deleteCompleter.future;
+          });
+
+          final freshController = FreshController<OAuth2Token>(tokenStorage);
+          await freshController.token;
+
+          // Start clearToken but don't await it
+          final clearTokenFuture = freshController.clearToken();
+
+          // While storage delete is in progress, read the token
+          final tokenDuringDelete = await freshController.token;
+
+          // Complete the storage delete
+          deleteCompleter.complete();
+          await clearTokenFuture;
+
+          final tokenAfterDelete = await freshController.token;
+
+          // The token getter should reflect the cleared state
+          expect(
+            tokenDuringDelete,
+            isNull,
+            reason: 'token getter should return null during clearToken, '
+                'not the stale oldToken',
+          );
+          expect(tokenAfterDelete, isNull);
+        },
+      );
+    });
   });
 }
