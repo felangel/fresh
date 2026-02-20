@@ -519,6 +519,74 @@ void main() {
       );
     });
 
+    group('initial storage read', () {
+      setUpAll(() {
+        registerFallbackValue(FakeOAuth2Token());
+      });
+
+      test(
+        'initial read does not overwrite explicit setToken',
+        () async {
+          final storedToken = MockToken();
+          final newToken = MockToken();
+
+          // Slow storage read to simulate async persistence
+          final readCompleter = Completer<OAuth2Token?>();
+          when(() => tokenStorage.read())
+              .thenAnswer((_) => readCompleter.future);
+          when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+          final freshController = FreshController<OAuth2Token>(tokenStorage);
+
+          // Set token before the initial read completes
+          await freshController.setToken(newToken);
+
+          // Now complete the initial read with the old stored token
+          readCompleter.complete(storedToken);
+          await pumpEventQueue();
+
+          // The explicitly set token must win
+          final token = await freshController.token;
+          expect(
+            token,
+            newToken,
+            reason: 'initial storage read should not overwrite '
+                'an explicit setToken call',
+          );
+        },
+      );
+
+      test(
+        'initial read does not overwrite explicit clearToken',
+        () async {
+          final storedToken = MockToken();
+
+          final readCompleter = Completer<OAuth2Token?>();
+          when(() => tokenStorage.read())
+              .thenAnswer((_) => readCompleter.future);
+          when(() => tokenStorage.delete()).thenAnswer((_) async {});
+
+          final freshController = FreshController<OAuth2Token>(tokenStorage);
+
+          // Clear token before the initial read completes
+          await freshController.clearToken();
+
+          // Now complete the initial read with a stored token
+          readCompleter.complete(storedToken);
+          await pumpEventQueue();
+
+          // The explicit clear must win
+          final token = await freshController.token;
+          expect(
+            token,
+            isNull,
+            reason: 'initial storage read should not overwrite '
+                'an explicit clearToken call',
+          );
+        },
+      );
+    });
+
     // https://github.com/felangel/fresh/issues/115
     group('race condition: token getter during setToken', () {
       setUpAll(() {
