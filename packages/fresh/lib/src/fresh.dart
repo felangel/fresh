@@ -77,20 +77,36 @@ mixin FreshMixin<T> {
 
   /// Setter for the [TokenStorage] instance.
   set tokenStorage(TokenStorage<T> tokenStorage) {
-    _tokenStorage = tokenStorage..read().then(_updateStatus);
+    _tokenStorage = tokenStorage;
+    tokenStorage.read().then((token) {
+      // Only apply the initial read if no explicit setToken/clearToken/
+      // revokeToken has moved the status past initial.
+      if (_authenticationStatus == AuthenticationStatus.initial) {
+        _updateStatus(token);
+      }
+    });
   }
 
   /// Returns the current token.
-  Future<T?> get token async {
-    if (_authenticationStatus != AuthenticationStatus.initial) return _token;
-    await authenticationStatus.firstWhere(
-      (status) => status != AuthenticationStatus.initial,
-    );
-    return _token;
-  }
+  ///
+  /// If the authentication status has already been determined, the token is
+  /// returned synchronously (no microtask gap). Otherwise, waits for the
+  /// initial storage read to complete.
+  Future<T?> get token => Future.sync(() {
+        if (_authenticationStatus != AuthenticationStatus.initial)
+          return _token;
+        return authenticationStatus
+            .firstWhere((status) => status != AuthenticationStatus.initial)
+            .then((_) => _token);
+      });
 
   /// Returns a [Stream<AuthenticationStatus>] which can be used to get notified
   /// of changes to the authentication state based on the presence/absence of a token.
+  ///
+  /// Status changes are emitted eagerly, before the token is persisted to
+  /// [TokenStorage]. This means listeners are notified immediately when
+  /// [setToken], [clearToken], or [revokeToken] is called, even if the
+  /// storage write has not yet completed.
   Stream<AuthenticationStatus> get authenticationStatus async* {
     yield _authenticationStatus;
     yield* _controller.stream;
@@ -99,13 +115,16 @@ mixin FreshMixin<T> {
   /// Sets the internal [token] to the provided [token]
   /// and updates the [AuthenticationStatus] accordingly.
   ///
+  /// The in-memory token and authentication status are updated immediately
+  /// so that concurrent access via the [token] getter returns the latest value.
+  ///
   /// If the provided token is null, the [AuthenticationStatus] will be updated
   /// to `unauthenticated` and the token will be removed from storage, otherwise
   /// it will be updated to `authenticated` and save to storage.
   Future<void> setToken(T? token) async {
     if (token == null) return clearToken();
-    await _tokenStorage.write(token);
     _updateStatus(token);
+    await _tokenStorage.write(token);
   }
 
   /// Delete the stored [token]. and emit the
@@ -113,18 +132,22 @@ mixin FreshMixin<T> {
   /// not is `AuthenticationStatus.unauthenticated`
   /// This method should be called when the token is no longer valid.
   Future<void> revokeToken() async {
-    await _tokenStorage.delete();
+    _token = null;
     if (_authenticationStatus != AuthenticationStatus.unauthenticated) {
       _authenticationStatus = AuthenticationStatus.unauthenticated;
       _controller.add(_authenticationStatus);
     }
+    await _tokenStorage.delete();
   }
 
   /// Clears token storage and updates the [AuthenticationStatus]
   /// to [AuthenticationStatus.unauthenticated].
+  ///
+  /// The in-memory token and authentication status are updated immediately
+  /// so that concurrent access via the [token] getter returns null.
   Future<void> clearToken() async {
-    await _tokenStorage.delete();
     _updateStatus(null);
+    await _tokenStorage.delete();
   }
 
   /// Closes Fresh StreamController.
