@@ -93,11 +93,12 @@ mixin FreshMixin<T> {
   /// returned synchronously (no microtask gap). Otherwise, waits for the
   /// initial storage read to complete.
   Future<T?> get token => Future.sync(() {
-    if (_authenticationStatus != AuthenticationStatus.initial) return _token;
-    return authenticationStatus
-        .firstWhere((status) => status != AuthenticationStatus.initial)
-        .then((_) => _token);
-  });
+        if (_authenticationStatus != AuthenticationStatus.initial)
+          return _token;
+        return authenticationStatus
+            .firstWhere((status) => status != AuthenticationStatus.initial)
+            .then((_) => _token);
+      });
 
   /// Returns a [Stream<AuthenticationStatus>] which can be used to get notified
   /// of changes to the authentication state based on the presence/absence of a token.
