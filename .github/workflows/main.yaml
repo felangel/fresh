@@ -47,6 +47,12 @@ jobs:
               - ./.github/workflows/main.yaml
               - ./.github/actions/dart_package/action.yaml
               - packages/fresh_graphql/**
+              - packages/fresh/**
+            fresh_http:
+              - ./.github/workflows/main.yaml
+              - ./.github/actions/dart_package/action.yaml
+              - packages/fresh_http/**
+              - packages/fresh/**
 
       - uses: dorny/paths-filter@v3
         name: Flutter Package Detection
@@ -57,6 +63,7 @@ jobs:
               - ./.github/workflows/main.yaml
               - ./.github/actions/dart_package/action.yaml
               - packages/fresh_dio/**
+              - packages/fresh/**
             fresh_dio/example:
               - ./.github/workflows/main.yaml
               - ./.github/actions/dart_package/action.yaml
@@ -82,8 +89,6 @@ jobs:
       - name: 🎯 Build ${{ matrix.package }}
         uses: ./.github/actions/dart_package
         with:
-          # TODO: remove when fresh v0.5.0 is published.
-          collect_score: false
           min_coverage: 100
           working_directory: packages/${{ matrix.package }}
 
@@ -107,8 +112,6 @@ jobs:
       - name: 🎯 Build ${{ matrix.package }}
         uses: ./.github/actions/flutter_package
         with:
-          # TODO: remove when fresh v0.5.0 is published.
-          collect_score: false
           min_coverage: 100
           working_directory: packages/${{ matrix.package }}
 
