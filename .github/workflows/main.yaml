@@ -85,8 +85,6 @@ jobs:
       - name: 🎯 Build ${{ matrix.package }}
         uses: ./.github/actions/dart_package
         with:
-          # TODO: remove when fresh_http v0.1.0 is published.
-          collect_score: ${{ matrix.package != 'fresh_http'}}
           min_coverage: 100
           working_directory: packages/${{ matrix.package }}
 
