@@ -5,9 +5,9 @@ import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
-class MockTokenStorage<T> extends Mock implements TokenStorage<T> {}
+class _MockTokenStorage<T> extends Mock implements TokenStorage<T> {}
 
-class MockToken extends Mock implements OAuth2Token {
+class _MockToken extends Mock implements OAuth2Token {
   @override
   String get accessToken => 'accessToken';
 }
@@ -17,7 +17,7 @@ class FakeBaseRequest extends Fake implements http.BaseRequest {}
 class FakeUri extends Fake implements Uri {}
 
 Future<OAuth2Token> emptyRefreshToken(OAuth2Token? _, http.Client __) async {
-  return MockToken();
+  return _MockToken();
 }
 
 void main() {
@@ -25,19 +25,19 @@ void main() {
     late TokenStorage<OAuth2Token> tokenStorage;
 
     setUpAll(() {
-      registerFallbackValue(MockToken());
+      registerFallbackValue(_MockToken());
       registerFallbackValue(FakeBaseRequest());
       registerFallbackValue(FakeUri());
     });
 
     setUp(() {
-      tokenStorage = MockTokenStorage<OAuth2Token>();
+      tokenStorage = _MockTokenStorage<OAuth2Token>();
     });
 
     group('configure token', () {
       group('setToken', () {
         test('invokes tokenStorage.write', () async {
-          final token = MockToken();
+          final token = _MockToken();
 
           when(() => tokenStorage.read()).thenAnswer((_) async => token);
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
@@ -52,7 +52,7 @@ void main() {
         });
 
         test('adds unauthenticated status when call setToken(null)', () async {
-          when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+          when(() => tokenStorage.read()).thenAnswer((_) async => _MockToken());
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           when(() => tokenStorage.delete()).thenAnswer((_) async {});
 
@@ -73,7 +73,7 @@ void main() {
 
       group('clearToken', () {
         test('adds unauthenticated status when call clearToken()', () async {
-          when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+          when(() => tokenStorage.read()).thenAnswer((_) async => _MockToken());
           when(() => tokenStorage.write(any())).thenAnswer((_) async {});
           when(() => tokenStorage.delete()).thenAnswer((_) async {});
 
@@ -104,13 +104,11 @@ void main() {
           tokenStorage: tokenStorage,
           refreshToken: (token, client) async {
             refreshCallCount++;
-            return token ?? MockToken();
+            return token ?? _MockToken();
           },
         );
 
-        // A GET to a placeholder URL exercises onRequest logic via send().
-        final mockClient = _noopClient();
-        await _sendGetThrough(fresh, mockClient);
+        await fresh.get(Uri.parse('https://example.com/test'));
 
         expect(refreshCallCount, 0);
       });
@@ -129,11 +127,11 @@ void main() {
           tokenStorage: tokenStorage,
           refreshToken: (token, client) async {
             refreshCallCount++;
-            return token ?? MockToken();
+            return token ?? _MockToken();
           },
         );
 
-        await _sendGetThrough(fresh, _noopClient());
+        await fresh.get(Uri.parse('https://example.com/test'));
 
         expect(refreshCallCount, 0);
       });
@@ -156,12 +154,10 @@ void main() {
             refreshCallCount++;
             return newToken;
           },
-          // Use a retry client that always returns 200 so the request
-          // completes after the proactive refresh.
           httpClient: _alwaysOkClient(),
         );
 
-        await _sendGetThrough(fresh, _alwaysOkClient());
+        await fresh.get(Uri.parse('https://example.com/test'));
 
         expect(refreshCallCount, 1);
         verify(() => tokenStorage.write(any())).called(1);
@@ -184,13 +180,14 @@ void main() {
           },
         );
 
-        await _sendGetThrough(fresh, _noopClient());
+        await fresh.get(Uri.parse('https://example.com/test'));
 
         expect(customCallCount, 1);
       });
 
-      test('calls revokeToken when refresh throws RevokeTokenException',
-          () async {
+      test(
+          'calls revokeToken '
+          'when refresh throws RevokeTokenException', () async {
         final expiredToken = OAuth2Token(
           accessToken: 'expiredToken',
           issuedAt: DateTime.now().subtract(const Duration(hours: 2)),
@@ -205,10 +202,7 @@ void main() {
           refreshToken: (token, client) async => throw RevokeTokenException(),
         );
 
-        // The send() will catch the RevokeTokenException from the proactive
-        // refresh and clear the token; the request itself still completes
-        // (no auth header, original response returned).
-        await _sendGetThrough(fresh, _noopClient());
+        await fresh.get(Uri.parse('https://example.com/test'));
 
         verify(() => tokenStorage.delete()).called(1);
       });
@@ -241,37 +235,6 @@ void main() {
         expect(capturedRequest!.method, 'GET');
       });
 
-      test('appends token header to StreamedRequest in-place', () async {
-        const oAuth2Token = OAuth2Token(accessToken: 'accessToken');
-        when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
-        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
-
-        http.BaseRequest? captured;
-        final spyClient = _SpyClient((request) {
-          captured = request;
-          return http.Response('{}', 200);
-        });
-
-        final fresh = Fresh.oAuth2(
-          tokenStorage: tokenStorage,
-          refreshToken: emptyRefreshToken,
-          httpClient: spyClient,
-        );
-
-        final streamed = http.StreamedRequest(
-          'POST',
-          Uri.parse('https://example.com/upload'),
-        );
-        // StreamedRequest requires the body stream to be closed or the inner
-        // client will wait forever for bytes before returning a response.
-        unawaited(streamed.sink.close());
-
-        await fresh.send(streamed);
-
-        expect(captured, same(streamed)); // returned in-place, not a copy
-        expect(captured?.headers['authorization'], 'bearer accessToken');
-      });
-
       test('can refresh based on request path', () async {
         const token = OAuth2Token(accessToken: 'accessToken');
         when(() => tokenStorage.read()).thenAnswer((_) async => token);
@@ -293,13 +256,11 @@ void main() {
           httpClient: _alwaysOkClient(),
         );
 
-        // Non-sensitive path should not trigger refresh.
         await fresh.send(
           http.Request('GET', Uri.parse('https://example.com/api/public')),
         );
         expect(refreshCallCount, 0);
 
-        // Sensitive path should trigger refresh.
         await fresh.send(
           http.Request('GET', Uri.parse('https://example.com/api/sensitive')),
         );
@@ -333,10 +294,7 @@ void main() {
           http.Request('GET', Uri.parse('https://example.com/test')),
         );
 
-        expect(
-          captured?.headers['authorization'],
-          'bearer accessToken',
-        );
+        expect(captured?.headers['authorization'], 'bearer accessToken');
       });
 
       test('appends custom tokenHeader when provided', () async {
@@ -453,14 +411,13 @@ void main() {
 
         final response = await fresh.get(Uri.parse('https://example.com'));
         expect(response.statusCode, 200);
-        // Refresh must not have been attempted.
         verifyNever(() => tokenStorage.write(any()));
       });
 
       test(
           'returns untouched response when '
           'shouldRefresh (default) is false', () async {
-        when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(() => tokenStorage.read()).thenAnswer((_) async => _MockToken());
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
 
         var requestCount = 0;
@@ -477,14 +434,13 @@ void main() {
 
         final response = await fresh.get(Uri.parse('https://example.com'));
         expect(response.statusCode, 200);
-        // Only the original request — no retry.
         expect(requestCount, 1);
       });
 
       test(
           'returns untouched response when '
           'shouldRefresh (custom) is false', () async {
-        when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(() => tokenStorage.read()).thenAnswer((_) async => _MockToken());
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
 
         var requestCount = 0;
@@ -509,20 +465,19 @@ void main() {
           'invokes refreshToken when token is not null '
           'and shouldRefresh (default) is true', () async {
         var refreshCallCount = 0;
-        final token = MockToken();
-        final tokenStorage = MockTokenStorage<MockToken>();
+        final token = _MockToken();
+        final tokenStorage = _MockTokenStorage<_MockToken>();
         when(tokenStorage.read).thenAnswer((_) async => token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
 
         var requestCount = 0;
         final spyClient = _SpyClient((request) {
           requestCount++;
-          // First call → 401; retry (with new token) → 200.
           if (requestCount == 1) return http.Response('{}', 401);
           return http.Response('{"success": true}', 200);
         });
 
-        final fresh = Fresh<MockToken>(
+        final fresh = Fresh<_MockToken>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
             refreshCallCount++;
@@ -534,13 +489,14 @@ void main() {
 
         await expectLater(
           fresh.authenticationStatus,
-          emitsInOrder(const <AuthenticationStatus>[
-            AuthenticationStatus.authenticated,
-          ]),
+          emitsInOrder(
+            const <AuthenticationStatus>[AuthenticationStatus.authenticated],
+          ),
         );
 
-        final response =
-            await fresh.get(Uri.parse('https://example.com/mock/path'));
+        final response = await fresh.get(
+          Uri.parse('https://example.com/mock/path'),
+        );
         expect(response.statusCode, 200);
         expect(refreshCallCount, 1);
         expect(requestCount, 2);
@@ -551,15 +507,15 @@ void main() {
           'wipes tokenStorage and sets authenticationStatus to unauthenticated '
           'when RevokeTokenException is thrown', () async {
         var refreshCallCount = 0;
-        final token = MockToken();
-        final tokenStorage = MockTokenStorage<MockToken>();
+        final token = _MockToken();
+        final tokenStorage = _MockTokenStorage<_MockToken>();
         when(tokenStorage.read).thenAnswer((_) async => token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         when(tokenStorage.delete).thenAnswer((_) async {});
 
         final spyClient = _SpyClient((_) => http.Response('{}', 401));
 
-        final fresh = Fresh<MockToken>(
+        final fresh = Fresh<_MockToken>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
             refreshCallCount++;
@@ -576,7 +532,6 @@ void main() {
           ]),
         );
 
-        // send() throws http.ClientException on RevokeTokenException.
         await expectLater(
           fresh.get(Uri.parse('https://example.com')),
           throwsA(isA<http.ClientException>()),
@@ -594,7 +549,7 @@ void main() {
       });
 
       test('returns same response when shouldRefresh returns false', () async {
-        when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(() => tokenStorage.read()).thenAnswer((_) async => _MockToken());
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
 
         await expectLater(
@@ -629,7 +584,7 @@ void main() {
     // These tests verify the same behaviours through send().
     group('send (onError equivalent)', () {
       test('skips refresh when isTokenRequired returns false', () async {
-        final mockToken = MockToken();
+        final mockToken = _MockToken();
         when(() => tokenStorage.read()).thenAnswer((_) async => mockToken);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
 
@@ -652,7 +607,6 @@ void main() {
         );
 
         final response = await fresh.get(Uri.parse('https://example.com'));
-        // Response passes through unchanged; no retry.
         expect(response.statusCode, 401);
         expect(refreshTokenCallCount, 0);
         expect(requestCount, 1);
@@ -682,7 +636,7 @@ void main() {
       test(
           'throws http.ClientException when RevokeTokenException is thrown '
           'during retry', () async {
-        when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(() => tokenStorage.read()).thenAnswer((_) async => _MockToken());
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         when(() => tokenStorage.delete()).thenAnswer((_) async {});
 
@@ -700,7 +654,7 @@ void main() {
       });
 
       test('returns response when shouldRefresh (default) is false', () async {
-        when(() => tokenStorage.read()).thenAnswer((_) async => MockToken());
+        when(() => tokenStorage.read()).thenAnswer((_) async => _MockToken());
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
 
         var requestCount = 0;
@@ -724,8 +678,8 @@ void main() {
           'invokes refreshToken and retries when token is not null '
           'and shouldRefresh (default) is true', () async {
         var refreshCallCount = 0;
-        final token = MockToken();
-        final tokenStorage = MockTokenStorage<MockToken>();
+        final token = _MockToken();
+        final tokenStorage = _MockTokenStorage<_MockToken>();
         when(tokenStorage.read).thenAnswer((_) async => token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
 
@@ -738,7 +692,7 @@ void main() {
           return http.Response('{"success": true}', 200);
         });
 
-        final fresh = Fresh<MockToken>(
+        final fresh = Fresh<_MockToken>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
             refreshCallCount++;
@@ -768,8 +722,8 @@ void main() {
           'clones MultipartRequest body when retrying '
           'after token refresh', () async {
         var refreshCallCount = 0;
-        final token = MockToken();
-        final tokenStorage = MockTokenStorage<MockToken>();
+        final token = _MockToken();
+        final tokenStorage = _MockTokenStorage<_MockToken>();
         when(tokenStorage.read).thenAnswer((_) async => token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
 
@@ -782,7 +736,7 @@ void main() {
           return http.Response('{"success": true}', 200);
         });
 
-        final fresh = Fresh<MockToken>(
+        final fresh = Fresh<_MockToken>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
             refreshCallCount++;
@@ -812,7 +766,6 @@ void main() {
         expect(response.statusCode, 200);
         expect(refreshCallCount, 1);
         expect(requestCount, 2);
-        // Retry must be a new MultipartRequest (a copy, not the same instance).
         expect(retryRequest, isA<http.MultipartRequest>());
         expect(retryRequest, isNot(same(multipart)));
         expect(
@@ -822,12 +775,42 @@ void main() {
         verify(() => tokenStorage.write(token)).called(1);
       });
 
+      test('clones StreamedRequest into a Request', () async {
+        const oAuth2Token = OAuth2Token(accessToken: 'accessToken');
+        when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        http.BaseRequest? captured;
+        final spyClient = _SpyClient((request) {
+          captured = request;
+          return http.Response('{}', 200);
+        });
+
+        final fresh = Fresh.oAuth2(
+          tokenStorage: tokenStorage,
+          refreshToken: emptyRefreshToken,
+          httpClient: spyClient,
+        );
+
+        final streamed = http.StreamedRequest(
+          'POST',
+          Uri.parse('https://example.com/upload'),
+        );
+        unawaited(streamed.sink.close());
+
+        await fresh.send(streamed);
+
+        expect(captured, isNot(same(streamed)));
+        expect(captured, isA<http.Request>());
+        expect(captured?.headers['authorization'], 'bearer accessToken');
+      });
+
       test(
           'retries plain Request body unchanged after '
           'token refresh', () async {
         var refreshCallCount = 0;
-        final token = MockToken();
-        final tokenStorage = MockTokenStorage<MockToken>();
+        final token = _MockToken();
+        final tokenStorage = _MockTokenStorage<_MockToken>();
         when(tokenStorage.read).thenAnswer((_) async => token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
 
@@ -840,7 +823,7 @@ void main() {
           return http.Response('{"success": true}', 200);
         });
 
-        final fresh = Fresh<MockToken>(
+        final fresh = Fresh<_MockToken>(
           tokenStorage: tokenStorage,
           refreshToken: (_, __) async {
             refreshCallCount++;
@@ -875,7 +858,7 @@ void main() {
 
     group('close', () {
       test('should close streams', () async {
-        final token = MockToken();
+        final token = _MockToken();
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
 
@@ -921,17 +904,3 @@ class _SpyClient extends http.BaseClient {
 
 /// Returns a client that always responds 200 OK with an empty JSON body.
 http.Client _alwaysOkClient() => _SpyClient((_) => http.Response('{}', 200));
-
-/// Returns a client whose response we never inspect (used for pre-request
-/// refresh tests where we only care about side-effects before the send).
-http.Client _noopClient() => _SpyClient((_) => http.Response('{}', 200));
-
-/// Sends a plain GET through [fresh] using [innerClient] as the httpClient.
-/// Convenience wrapper so shouldRefreshBeforeRequest tests don't need to
-/// construct Fresh with a separate httpClient every time.
-Future<http.Response> _sendGetThrough(
-  Fresh<dynamic> fresh,
-  http.Client innerClient,
-) {
-  return fresh.get(Uri.parse('https://example.com/test'));
-}

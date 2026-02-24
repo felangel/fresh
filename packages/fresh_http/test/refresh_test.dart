@@ -25,13 +25,8 @@ void main() {
       ),
     );
 
-    // In the package:http version, a non-RevokeTokenException refresh failure
-    // resolves with the original 401 response rather than attaching metadata
-    // to response.extra (http.Response has no extra map). The important
-    // contract is that the future completes and does not hang.
     final response = await fresh.get(Uri.parse('http://example.com'));
     expect(response.statusCode, equals(401));
-    // The request was made exactly once — no retry after the failed refresh.
     expect(requestCount, equals(1));
   });
 
@@ -41,7 +36,6 @@ void main() {
     var requestCount = 0;
     final spyClient = _SpyClient((request) {
       requestCount++;
-      // Verify no auth header was added.
       expect(request.headers.containsKey('authorization'), isFalse);
       return http.Response('{"error": "Unauthorized"}', 401);
     });
