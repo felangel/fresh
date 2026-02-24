@@ -775,15 +775,19 @@ void main() {
         verify(() => tokenStorage.write(token)).called(1);
       });
 
-      test('clones StreamedRequest into a Request', () async {
+      test(
+          'appends token header to StreamedRequest in-place '
+          'and does not retry on 401', () async {
         const oAuth2Token = OAuth2Token(accessToken: 'accessToken');
         when(() => tokenStorage.read()).thenAnswer((_) async => oAuth2Token);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
 
+        var requestCount = 0;
         http.BaseRequest? captured;
         final spyClient = _SpyClient((request) {
+          requestCount++;
           captured = request;
-          return http.Response('{}', 200);
+          return http.Response('{}', 401);
         });
 
         final fresh = Fresh.oAuth2(
@@ -798,11 +802,12 @@ void main() {
         );
         unawaited(streamed.sink.close());
 
-        await fresh.send(streamed);
+        final response = await fresh.send(streamed);
 
-        expect(captured, isNot(same(streamed)));
-        expect(captured, isA<http.Request>());
+        expect(captured, same(streamed));
         expect(captured?.headers['authorization'], 'bearer accessToken');
+        expect(requestCount, equals(1));
+        expect(response.statusCode, equals(401));
       });
 
       test(

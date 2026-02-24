@@ -113,10 +113,7 @@ class Fresh<T> extends http.BaseClient with FreshMixin<T> {
     }
 
     var currentToken = await token;
-    final shouldRefresh = _shouldRefreshBeforeRequest(
-      request,
-      currentToken,
-    );
+    final shouldRefresh = _shouldRefreshBeforeRequest(request, currentToken);
 
     if (shouldRefresh) {
       try {
@@ -127,18 +124,23 @@ class Fresh<T> extends http.BaseClient with FreshMixin<T> {
       currentToken = await token;
     }
 
-    // The request cannot be mutated after being sent so we create a
-    // copy and attach the auth headers.
-    final authedRequest = _cloneWithToken(
-      request: request,
-      token: currentToken,
-    );
+    final canClone = request.canClone;
+
+    final http.BaseRequest outboundRequest;
+    if (canClone) {
+      outboundRequest = _cloneWithToken(request: request, token: currentToken);
+    } else {
+      if (currentToken != null) {
+        request.headers.addAll(_tokenHeader(currentToken));
+      }
+      outboundRequest = request;
+    }
 
     final response = await http.Response.fromStream(
-      await _httpClient.send(authedRequest),
+      await _httpClient.send(outboundRequest),
     );
 
-    if (currentToken == null || !_shouldRefresh(response)) {
+    if (!canClone || currentToken == null || !_shouldRefresh(response)) {
       return response.streamed;
     }
 
@@ -195,9 +197,13 @@ class Fresh<T> extends http.BaseClient with FreshMixin<T> {
         ..files.addAll(request.files);
     }
 
-    return http.Request(request.method, request.url)
-      ..headers.addAll(request.headers)
-      ..headers.addAll(tokenHeaders);
+    // _cloneWithToken should only be called for known-cloneable types.
+    // coverage:ignore-start
+    throw UnsupportedError(
+      'Cannot clone request of type ${request.runtimeType}. '
+      'Only http.Request and http.MultipartRequest are supported.',
+    );
+    // coverage:ignore-end
   }
 
   static bool _defaultShouldRefresh(http.Response? response) {
@@ -214,6 +220,11 @@ class Fresh<T> extends http.BaseClient with FreshMixin<T> {
     }
     return false;
   }
+}
+
+extension on http.BaseRequest {
+  /// Whether the current request can safely be cloned.
+  bool get canClone => this is http.Request || this is http.MultipartRequest;
 }
 
 extension on http.Response {
