@@ -861,6 +861,106 @@ void main() {
       });
     });
 
+    group('_defaultShouldRefreshBeforeRequest', () {
+      test('does not refresh when token expires more than 30 seconds from now',
+          () async {
+        final token = OAuth2Token(
+          accessToken: 'accessToken',
+          issuedAt: DateTime.now(),
+          expiresIn: 60,
+        );
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        var refreshCallCount = 0;
+        final fresh = Fresh.oAuth2<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (_, __) async {
+            refreshCallCount++;
+            return token;
+          },
+          httpClient: _alwaysOkClient(),
+        );
+
+        await fresh.get(Uri.parse('https://example.com/test'));
+
+        expect(refreshCallCount, 0);
+      });
+
+      test('refreshes when token expires within 30 seconds', () async {
+        final token = OAuth2Token(
+          accessToken: 'accessToken',
+          issuedAt: DateTime.now(),
+          expiresIn: 29,
+        );
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        var refreshCallCount = 0;
+        final fresh = Fresh.oAuth2<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (_, __) async {
+            refreshCallCount++;
+            return const OAuth2Token(accessToken: 'newToken');
+          },
+          httpClient: _alwaysOkClient(),
+        );
+
+        await fresh.get(Uri.parse('https://example.com/test'));
+
+        expect(refreshCallCount, 1);
+      });
+
+      test('refreshes when token expires exactly at the 30 second boundary',
+          () async {
+        final token = OAuth2Token(
+          accessToken: 'accessToken',
+          issuedAt: DateTime.now(),
+          expiresIn: 30,
+        );
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        var refreshCallCount = 0;
+        final fresh = Fresh.oAuth2<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (_, __) async {
+            refreshCallCount++;
+            return const OAuth2Token(accessToken: 'newToken');
+          },
+          httpClient: _alwaysOkClient(),
+        );
+
+        await fresh.get(Uri.parse('https://example.com/test'));
+
+        expect(refreshCallCount, 1);
+      });
+
+      test('refreshes when token is already expired', () async {
+        final token = OAuth2Token(
+          accessToken: 'accessToken',
+          issuedAt: DateTime.now().subtract(const Duration(hours: 2)),
+          expiresIn: 3600,
+        );
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        var refreshCallCount = 0;
+        final fresh = Fresh.oAuth2<OAuth2Token>(
+          tokenStorage: tokenStorage,
+          refreshToken: (_, __) async {
+            refreshCallCount++;
+            return const OAuth2Token(accessToken: 'newToken');
+          },
+          httpClient: _alwaysOkClient(),
+        );
+
+        await fresh.get(Uri.parse('https://example.com/test'));
+
+        expect(refreshCallCount, 1);
+      });
+    });
+
     group('close', () {
       test('should close streams', () async {
         final token = _MockToken();

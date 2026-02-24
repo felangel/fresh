@@ -304,11 +304,11 @@ Example:
     if (token is Token) {
       final expiresAt = token.expiresAt;
       if (expiresAt != null) {
-        final now = DateTime.now();
-        return expiresAt.isBefore(now);
+        return expiresAt.isBefore(
+          DateTime.now().add(const Duration(seconds: 30)),
+        );
       }
     }
-
     return false;
   }
 }

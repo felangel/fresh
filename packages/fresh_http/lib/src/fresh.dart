@@ -213,7 +213,11 @@ class Fresh<T> extends http.BaseClient with FreshMixin<T> {
   ) {
     if (token is Token) {
       final expiresAt = token.expiresAt;
-      if (expiresAt != null) return expiresAt.isBefore(DateTime.now());
+      if (expiresAt != null) {
+        return expiresAt.isBefore(
+          DateTime.now().add(const Duration(seconds: 30)),
+        );
+      }
     }
     return false;
   }
