@@ -3,8 +3,8 @@ import 'package:fresh_http/fresh_http.dart';
 import 'package:http/http.dart' as http;
 
 Future<void> main() async {
-  final client = Fresh.oAuth2(
-    tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+  final client = Fresh.oAuth2<OAuth2Token>(
+    tokenStorage: InMemoryTokenStorage(),
     refreshToken: (token, httpClient) async {
       // In practice, you would fetch a refresh token from your own auth server:
       // ```dart

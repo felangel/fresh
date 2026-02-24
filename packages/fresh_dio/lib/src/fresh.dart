@@ -29,7 +29,7 @@ typedef IsTokenRequired = bool Function(RequestOptions options);
 ///
 /// ```dart
 /// dio.interceptors.add(
-///   Fresh<AuthToken>(
+///   Fresh<OAuth2Token>(
 ///     tokenStorage: InMemoryTokenStorage(),
 ///     refreshToken: (token, client) async {...},
 ///   ),
@@ -64,8 +64,8 @@ class Fresh<T> extends QueuedInterceptor with FreshMixin<T> {
   ///
   /// ```dart
   /// dio.interceptors.add(
-  ///   Fresh.oAuth2(
-  ///     tokenStorage: InMemoryTokenStorage<AuthToken>(),
+  ///   Fresh.oAuth2<OAuth2Token>(
+  ///     tokenStorage: InMemoryTokenStorage(),
   ///     refreshToken: (token, client) async {...},
   ///     // Optional: control which requests require authentication
   ///     isTokenRequired: (options) {

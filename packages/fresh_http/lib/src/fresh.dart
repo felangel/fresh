@@ -27,10 +27,9 @@ typedef IsTokenRequired = bool Function(http.BaseRequest request);
 /// for specific requests (e.g., login, registration, public endpoints).
 ///
 /// ```dart
-/// final client = Fresh<AuthToken>(
+/// final client = Fresh<OAuth2Token>(
 ///   tokenStorage: InMemoryTokenStorage(),
 ///   refreshToken: (token, client) async {...},
-///   tokenHeader: (token) => {'authorization': 'Bearer ${token.accessToken}'},
 /// );
 /// ```
 /// {@endtemplate}
@@ -60,8 +59,8 @@ class Fresh<T> extends http.BaseClient with FreshMixin<T> {
   /// Use the `isTokenRequired` parameter to conditionally skip authentication:
   ///
   /// ```dart
-  /// final client = Fresh.oAuth2(
-  ///   tokenStorage: InMemoryTokenStorage<AuthToken>(),
+  /// final client = Fresh.oAuth2<AuthToken>(
+  ///   tokenStorage: InMemoryTokenStorage(),
   ///   refreshToken: (token, client) async {...},
   ///   // Optional: control which requests require authentication
   ///   isTokenRequired: (request) {
@@ -85,9 +84,7 @@ class Fresh<T> extends http.BaseClient with FreshMixin<T> {
       refreshToken: refreshToken,
       tokenHeader: tokenHeader ??
           (token) {
-            return {
-              'authorization': '${token.tokenType} ${token.accessToken}',
-            };
+            return {'authorization': '${token.tokenType} ${token.accessToken}'};
           },
       shouldRefresh: shouldRefresh,
       shouldRefreshBeforeRequest: shouldRefreshBeforeRequest,
