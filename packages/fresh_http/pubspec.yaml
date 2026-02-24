@@ -1,0 +1,19 @@
+name: fresh_http
+description: A auto-refreshing http client. Built on top of package:http and manages authentication tokens transparently.
+repository: https://github.com/felangel/fresh
+issue_tracker: https://github.com/felangel/fresh/issues
+homepage: https://github.com/felangel/fresh
+funding: [https://github.com/sponsors/felangel]
+
+version: 0.1.0
+
+environment:
+  sdk: ">=2.15.0 <4.0.0"
+
+dependencies:
+  fresh: ^0.6.0
+  http: ^1.0.0
+
+dev_dependencies:
+  mocktail: ^1.0.0
+  test: ^1.16.0
