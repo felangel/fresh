@@ -23,6 +23,7 @@ Token-based authentication seems simple until you handle the edge cases: tokens 
 | [fresh](https://github.com/felangel/fresh/tree/master/packages/fresh)                 | [![pub package](https://img.shields.io/pub/v/fresh.svg)](https://pub.dev/packages/fresh)                 |
 | [fresh_dio](https://github.com/felangel/fresh/tree/master/packages/fresh_dio)         | [![pub package](https://img.shields.io/pub/v/fresh_dio.svg)](https://pub.dev/packages/fresh_dio)         |
 | [fresh_graphql](https://github.com/felangel/fresh/tree/master/packages/fresh_graphql) | [![pub package](https://img.shields.io/pub/v/fresh_graphql.svg)](https://pub.dev/packages/fresh_graphql) |
+| [fresh_http](https://github.com/felangel/fresh/tree/master/packages/fresh_http)       | [![pub package](https://img.shields.io/pub/v/fresh_http.svg)](https://pub.dev/packages/fresh_http)       |
 
 ## Features
 
@@ -86,3 +87,26 @@ final link = Link.from([freshLink, HttpLink('https://api.example.com/graphql')])
 ```
 
 See the [fresh_graphql README](https://github.com/felangel/fresh/tree/master/packages/fresh_graphql) for full documentation.
+
+### fresh_http
+
+```dart
+import 'dart:convert';
+
+final client = Fresh.oAuth2(
+  tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+  refreshToken: (token, client) async {
+    final response = await client.post(
+      Uri.parse('https://api.example.com/auth/refresh'),
+      body: jsonEncode({'refresh_token': token?.refreshToken}),
+    );
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    return OAuth2Token(
+      accessToken: body['access_token'],
+      refreshToken: body['refresh_token'],
+    );
+  },
+);
+```
+
+See the [fresh_http README](https://github.com/felangel/fresh/tree/master/packages/fresh_http) for full documentation.
