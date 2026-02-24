@@ -303,11 +303,8 @@ Example:
   ) {
     if (token is Token) {
       final expiresAt = token.expiresAt;
-      if (expiresAt != null) {
-        return expiresAt.isBefore(
-          DateTime.now().add(const Duration(seconds: 30)),
-        );
-      }
+      if (expiresAt == null) return false;
+      return expiresAt.difference(DateTime.now()).inSeconds < 30;
     }
     return false;
   }

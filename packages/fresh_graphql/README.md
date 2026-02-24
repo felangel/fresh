@@ -143,10 +143,11 @@ FreshLink.oAuth2(
     }) ?? false;
   },
   shouldRefreshBeforeRequest: (request, token) {
-    // Refresh proactively if token expires within 30 seconds
+    // Refresh proactively if token expires within 60 seconds
+    // By default, a refresh is performed if the token expires within 30s.
     final expiresAt = token?.expiresAt;
     if (expiresAt == null) return false;
-    return expiresAt.difference(DateTime.now()).inSeconds < 30;
+    return expiresAt.difference(DateTime.now()).inSeconds < 60;
   },
 );
 ```
