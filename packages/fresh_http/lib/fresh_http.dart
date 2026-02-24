@@ -8,4 +8,5 @@ export 'package:fresh/fresh.dart'
         Token,
         TokenHeaderBuilder,
         TokenStorage;
+export 'package:http/http.dart';
 export 'src/fresh.dart';
