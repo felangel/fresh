@@ -64,10 +64,6 @@ jobs:
               - ./.github/actions/dart_package/action.yaml
               - packages/fresh_dio/**
               - packages/fresh/**
-            fresh_dio/example:
-              - ./.github/workflows/main.yaml
-              - ./.github/actions/dart_package/action.yaml
-              - packages/fresh_dio/**
 
   dart_package_checks:
     needs: changes
