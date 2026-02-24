@@ -106,8 +106,6 @@ final client = Fresh.oAuth2(
       refreshToken: body['refresh_token'],
     );
   },
-  shouldRefresh: (response) =>
-      response.errors?.any((e) => e.message.contains('UNAUTHENTICATED')) ?? false,
 );
 ```
 
