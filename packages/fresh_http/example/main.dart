@@ -43,7 +43,7 @@ Future<void> main() async {
     print('request failed: $e');
   }
 
-  // Simulate a logout by clear the token.
+  // Simulate a logout by clearing the token.
   await client.clearToken();
 
   // Requests made without a token will have no Authorization header.
