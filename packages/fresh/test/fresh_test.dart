@@ -36,6 +36,10 @@ class FreshController<T> with FreshMixin<T> {
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(FakeOAuth2Token());
+  });
+
   group('OAuth2Token', () {
     test('tokenType defaults to bearer', () {
       expect(const OAuth2Token(accessToken: 'accessToken').tokenType, 'bearer');
@@ -285,7 +289,7 @@ void main() {
     });
 
     group('close', () {
-      test('shoud close streams', () async {
+      test('should close streams gracefully', () async {
         when(() => tokenStorage.read()).thenAnswer((_) async => null);
         when(() => tokenStorage.write(any())).thenAnswer((_) async {});
         final token = MockToken();
@@ -294,6 +298,7 @@ void main() {
 
         await freshController.setToken(token);
         await freshController.close();
+        await freshController.setToken(token);
 
         await expectLater(
           freshController.authenticationStatus,

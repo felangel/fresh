@@ -136,7 +136,7 @@ mixin FreshMixin<T> {
     _token = null;
     if (_authenticationStatus != AuthenticationStatus.unauthenticated) {
       _authenticationStatus = AuthenticationStatus.unauthenticated;
-      _controller.add(_authenticationStatus);
+      if (!_controller.isClosed) _controller.add(_authenticationStatus);
     }
     await _tokenStorage.delete();
   }
@@ -239,6 +239,6 @@ mixin FreshMixin<T> {
         ? AuthenticationStatus.authenticated
         : AuthenticationStatus.unauthenticated;
     _token = token;
-    _controller.add(_authenticationStatus);
+    if (!_controller.isClosed) _controller.add(_authenticationStatus);
   }
 }

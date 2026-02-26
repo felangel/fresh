@@ -1,3 +1,8 @@
+# 0.6.1.
+
+- fix: guard authenticationStatus emits on whether internal controller is closed
+- fix: minor analysis warnings
+
 # 0.6.0
 
 - **BREAKING**: `FreshMixin` now requires implementing `performTokenRefresh(T? token)` for raw refresh logic ([#130](https://github.com/felangel/fresh/pull/130))
@@ -9,7 +14,7 @@
 # 0.5.0
 
 - feat: add `Token` base class for token extensibility
-- feat: add `OAuth2Token.issuedAt` field for token issue date tracking  
+- feat: add `OAuth2Token.issuedAt` field for token issue date tracking
 - feat: add `Token.expiresAt` getter for token expiration validation
 
 # 0.4.4
