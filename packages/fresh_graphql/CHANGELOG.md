@@ -1,3 +1,7 @@
+# 0.8.0
+
+- **BREAKING** feat: adjust the default `shouldRefreshBeforeRequest` to automatically refresh if the token expires within 30s
+
 # 0.7.1
 
 - feat: single-flight token refresh - concurrent UNAUTHENTICATED errors trigger only one `refreshToken` call ([#126](https://github.com/felangel/fresh/issues/126), [#130](https://github.com/felangel/fresh/pull/130))
@@ -7,7 +11,7 @@
 
 - feat: `ShouldRefreshBeforeRequest` allows conditional token refresh based on GraphQL request details and token expiration
 - feat: automatic token refresh based on expiration before requests
-- feat: enhanced token validation with `Token.expiresAt` getter  
+- feat: enhanced token validation with `Token.expiresAt` getter
 - feat: support for custom token validation logic with GraphQL Request context
 
 # 0.6.1
