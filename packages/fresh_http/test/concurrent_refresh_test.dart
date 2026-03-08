@@ -316,6 +316,146 @@ void main() {
     });
 
     test(
+        'WITHOUT fix: new request during in-flight refresh '
+        'gets unnecessary 401', () async {
+      var refreshCallCount = 0;
+      final refreshCompleter = Completer<OAuth2Token>();
+      var total401Count = 0;
+
+      final mockClient = _mockClient((request) {
+        final auth = request.headers['authorization'];
+        if (auth == 'bearer new.token.jwt') {
+          return http.Response(
+            '{"success": true}',
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        total401Count++;
+        return http.Response(
+          '{"error": "Unauthorized"}',
+          401,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+
+      // _UnfixedFresh overrides tokenWaitingRefresh to NOT wait,
+      // simulating behavior without the fix.
+      final fresh = _UnfixedFresh(
+        tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+        refreshToken: (_, __) async {
+          refreshCallCount++;
+          return refreshCompleter.future;
+        },
+        tokenHeader: (token) => {
+          'authorization': '${token.tokenType} ${token.accessToken}',
+        },
+        httpClient: mockClient,
+      );
+
+      await fresh.setToken(
+        const OAuth2Token(
+          accessToken: 'old.token.jwt',
+          refreshToken: 'refreshToken',
+        ),
+      );
+
+      final future1 = fresh.get(Uri.parse('http://example.com/1'));
+      await pumpEventQueue();
+      expect(refreshCallCount, equals(1));
+
+      final future2 = fresh.get(Uri.parse('http://example.com/2'));
+      await pumpEventQueue();
+
+      refreshCompleter.complete(
+        const OAuth2Token(
+          accessToken: 'new.token.jwt',
+          refreshToken: 'newRefreshToken',
+        ),
+      );
+
+      final responses = await Future.wait([future1, future2]);
+      for (final response in responses) {
+        expect(response.statusCode, equals(200));
+      }
+
+      expect(refreshCallCount, equals(1));
+      expect(
+        total401Count,
+        equals(2),
+        reason: 'Without fix, request 2 is sent with the old token '
+            'while refresh is in-flight, causing an extra 401',
+      );
+    });
+
+    test(
+        'WITH fix: new request during in-flight refresh waits '
+        'and avoids unnecessary 401', () async {
+      var refreshCallCount = 0;
+      final refreshCompleter = Completer<OAuth2Token>();
+      var total401Count = 0;
+
+      final mockClient = _mockClient((request) {
+        final auth = request.headers['authorization'];
+        if (auth == 'bearer new.token.jwt') {
+          return http.Response(
+            '{"success": true}',
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        total401Count++;
+        return http.Response(
+          '{"error": "Unauthorized"}',
+          401,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+
+      final fresh = Fresh.oAuth2(
+        tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+        refreshToken: (_, __) async {
+          refreshCallCount++;
+          return refreshCompleter.future;
+        },
+        httpClient: mockClient,
+      );
+
+      await fresh.setToken(
+        const OAuth2Token(
+          accessToken: 'old.token.jwt',
+          refreshToken: 'refreshToken',
+        ),
+      );
+
+      final future1 = fresh.get(Uri.parse('http://example.com/1'));
+      await pumpEventQueue();
+      expect(refreshCallCount, equals(1));
+
+      final future2 = fresh.get(Uri.parse('http://example.com/2'));
+      await pumpEventQueue();
+
+      refreshCompleter.complete(
+        const OAuth2Token(
+          accessToken: 'new.token.jwt',
+          refreshToken: 'newRefreshToken',
+        ),
+      );
+
+      final responses = await Future.wait([future1, future2]);
+      for (final response in responses) {
+        expect(response.statusCode, equals(200));
+      }
+
+      expect(refreshCallCount, equals(1));
+      expect(
+        total401Count,
+        equals(1),
+        reason: 'With fix, request 2 waits for refresh and uses new token',
+      );
+    });
+
+    test(
         'after successful refresh, '
         'a subsequent 401 triggers a new refresh', () async {
       var refreshCallCount = 0;
@@ -387,6 +527,24 @@ http.Client _mockClient(
   http.Response Function(http.Request request) handler,
 ) {
   return MockClient((request) async => handler(request));
+}
+
+/// Simulates Fresh WITHOUT the tokenWaitingRefresh fix.
+class _UnfixedFresh extends Fresh<OAuth2Token> {
+  _UnfixedFresh({
+    required TokenStorage<OAuth2Token> tokenStorage,
+    required RefreshToken<OAuth2Token> refreshToken,
+    required TokenHeaderBuilder<OAuth2Token> tokenHeader,
+    http.Client? httpClient,
+  }) : super(
+          tokenStorage: tokenStorage,
+          refreshToken: refreshToken,
+          tokenHeader: tokenHeader,
+          httpClient: httpClient,
+        );
+
+  @override
+  Future<OAuth2Token?> get tokenWaitingRefresh => token;
 }
 
 class _TrackingTokenStorage<T> implements TokenStorage<T> {

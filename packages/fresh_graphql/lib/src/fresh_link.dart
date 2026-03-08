@@ -111,7 +111,10 @@ class FreshLink<T> extends Link with FreshMixin<T> {
 
   @override
   Stream<Response> request(Request request, [NextLink? forward]) async* {
-    var currentToken = await token;
+    // Wait for any in-flight refresh before reading the token. Without this,
+    // concurrent request() calls could use a stale token that the backend has
+    // already invalidated during a refresh triggered by another request.
+    var currentToken = await tokenWaitingRefresh;
 
     final shouldRefresh = _shouldRefreshBeforeRequest.call(
       request,

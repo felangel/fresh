@@ -85,7 +85,7 @@ dio.interceptors.add(
 1. **Before each request**: If the token has an `expiresAt` date in the past, it is refreshed proactively.
 2. **Auth header**: The current token is attached to the request as an `Authorization` header.
 3. **On 401 response**: The token is refreshed and the request is retried automatically.
-4. **Concurrent requests**: If multiple requests trigger a refresh simultaneously, only one refresh call is made. The others wait for the result.
+4. **Concurrent requests**: If multiple requests trigger a refresh simultaneously, only one refresh call is made. The others wait for the result. New requests arriving while a refresh is in-flight also wait and are sent with the updated token.
 
 ## Authentication Status
 

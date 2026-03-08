@@ -23,6 +23,9 @@ class FreshController<T> with FreshMixin<T> {
 
   Future<T> Function(T? token)? refreshTokenFn;
 
+  // Expose @protected getter for testing.
+  Future<T?> get testTokenWaitingRefresh => tokenWaitingRefresh;
+
   @override
   Future<T> performTokenRefresh(T? token) {
     final refreshAction = refreshTokenFn;
@@ -522,6 +525,51 @@ void main() {
           expect(result, currentToken);
         },
       );
+    });
+
+    group('tokenWaitingRefresh', () {
+      setUpAll(() {
+        registerFallbackValue(FakeOAuth2Token());
+      });
+
+      test('returns current token when no refresh is pending', () async {
+        final token = MockToken();
+        when(() => tokenStorage.read()).thenAnswer((_) async => token);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        final freshController = FreshController<OAuth2Token>(tokenStorage);
+        await freshController.setToken(token);
+
+        final result = await freshController.testTokenWaitingRefresh;
+        expect(result, token);
+      });
+
+      test('waits for in-flight refresh and returns updated token', () async {
+        final oldToken = MockToken();
+        final newToken = MockToken();
+        final refreshCompleter = Completer<OAuth2Token>();
+
+        when(() => tokenStorage.read()).thenAnswer((_) async => oldToken);
+        when(() => tokenStorage.write(any())).thenAnswer((_) async {});
+
+        final freshController = FreshController<OAuth2Token>(tokenStorage);
+        await freshController.setToken(oldToken);
+
+        freshController.refreshTokenFn = (_) => refreshCompleter.future;
+
+        // Start a refresh without awaiting to simulate an in-flight refresh.
+        // ignore: unused_local_variable
+        final pendingRefresh =
+            freshController.refreshToken(tokenUsedForRequest: oldToken);
+
+        // tokenWaitingRefresh should wait for the in-flight refresh
+        final resultFuture = freshController.testTokenWaitingRefresh;
+
+        refreshCompleter.complete(newToken);
+
+        final result = await resultFuture;
+        expect(result, newToken);
+      });
     });
 
     group('initial storage read', () {

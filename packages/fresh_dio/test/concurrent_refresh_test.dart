@@ -354,6 +354,186 @@ void main() {
     );
 
     test(
+      'WITHOUT fix: new request during in-flight refresh gets '
+      'unnecessary 401 due to separate QueuedInterceptor queues',
+      () async {
+        var refreshCallCount = 0;
+        final refreshCompleter = Completer<OAuth2Token>();
+        var total401Count = 0;
+
+        final mockAdapter = _MockAdapter(
+          (options) {
+            final auth = options.headers['authorization'] as String?;
+            if (auth == 'bearer new.token.jwt') {
+              return ResponseBody.fromString(
+                '{"success": true}',
+                200,
+                headers: {
+                  Headers.contentTypeHeader: [Headers.jsonContentType],
+                },
+              );
+            }
+            total401Count++;
+            return ResponseBody.fromString(
+              '{"error": "Unauthorized"}',
+              401,
+              headers: {
+                Headers.contentTypeHeader: [Headers.jsonContentType],
+              },
+            );
+          },
+        );
+
+        final retryClient = Dio()..httpClientAdapter = mockAdapter;
+
+        // _UnfixedFresh overrides tokenWaitingRefresh to NOT wait,
+        // simulating the behavior without the fix.
+        final fresh = _UnfixedFresh(
+          tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+          refreshToken: (_, __) async {
+            refreshCallCount++;
+            return refreshCompleter.future;
+          },
+          tokenHeader: (token) => {
+            'authorization': '${token.tokenType} ${token.accessToken}',
+          },
+          httpClient: retryClient,
+        );
+
+        await fresh.setToken(
+          const OAuth2Token(
+            accessToken: 'old.token.jwt',
+            refreshToken: 'refreshToken',
+          ),
+        );
+
+        final dio = Dio()..httpClientAdapter = mockAdapter;
+        dio.interceptors.add(fresh);
+
+        final future1 = dio.get<Object?>('http://example.com/1');
+        await pumpEventQueue();
+        expect(refreshCallCount, equals(1));
+
+        // Without the fix, onRequest doesn't wait for the in-flight refresh
+        // and sends the request with the old (invalidated) token.
+        final future2 = dio.get<Object?>('http://example.com/2');
+        await pumpEventQueue();
+
+        refreshCompleter.complete(
+          const OAuth2Token(
+            accessToken: 'new.token.jwt',
+            refreshToken: 'newRefreshToken',
+          ),
+        );
+
+        final responses = await Future.wait([future1, future2]);
+
+        for (final response in responses) {
+          expect(response.statusCode, equals(200));
+        }
+
+        expect(refreshCallCount, equals(1));
+
+        // 2 backend 401s: request 1 (expected) + request 2 (unnecessary).
+        expect(
+          total401Count,
+          equals(2),
+          reason: 'Without fix, request 2 is sent with the old token '
+              'while refresh is in-flight, causing an extra 401',
+        );
+      },
+    );
+
+    test(
+      'WITH fix: new request during in-flight refresh waits for refresh '
+      'and avoids unnecessary 401',
+      () async {
+        var refreshCallCount = 0;
+        final refreshCompleter = Completer<OAuth2Token>();
+        var total401Count = 0;
+
+        final mockAdapter = _MockAdapter(
+          (options) {
+            final auth = options.headers['authorization'] as String?;
+            if (auth == 'bearer new.token.jwt') {
+              return ResponseBody.fromString(
+                '{"success": true}',
+                200,
+                headers: {
+                  Headers.contentTypeHeader: [Headers.jsonContentType],
+                },
+              );
+            }
+            total401Count++;
+            return ResponseBody.fromString(
+              '{"error": "Unauthorized"}',
+              401,
+              headers: {
+                Headers.contentTypeHeader: [Headers.jsonContentType],
+              },
+            );
+          },
+        );
+
+        final retryClient = Dio()..httpClientAdapter = mockAdapter;
+
+        final fresh = Fresh.oAuth2(
+          tokenStorage: InMemoryTokenStorage<OAuth2Token>(),
+          refreshToken: (_, __) async {
+            refreshCallCount++;
+            return refreshCompleter.future;
+          },
+          httpClient: retryClient,
+        );
+
+        await fresh.setToken(
+          const OAuth2Token(
+            accessToken: 'old.token.jwt',
+            refreshToken: 'refreshToken',
+          ),
+        );
+
+        final dio = Dio()..httpClientAdapter = mockAdapter;
+        dio.interceptors.add(fresh);
+
+        // First request → 401 → triggers refresh
+        final future1 = dio.get<Object?>('http://example.com/1');
+        await pumpEventQueue();
+        expect(refreshCallCount, equals(1));
+
+        // New request while refresh is in-flight.
+        // tokenWaitingRefresh in onRequest causes it to wait for the
+        // in-flight refresh, so it will use the new token immediately.
+        final future2 = dio.get<Object?>('http://example.com/2');
+        await pumpEventQueue();
+
+        refreshCompleter.complete(
+          const OAuth2Token(
+            accessToken: 'new.token.jwt',
+            refreshToken: 'newRefreshToken',
+          ),
+        );
+
+        final responses = await Future.wait([future1, future2]);
+
+        for (final response in responses) {
+          expect(response.statusCode, equals(200));
+        }
+
+        expect(refreshCallCount, equals(1));
+
+        // Request 2 waited for the refresh and was sent with the new token,
+        // so only 1 backend 401 (from request 1).
+        expect(
+          total401Count,
+          equals(1),
+          reason: 'Request 2 should wait for refresh and use new token '
+              'instead of getting an unnecessary 401',
+        );
+      },
+    );
+
+    test(
       'after successful refresh, a later 401 triggers a new refresh',
       () async {
         var refreshCallCount = 0;
@@ -450,6 +630,26 @@ class _MockAdapter implements HttpClientAdapter {
   ) async {
     return onFetch(options);
   }
+}
+
+/// Simulates Fresh WITHOUT the tokenWaitingRefresh fix.
+/// [tokenWaitingRefresh] falls back to [token], so onRequest never waits
+/// for an in-flight refresh triggered by onError.
+class _UnfixedFresh extends Fresh<OAuth2Token> {
+  _UnfixedFresh({
+    required TokenStorage<OAuth2Token> tokenStorage,
+    required RefreshToken<OAuth2Token> refreshToken,
+    required TokenHeaderBuilder<OAuth2Token> tokenHeader,
+    Dio? httpClient,
+  }) : super(
+          tokenStorage: tokenStorage,
+          refreshToken: refreshToken,
+          tokenHeader: tokenHeader,
+          httpClient: httpClient,
+        );
+
+  @override
+  Future<OAuth2Token?> get tokenWaitingRefresh => token;
 }
 
 class _TrackingTokenStorage<T> implements TokenStorage<T> {

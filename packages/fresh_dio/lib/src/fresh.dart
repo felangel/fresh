@@ -153,7 +153,11 @@ Example:
       return handler.next(options);
     }
 
-    var currentToken = await token;
+    // Wait for any in-flight refresh (triggered by a 401 in onError/onResponse)
+    // before reading the token. QueuedInterceptor runs onRequest and onError
+    // on separate queues, so without this a new request could be sent with a
+    // stale token that the backend has already invalidated.
+    var currentToken = await tokenWaitingRefresh;
 
     final shouldRefresh = _shouldRefreshBeforeRequest(
       options,

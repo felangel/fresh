@@ -1,3 +1,7 @@
+# 0.6.1
+
+- fix: new requests during in-flight token refresh no longer sent with stale token ([#141](https://github.com/felangel/fresh/issues/141), [#142](https://github.com/felangel/fresh/pull/142))
+
 # 0.6.0
 
 - **BREAKING** feat: adjust the default `shouldRefreshBeforeRequest` to automatically refresh if the token expires within 30s
