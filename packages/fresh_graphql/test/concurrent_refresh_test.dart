@@ -372,6 +372,160 @@ void main() {
     );
 
     test(
+      'WITHOUT fix: new request during in-flight refresh '
+      'gets unnecessary UNAUTHENTICATED error',
+      () async {
+        var refreshCallCount = 0;
+        final refreshCompleter = Completer<OAuth2Token>();
+        var totalAuthErrorCount = 0;
+
+        final freshLink = _UnfixedFreshLink(
+          tokenStorage: _TrackingTokenStorage<OAuth2Token>(),
+          refreshToken: (_, __) async {
+            refreshCallCount++;
+            return refreshCompleter.future;
+          },
+          shouldRefresh: (response) =>
+              response.errors?.any(
+                (e) => e.message.contains('UNAUTHENTICATED'),
+              ) ??
+              false,
+          tokenHeader: (token) => {
+            'authorization': '${token?.tokenType} ${token?.accessToken}',
+          },
+        );
+
+        await freshLink.setToken(
+          const OAuth2Token(
+            accessToken: 'old.token.jwt',
+            refreshToken: 'refreshToken',
+          ),
+        );
+
+        Stream<Response> mockForward(Request request) async* {
+          final authHeader = request.context
+              .entry<HttpLinkHeaders>()
+              ?.headers['authorization'];
+
+          if (authHeader == 'bearer new.token.jwt') {
+            yield MockResponse(data: {'result': 'success'});
+          } else {
+            totalAuthErrorCount++;
+            yield MockResponse(
+              errors: [const GraphQLError(message: 'UNAUTHENTICATED')],
+            );
+          }
+        }
+
+        final future1 = freshLink.request(MockRequest(), mockForward).toList();
+        await pumpEventQueue();
+        expect(refreshCallCount, equals(1));
+
+        final future2 = freshLink.request(MockRequest(), mockForward).toList();
+        await pumpEventQueue();
+
+        refreshCompleter.complete(
+          const OAuth2Token(
+            accessToken: 'new.token.jwt',
+            refreshToken: 'newRefreshToken',
+          ),
+        );
+
+        final results = await Future.wait([future1, future2]).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => throw TimeoutException('Streams hung'),
+        );
+
+        for (final result in results) {
+          expect(result, isNotEmpty);
+        }
+
+        expect(refreshCallCount, equals(1));
+        expect(
+          totalAuthErrorCount,
+          equals(2),
+          reason: 'Without fix, request 2 is sent with the old token '
+              'while refresh is in-flight, causing an extra auth error',
+        );
+      },
+    );
+
+    test(
+      'WITH fix: new request during in-flight refresh waits '
+      'and avoids unnecessary UNAUTHENTICATED error',
+      () async {
+        var refreshCallCount = 0;
+        final refreshCompleter = Completer<OAuth2Token>();
+        var totalAuthErrorCount = 0;
+
+        final freshLink = FreshLink.oAuth2(
+          tokenStorage: _TrackingTokenStorage<OAuth2Token>(),
+          refreshToken: (_, __) async {
+            refreshCallCount++;
+            return refreshCompleter.future;
+          },
+          shouldRefresh: (response) =>
+              response.errors?.any(
+                (e) => e.message.contains('UNAUTHENTICATED'),
+              ) ??
+              false,
+        );
+
+        await freshLink.setToken(
+          const OAuth2Token(
+            accessToken: 'old.token.jwt',
+            refreshToken: 'refreshToken',
+          ),
+        );
+
+        Stream<Response> mockForward(Request request) async* {
+          final authHeader = request.context
+              .entry<HttpLinkHeaders>()
+              ?.headers['authorization'];
+
+          if (authHeader == 'bearer new.token.jwt') {
+            yield MockResponse(data: {'result': 'success'});
+          } else {
+            totalAuthErrorCount++;
+            yield MockResponse(
+              errors: [const GraphQLError(message: 'UNAUTHENTICATED')],
+            );
+          }
+        }
+
+        final future1 = freshLink.request(MockRequest(), mockForward).toList();
+        await pumpEventQueue();
+        expect(refreshCallCount, equals(1));
+
+        final future2 = freshLink.request(MockRequest(), mockForward).toList();
+        await pumpEventQueue();
+
+        refreshCompleter.complete(
+          const OAuth2Token(
+            accessToken: 'new.token.jwt',
+            refreshToken: 'newRefreshToken',
+          ),
+        );
+
+        final results = await Future.wait([future1, future2]).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => throw TimeoutException('Streams hung'),
+        );
+
+        for (final result in results) {
+          expect(result, isNotEmpty);
+        }
+
+        expect(refreshCallCount, equals(1));
+        expect(
+          totalAuthErrorCount,
+          equals(1),
+          reason: 'With fix, request 2 waits for refresh and uses new token',
+        );
+      },
+    );
+
+    test(
       'after successful refresh, a later auth error triggers a new refresh',
       () async {
         var refreshCallCount = 0;
@@ -439,6 +593,24 @@ void main() {
       },
     );
   });
+}
+
+/// Simulates FreshLink WITHOUT the tokenWaitingRefresh fix.
+class _UnfixedFreshLink extends FreshLink<OAuth2Token> {
+  _UnfixedFreshLink({
+    required TokenStorage<OAuth2Token> tokenStorage,
+    required RefreshToken<OAuth2Token?> refreshToken,
+    required ShouldRefresh shouldRefresh,
+    TokenHeaderBuilder<OAuth2Token?>? tokenHeader,
+  }) : super(
+          tokenStorage: tokenStorage,
+          refreshToken: refreshToken,
+          shouldRefresh: shouldRefresh,
+          tokenHeader: tokenHeader,
+        );
+
+  @override
+  Future<OAuth2Token?> get tokenWaitingRefresh => token;
 }
 
 class _TrackingTokenStorage<T> implements TokenStorage<T> {

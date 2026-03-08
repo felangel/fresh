@@ -109,7 +109,10 @@ class Fresh<T> extends http.BaseClient with FreshMixin<T> {
       return _httpClient.send(request);
     }
 
-    var currentToken = await token;
+    // Wait for any in-flight refresh before reading the token. Without this,
+    // concurrent send() calls could use a stale token that the backend has
+    // already invalidated during a refresh triggered by another request.
+    var currentToken = await tokenWaitingRefresh;
     final shouldRefresh = _shouldRefreshBeforeRequest(request, currentToken);
 
     if (shouldRefresh) {

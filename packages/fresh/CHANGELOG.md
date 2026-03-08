@@ -1,3 +1,7 @@
+# 0.6.2
+
+- feat: add `tokenWaitingRefresh` getter to `FreshMixin` — awaits any in-flight refresh before returning the current token ([#141](https://github.com/felangel/fresh/issues/141), [#142](https://github.com/felangel/fresh/pull/142))
+
 # 0.6.1.
 
 - fix: guard authenticationStatus emits on whether internal controller is closed

@@ -158,6 +158,23 @@ mixin FreshMixin<T> {
   /// Calling this method more than once is allowed, but does nothing.
   Future<void> close() => _controller.close();
 
+  /// Returns the current token, waiting for any in-flight refresh to
+  /// complete first. Unlike [refreshToken], this does **not** start a new
+  /// refresh — it only piggy-backs on one that is already running.
+  ///
+  /// Use this before sending a request to avoid using a stale token while
+  /// another request is already refreshing it.
+  @protected
+  Future<T?> get tokenWaitingRefresh async {
+    final pending = _refreshFuture;
+    if (pending != null) {
+      try {
+        await pending;
+      } catch (_) {}
+    }
+    return token;
+  }
+
   /// Performs the token refresh operation.
   ///
   /// Implementers should provide only the raw token refresh mechanism.

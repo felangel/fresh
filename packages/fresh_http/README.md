@@ -97,7 +97,8 @@ final client = Fresh<String>(
    automatically.
 4. **Concurrent requests**: If multiple requests trigger a refresh
    simultaneously, only one refresh call is made. The others wait for the
-   result.
+   result. New requests arriving while a refresh is in-flight also wait and
+   are sent with the updated token.
 
 ## Authentication Status
 

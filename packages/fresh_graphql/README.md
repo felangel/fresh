@@ -89,7 +89,7 @@ final freshLink = FreshLink<String>(
 1. **Before each request**: If the token has an `expiresAt` date in the past, it is refreshed proactively.
 2. **Auth header**: The current token is attached to the request via `HttpLinkHeaders`.
 3. **On error response**: When `shouldRefresh` returns true, the token is refreshed and the request is retried.
-4. **Concurrent requests**: If multiple GraphQL streams trigger a refresh simultaneously, only one refresh call is made. The others wait for the result.
+4. **Concurrent requests**: If multiple GraphQL streams trigger a refresh simultaneously, only one refresh call is made. The others wait for the result. New requests arriving while a refresh is in-flight also wait and are sent with the updated token.
 
 ## Authentication Status
 

@@ -62,4 +62,4 @@ class MyHttpFresh extends MyHttpClient with FreshMixin<OAuth2Token> {
 }
 ```
 
-`refreshToken()` handles deduplication automatically - concurrent calls share a single in-flight refresh.
+`refreshToken()` handles deduplication automatically - concurrent calls share a single in-flight refresh. Use `tokenWaitingRefresh` instead of `token` before sending requests to wait for any in-flight refresh and avoid dispatching with a stale token.
