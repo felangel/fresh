@@ -12,12 +12,13 @@ An token refresh library for dart. This package exposes the core components that
 
 **Most users should use one of the integration packages instead:**
 
-| Package | For |
-| --- | --- |
-| [fresh_dio](https://pub.dev/packages/fresh_dio) | [dio](https://pub.dev/packages/dio) HTTP client |
+| Package                                                 | For                                                   |
+| ------------------------------------------------------- | ----------------------------------------------------- |
+| [fresh_dio](https://pub.dev/packages/fresh_dio)         | [dio](https://pub.dev/packages/dio) HTTP client       |
 | [fresh_graphql](https://pub.dev/packages/fresh_graphql) | [gql_link](https://pub.dev/packages/gql_link) GraphQL |
+| [fresh_http](https://pub.dev/packages/fresh_http)       | [http](https://pub.dev/packages/http) HTTP client     |
 
-Use `package:fresh` directly only if you are building a custom integration (e.g. for `package:http` or another HTTP client).
+Use `package:fresh` directly only if you are building a custom integration.
 
 ## What's Included
 
