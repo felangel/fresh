@@ -26,6 +26,12 @@ typedef IsTokenRequired = bool Function(http.BaseRequest request);
 /// Use the `isTokenRequired` parameter to conditionally skip authentication
 /// for specific requests (e.g., login, registration, public endpoints).
 ///
+/// A request belongs to the token session that is current when it starts.
+/// If the token is replaced through `setToken`, `clearToken` or
+/// `revokeToken` while the request is in flight, the request is neither
+/// refreshed nor retried with the new token and fails with an
+/// [http.ClientException] instead.
+///
 /// ```dart
 /// final client = Fresh<OAuth2Token>(
 ///   tokenStorage: InMemoryTokenStorage(),
@@ -109,15 +115,18 @@ class Fresh<T> extends http.BaseClient with FreshMixin<T> {
       return _httpClient.send(request);
     }
 
+    final session = tokenSession;
     var currentToken = await token;
     final shouldRefresh = _shouldRefreshBeforeRequest(request, currentToken);
 
     if (shouldRefresh) {
+      _ensureSession(session, request);
       try {
         await refreshToken(tokenUsedForRequest: currentToken);
       } on RevokeTokenException catch (_) {
         // Token is already cleared by refreshToken.
       }
+      _ensureSession(session, request);
       currentToken = await token;
     }
 
@@ -142,7 +151,7 @@ class Fresh<T> extends http.BaseClient with FreshMixin<T> {
     }
 
     try {
-      return await _tryRefresh(request, response, currentToken);
+      return await _tryRefresh(request, currentToken, session);
     } on http.ClientException {
       rethrow;
     } catch (_) {
@@ -152,9 +161,10 @@ class Fresh<T> extends http.BaseClient with FreshMixin<T> {
 
   Future<http.StreamedResponse> _tryRefresh(
     http.BaseRequest originalRequest,
-    http.Response response,
     T? tokenUsedForRequest,
+    int session,
   ) async {
+    _ensureSession(session, originalRequest);
     final T refreshedToken;
     try {
       refreshedToken = await refreshToken(
@@ -163,9 +173,21 @@ class Fresh<T> extends http.BaseClient with FreshMixin<T> {
     } on RevokeTokenException catch (error) {
       throw http.ClientException('$error', originalRequest.url);
     }
+    _ensureSession(session, originalRequest);
 
     return _httpClient.send(
       _cloneWithToken(request: originalRequest, token: refreshedToken),
+    );
+  }
+
+  /// Throws if the token was replaced since the request started under
+  /// [session], so that the request is never sent with another session's
+  /// token.
+  void _ensureSession(int session, http.BaseRequest request) {
+    if (session == tokenSession) return;
+    throw http.ClientException(
+      'The token was replaced while the request was in flight.',
+      request.url,
     );
   }
 

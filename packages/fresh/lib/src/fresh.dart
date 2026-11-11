@@ -71,6 +71,17 @@ mixin FreshMixin<T> {
   /// concurrent refresh requests will await.
   Future<T>? _refreshFuture;
 
+  int _tokenSession = 0;
+
+  /// Identifies the session the current token belongs to.
+  ///
+  /// The value changes whenever the token is replaced through [setToken],
+  /// [clearToken] or [revokeToken], and stays the same when the token is
+  /// refreshed. Work that started under one value must not continue with
+  /// the token of another.
+  @protected
+  int get tokenSession => _tokenSession;
+
   final StreamController<AuthenticationStatus> _controller =
       StreamController<AuthenticationStatus>.broadcast()
         ..add(AuthenticationStatus.initial);
@@ -122,10 +133,13 @@ mixin FreshMixin<T> {
   /// If the provided token is null, the [AuthenticationStatus] will be updated
   /// to `unauthenticated` and the token will be removed from storage, otherwise
   /// it will be updated to `authenticated` and save to storage.
+  ///
+  /// A refresh that is still in flight belongs to the previous session and
+  /// will not overwrite or clear [token] when it completes.
   Future<void> setToken(T? token) async {
     if (token == null) return clearToken();
-    _updateStatus(token);
-    await _tokenStorage.write(token);
+    _startSession();
+    await _write(token);
   }
 
   /// Delete the stored [token]. and emit the
@@ -133,6 +147,7 @@ mixin FreshMixin<T> {
   /// not is `AuthenticationStatus.unauthenticated`
   /// This method should be called when the token is no longer valid.
   Future<void> revokeToken() async {
+    _startSession();
     _token = null;
     if (_authenticationStatus != AuthenticationStatus.unauthenticated) {
       _authenticationStatus = AuthenticationStatus.unauthenticated;
@@ -146,7 +161,25 @@ mixin FreshMixin<T> {
   ///
   /// The in-memory token and authentication status are updated immediately
   /// so that concurrent access via the [token] getter returns null.
+  ///
+  /// A refresh that is still in flight belongs to the previous session and
+  /// will not restore a token when it completes.
   Future<void> clearToken() async {
+    _startSession();
+    await _clear();
+  }
+
+  void _startSession() {
+    _tokenSession++;
+    _refreshFuture = null;
+  }
+
+  Future<void> _write(T token) async {
+    _updateStatus(token);
+    await _tokenStorage.write(token);
+  }
+
+  Future<void> _clear() async {
     _updateStatus(null);
     await _tokenStorage.delete();
   }
@@ -179,14 +212,19 @@ mixin FreshMixin<T> {
   /// used when the request that triggered this refresh was made. This allows
   /// detection of cases where another request has already refreshed the token.
   ///
-  /// If the refresh succeeds, the new token is automatically saved via
-  /// [setToken] and returned.
+  /// If the refresh succeeds, the new token is automatically saved and
+  /// returned.
   ///
   /// If the refresh fails:
-  /// - If a [RevokeTokenException] is thrown, [clearToken] is called
+  /// - If a [RevokeTokenException] is thrown, the token is cleared
   ///   and the exception is rethrown.
   /// - For any other exception, the exception is rethrown without
   ///   clearing the token.
+  ///
+  /// If [setToken], [clearToken] or [revokeToken] is called while the
+  /// refresh is in flight, its outcome belongs to the previous session: the
+  /// refreshed token is returned without being saved, and a
+  /// [RevokeTokenException] is rethrown without clearing the new token.
   ///
   /// In all cases (success or failure), the in-flight refresh state is
   /// cleared in a `finally` block, ensuring no deadlocks.
@@ -216,15 +254,16 @@ mixin FreshMixin<T> {
   }
 
   Future<T> _doRefresh() async {
+    final session = _tokenSession;
     try {
       final refreshedToken = await performTokenRefresh(_token);
-      await setToken(refreshedToken);
+      if (session == _tokenSession) await _write(refreshedToken);
       return refreshedToken;
     } on RevokeTokenException {
-      await clearToken();
+      if (session == _tokenSession) await _clear();
       rethrow;
     } finally {
-      _refreshFuture = null;
+      if (session == _tokenSession) _refreshFuture = null;
     }
   }
 

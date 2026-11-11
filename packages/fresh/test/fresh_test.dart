@@ -33,6 +33,8 @@ class FreshController<T> with FreshMixin<T> {
     }
     return refreshAction(token);
   }
+
+  int get session => tokenSession;
 }
 
 void main() {
@@ -674,6 +676,110 @@ void main() {
           expect(tokenAfterDelete, isNull);
         },
       );
+    });
+  });
+
+  group('token session', () {
+    const tokenA = OAuth2Token(accessToken: 'a');
+    const refreshedA = OAuth2Token(accessToken: 'a.refreshed');
+    const tokenB = OAuth2Token(accessToken: 'b');
+
+    late InMemoryTokenStorage<OAuth2Token> storage;
+    late FreshController<OAuth2Token> controller;
+
+    setUp(() async {
+      storage = InMemoryTokenStorage<OAuth2Token>();
+      controller = FreshController<OAuth2Token>(storage);
+      await controller.setToken(tokenA);
+    });
+
+    test('changes when the token is replaced, cleared or revoked', () async {
+      final sessions = {controller.session};
+
+      await controller.setToken(tokenB);
+      sessions.add(controller.session);
+      await controller.clearToken();
+      sessions.add(controller.session);
+      await controller.revokeToken();
+      sessions.add(controller.session);
+
+      expect(sessions, hasLength(4));
+    });
+
+    test('stays the same when the token is refreshed', () async {
+      final session = controller.session;
+      controller.refreshTokenFn = (_) async => refreshedA;
+
+      await controller.refreshToken(tokenUsedForRequest: tokenA);
+
+      expect(await controller.token, refreshedA);
+      expect(controller.session, session);
+    });
+
+    test('a refresh does not overwrite a token set while it was in flight',
+        () async {
+      final refresh = Completer<OAuth2Token>();
+      controller.refreshTokenFn = (_) => refresh.future;
+      final refreshed = controller.refreshToken(tokenUsedForRequest: tokenA);
+
+      await controller.setToken(tokenB);
+      refresh.complete(refreshedA);
+
+      expect(await refreshed, refreshedA);
+      expect(await controller.token, tokenB);
+      expect(await storage.read(), tokenB);
+    });
+
+    test('a refresh does not restore a token cleared while it was in flight',
+        () async {
+      final refresh = Completer<OAuth2Token>();
+      controller.refreshTokenFn = (_) => refresh.future;
+      final refreshed = controller.refreshToken(tokenUsedForRequest: tokenA);
+
+      await controller.clearToken();
+      refresh.complete(refreshedA);
+
+      expect(await refreshed, refreshedA);
+      expect(await controller.token, isNull);
+      expect(await storage.read(), isNull);
+    });
+
+    test('a revoked refresh does not clear a token set while it was in flight',
+        () async {
+      final refresh = Completer<OAuth2Token>();
+      controller.refreshTokenFn = (_) => refresh.future;
+      final refreshed = controller.refreshToken(tokenUsedForRequest: tokenA);
+
+      await controller.setToken(tokenB);
+      refresh.completeError(RevokeTokenException());
+
+      await expectLater(refreshed, throwsA(isA<RevokeTokenException>()));
+      expect(await controller.token, tokenB);
+      expect(await storage.read(), tokenB);
+    });
+
+    test('a refresh in a new session does not join the previous one', () async {
+      const refreshedB = OAuth2Token(accessToken: 'b.refreshed');
+      final refreshes = <Completer<OAuth2Token>>[];
+      controller.refreshTokenFn = (_) {
+        refreshes.add(Completer<OAuth2Token>());
+        return refreshes.last.future;
+      };
+      final previous = controller.refreshToken(tokenUsedForRequest: tokenA);
+
+      await controller.setToken(tokenB);
+      final current = controller.refreshToken(tokenUsedForRequest: tokenB);
+      expect(refreshes, hasLength(2));
+
+      refreshes.first.complete(refreshedA);
+      expect(await previous, refreshedA);
+      final joined = controller.refreshToken(tokenUsedForRequest: tokenB);
+      expect(refreshes, hasLength(2));
+
+      refreshes.last.complete(refreshedB);
+      expect(await current, refreshedB);
+      expect(await joined, refreshedB);
+      expect(await controller.token, refreshedB);
     });
   });
 }
