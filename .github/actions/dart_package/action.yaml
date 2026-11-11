@@ -43,8 +43,7 @@ runs:
   using: "composite"
   steps:
     - name: 🎯 Setup Dart
-      # https://github.com/dart-lang/setup-dart/issues/198
-      uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1.7.2
+      uses: dart-lang/setup-dart@v1
       with:
         sdk: ${{inputs.dart_sdk}}
 
