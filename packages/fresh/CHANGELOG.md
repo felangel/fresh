@@ -1,3 +1,7 @@
+# 0.7.0.
+
+- fix: introduce `tokenSession` to scope requests to a given session ([#143](https://github.com/felangel/fresh/pull/143))
+
 # 0.6.1.
 
 - fix: guard authenticationStatus emits on whether internal controller is closed
