@@ -2,6 +2,11 @@
 
 - fix: introduce `tokenSession` to scope requests to a given session ([#143](https://github.com/felangel/fresh/pull/143))
 
+# 0.6.1.
+
+- fix: guard authenticationStatus emits on whether internal controller is closed
+- fix: minor analysis warnings
+
 # 0.6.0
 
 - **BREAKING**: `FreshMixin` now requires implementing `performTokenRefresh(T? token)` for raw refresh logic ([#130](https://github.com/felangel/fresh/pull/130))
